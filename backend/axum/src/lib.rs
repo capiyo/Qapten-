@@ -1,4 +1,5 @@
 mod model;
+pub mod identity;
 pub mod robotics;
 mod robotics_routes;
 mod routes;
