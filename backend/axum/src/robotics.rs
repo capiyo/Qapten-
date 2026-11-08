@@ -238,7 +238,6 @@ pub fn validate_proposal(
     Ok(())
 }
 
-
 /// Validate simulator telemetry before it enters the development event stream.
 /// Physical-device telemetry requires authenticated enrollment and a separate gateway.
 pub fn validate_simulated_telemetry(
