@@ -1,5 +1,5 @@
 /**
- * Language-neutral API contract types for the Qapten web and mobile clients.
+ * Language-neutral API contract types for the Axon web and mobile clients.
  * Keep these aligned with the versioned schemas in /contracts.
  */
 export type Workspace = {
