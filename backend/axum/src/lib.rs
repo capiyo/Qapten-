@@ -1,4 +1,5 @@
 mod model;
+pub mod audit;
 pub mod identity;
 pub mod robotics;
 mod robotics_routes;
@@ -17,6 +18,7 @@ use tower_http::{limit::RequestBodyLimitLayer, trace::TraceLayer};
 pub fn app(state: AppState) -> Router {
     Router::new()
         .route("/health", get(routes::health))
+        .route("/api/v1/workspaces/:workspace_id/audit", get(routes::list_audit_events))
         .route(
             "/api/v1/sim/devices/:device_id/telemetry",
             get(robotics_routes::list_simulated_telemetry)
