@@ -41,7 +41,7 @@ export default function App() {
   const [artifactContent, setArtifactContent] = useState("");
   const [taskTitle, setTaskTitle] = useState("");
   const [taskObjective, setTaskObjective] = useState("");
-  const [assignee, setAssignee] = useState("");
+  const [assignee, setAssignee] = useState("");\n  const [selectedArtifactIds, setSelectedArtifactIds] = useState<string[]>([]);
   const [health, setHealth] = useState<Health | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -142,7 +142,7 @@ export default function App() {
           title: taskTitle.trim(),
           objective: taskObjective.trim(),
           assignee_agent_id: assignee,
-          context_artifact_ids: []
+          context_artifact_ids: selectedArtifactIds
         })
       });
       setTaskTitle("");
@@ -296,6 +296,7 @@ export default function App() {
                 <div><label htmlFor="task-title">Task title</label><input id="task-title" value={taskTitle} onChange={event => setTaskTitle(event.target.value)} placeholder="e.g. Review the API design" maxLength={160} required /></div>
                 <div><label htmlFor="assignee">Assign to agent</label><select id="assignee" value={assignee} onChange={event => setAssignee(event.target.value)} required><option value="">Choose an agent</option>{agents.map(agent => <option value={agent.id} key={agent.id}>{agent.display_name} ({agent.provider})</option>)}</select></div>
                 <div className="task-objective"><label htmlFor="task-objective">Expected outcome / instructions</label><textarea id="task-objective" value={taskObjective} onChange={event => setTaskObjective(event.target.value)} placeholder="Describe what the receiving agent should do and what evidence it should return…" maxLength={10000} rows={3} required /></div>
+                <div className="context-picker"><span className="field-label">Attach context artifacts</span>{artifacts.length === 0 ? <small>No artifacts captured yet.</small> : artifacts.map(artifact => <label className="context-option" key={artifact.id}><input type="checkbox" checked={selectedArtifactIds.includes(artifact.id)} onChange={event => setSelectedArtifactIds(current => event.target.checked ? [...current, artifact.id] : current.filter(id => id !== artifact.id))} /><span>{artifact.title}</span></label>)}</div>
                 <button disabled={!taskTitle.trim() || !taskObjective.trim() || !assignee || busy || agents.length === 0}>{busy ? "Creating…" : "Create handoff"}</button>
               </form>
               <div className="task-list">
