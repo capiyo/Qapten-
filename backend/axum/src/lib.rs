@@ -75,3 +75,56 @@ pub fn app(state: AppState) -> Router {
                 .allow_headers([header::CONTENT_TYPE]),
         )
 }
+
+
+#[cfg(test)]
+mod cors_tests {
+    use super::*;
+    use axum::{
+        body::Body,
+        http::{header, Request, StatusCode},
+    };
+    use tower::ServiceExt;
+
+    #[tokio::test]
+    async fn cors_allows_tauri_origins_and_rejects_unlisted_origins() {
+        let router = app(AppState::default());
+        let allowed = router
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .method(Method::OPTIONS)
+                    .uri("/health")
+                    .header(header::ORIGIN, "tauri://localhost")
+                    .header(header::ACCESS_CONTROL_REQUEST_METHOD, "GET")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(allowed.status(), StatusCode::OK);
+        assert_eq!(
+            allowed.headers().get(header::ACCESS_CONTROL_ALLOW_ORIGIN).unwrap(),
+            "tauri://localhost"
+        );
+
+        let denied = router
+            .oneshot(
+                Request::builder()
+                    .method(Method::OPTIONS)
+                    .uri("/health")
+                    .header(header::ORIGIN, "https://untrusted.example")
+                    .header(header::ACCESS_CONTROL_REQUEST_METHOD, "GET")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert!(denied
+            .headers()
+            .get(header::ACCESS_CONTROL_ALLOW_ORIGIN)
+            .is_none());
+    }
+}
