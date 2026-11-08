@@ -46,6 +46,10 @@ The first milestone is a reliable, inspectable collaboration loop—not a large 
 6. The user reviews the result, accepts or rejects proposed decisions, and records feedback.
 7. The workspace timeline shows the complete chain of evidence, handoffs, decisions, and revisions.
 
+## Python provider connector
+
+The initial Python bridge imports user-authorized Claude conversation exports, normalizes selected messages into an AXP context envelope, and sends the context to DeepSeek through its API only after explicit approval. It does not scrape logged-in browser sessions or use private endpoints. See [connectors/python/README.md](connectors/python/README.md).
+
 ## Getting started
 
 See [docs/QUICKSTART.md](docs/QUICKSTART.md) for local setup and a manual two-agent handoff walkthrough. Current implementation limitations are recorded in [docs/STATE_OF_REPO.md](docs/STATE_OF_REPO.md).
@@ -76,6 +80,7 @@ frontend/
     web/      React web application
     mobile/   React Native application
   packages/   shared frontend contracts and components
+connectors/   provider-specific Python adapters
 contracts/    versioned, language-neutral protocol schemas
 infra/        local development and deployment definitions
 docs/         architecture, decisions, security, and roadmap
