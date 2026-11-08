@@ -168,6 +168,32 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn simulator_ingress_rejects_oversized_payload() {
+        let app = crate::app(AppState::default());
+        let payload = serde_json::json!({
+            "event_id": "oversized-event",
+            "sequence": 1,
+            "observed_at": Utc::now().to_rfc3339(),
+            "kind": "diagnostic",
+            "payload": { "data": "x".repeat(65 * 1024) },
+            "quality": "simulated"
+        });
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri("/api/v1/sim/devices/simulator-1/telemetry")
+                    .header("content-type", "application/json")
+                    .body(Body::from(serde_json::to_vec(&payload).unwrap()))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::PAYLOAD_TOO_LARGE);
+    }
+
+    #[tokio::test]
     async fn simulator_ingress_rejects_measured_quality() {
         let app = crate::app(AppState::default());
         let payload = serde_json::json!({
