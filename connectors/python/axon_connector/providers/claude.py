@@ -43,7 +43,7 @@ def parse_claude_export(data: dict[str, Any]) -> ImportedConversation:
     """Normalize a Claude export conversation object into provider-neutral messages."""
     conversation_id = data.get("uuid") or data.get("id") or data.get("conversation_id")
     if not isinstance(conversation_id, str) or not conversation_id.strip():
-        raise ValueError("Claude export is missing a conversation UUID/ID.")
+        raise ValueError("Claude export is missing a conversation ID/UUID.")
 
     raw_messages = data.get("chat_messages") or data.get("messages")
     if not isinstance(raw_messages, list):
