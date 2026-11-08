@@ -6,14 +6,22 @@
 
 ## Repository
 
-- Repository: `capiyo/Qapten-`
+- Repository: `capiyo/Qapten-` (rename to `capiyo/axon` still pending in GitHub repository settings)
 - Default branch: `main`
 - Visibility: public
-- Active implementation branch: `foundation/axum-web-skeleton`
+- Active implementation branch: `foundation/axon-desktop-shell` (desktop work based on `foundation/axum-web-skeleton`)
 - Review: [Draft PR #1](https://github.com/capiyo/Qapten-/pull/1)
 - License: MIT (see [LICENSE](../LICENSE))
 
 ## Implemented on the draft branch
+
+- [x] Initial Tauri 2 desktop shell for Windows, macOS, and Linux using the shared React/Vite web client.
+- [x] Desktop-specific API endpoint configuration, minimum-privilege capability file, window sizing, and restrictive initial CSP.
+- [x] Original Axon SVG identity mark shared by web and desktop; platform icon generation wired into the desktop packaging script.
+
+## Desktop limitations
+
+The Tauri shell and packaging configuration are committed on `foundation/axon-desktop-shell`. Native installers have not yet been built or tested. The API still runs separately and is currently expected at `127.0.0.1:8080` in desktop mode. No local filesystem, shell, process, credential-vault, tray, updater, or unrestricted network permission is enabled. Desktop is therefore a shell foundation, not a finished desktop release.
 
 - [x] Product purpose, design principles, architecture, protocol draft, risk policy, roadmap, and architecture decision record.
 - [x] Rust workspace and Axum API application.
