@@ -10,7 +10,7 @@
 - Default branch: `main`
 - Visibility: public
 - Active implementation branch: `foundation/axon-desktop-shell` (desktop work based on `foundation/axum-web-skeleton`)
-- Review: [Draft PR #1](https://github.com/capiyo/Qapten-/pull/1)
+- Review: [Draft PR #1 — core foundation](https://github.com/capiyo/Qapten-/pull/1); [Draft PR #2 — desktop client](https://github.com/capiyo/Qapten-/pull/2)
 - License: MIT (see [LICENSE](../LICENSE))
 
 ## Implemented on the draft branch
@@ -18,10 +18,13 @@
 - [x] Initial Tauri 2 desktop shell for Windows, macOS, and Linux using the shared React/Vite web client.
 - [x] Desktop-specific API endpoint configuration, minimum-privilege capability file, window sizing, and restrictive initial CSP.
 - [x] Original Axon SVG identity mark shared by web and desktop; platform icon generation wired into the desktop packaging script.
+- [x] Tauri setup starts the Axum API inside the desktop process and gracefully stops it when the application exits.
+- [x] Local API binds to `127.0.0.1:8080`; requests are limited by a trusted Tauri/Vite origin allowlist, and the UI retries transient startup connection failures.
+- [x] Desktop CI job added for Tauri icon generation, web build in desktop mode, Rust formatting, and desktop host compilation (latest run pending).
 
 ## Desktop limitations
 
-The Tauri shell and packaging configuration are committed on `foundation/axon-desktop-shell`. Native installers have not yet been built or tested. The API still runs separately and is currently expected at `127.0.0.1:8080` in desktop mode. No local filesystem, shell, process, credential-vault, tray, updater, or unrestricted network permission is enabled. Desktop is therefore a shell foundation, not a finished desktop release.
+The Tauri shell and embedded API runtime are committed on `foundation/axon-desktop-shell`. Native installers have not yet been built or tested on all target platforms. The embedded API still uses in-memory development storage and has no authentication or route-level authorization. No local filesystem, shell, process, credential-vault, tray, updater, or unrestricted network permission is enabled. Desktop is an integrated development runtime, not yet a production release.
 
 - [x] Product purpose, design principles, architecture, protocol draft, risk policy, roadmap, and architecture decision record.
 - [x] Rust workspace and Axum API application.
@@ -31,7 +34,7 @@ The Tauri shell and packaging configuration are committed on `foundation/axon-de
 - [x] React + TypeScript + Vite web workspace for creating workspaces, registering agents, capturing artifacts, attaching context to tasks, submitting responses, and reviewing/advancing tasks.
 - [x] React Native + Expo workspace for workspace creation/listing, agent registration, artifact capture, context selection, task creation, response submission, and review transitions.
 - [x] Shared TypeScript API contract types consumed by web and mobile.
-- [x] GitHub Actions checks for Rust formatting, Clippy, tests, web production build, and mobile TypeScript validation.
+- [x] GitHub Actions checks for Rust formatting, Clippy, tests, web production build, mobile TypeScript validation, Python connector tests, and the Tauri desktop host.
 - [x] AXP robotics device-registration, telemetry, non-executable command-proposal, and safety-state schemas.
 - [x] Shared TypeScript robotics contracts and pure Rust proposal validation tests.
 - [x] Robotics safety boundary documented; no hardware dispatch or actuator endpoint.
@@ -72,7 +75,7 @@ The current API uses an in-process memory store. All records, including the audi
 
 ## Verification
 
-GitHub Actions run [42500672881](https://github.com/capiyo/Qapten-/actions/runs/42500672881) passed all four jobs on commit `5c199a8f364d5272f9525703f4e591a820652ef4`: Rust formatting, Clippy and tests; React web production build; React Native TypeScript validation; and Python connector Ruff/pytest. The Python suite verifies Claude export normalization, AXP provenance and payload hashing, preview-only behavior, explicit transfer approval, and context-size validation. This verifies the current branch head at the time of the run. No physical Android/iOS build, hardware integration, or production deployment has been performed.
+The last verified core-foundation run [42500672881](https://github.com/capiyo/Qapten-/actions/runs/42500672881) passed Rust, web, mobile, and Python checks on its then-current commit; it predates the Tauri desktop integration. Desktop branch run [42509094589](https://github.com/capiyo/Qapten-/actions/runs/42509094589) is queued for commit `20a88b945250481e0506c612ffa6ecf62f0aa838`; no result is claimed yet. The Python suite verifies Claude export normalization, AXP provenance and payload hashing, preview-only behavior, explicit transfer approval, and context-size validation. No physical Android/iOS build, hardware integration, native installer verification, or production deployment has been performed.
 
 ## Architecture direction
 
