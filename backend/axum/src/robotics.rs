@@ -93,6 +93,17 @@ pub struct TelemetryEvent {
     pub quality: Option<TelemetryQuality>,
 }
 
+#[derive(Debug, Clone, Deserialize)]
+pub struct TelemetryIngest {
+    pub event_id: String,
+    pub sequence: u64,
+    pub observed_at: DateTime<Utc>,
+    pub kind: TelemetryKind,
+    pub frame_id: Option<String>,
+    pub payload: serde_json::Map<String, serde_json::Value>,
+    pub quality: TelemetryQuality,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum ProposedOperation {
@@ -128,6 +139,8 @@ pub struct CommandProposal {
 pub struct SafetyLimits {
     pub max_velocity_mps: f64,
     pub max_command_age_seconds: i64,
+    pub max_safety_state_age_seconds: i64,
+    pub max_future_clock_skew_seconds: i64,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -143,6 +156,14 @@ pub enum ProposalRejection {
     VelocityOutOfBounds,
     InvalidParameters,
     InvalidPolicyLimits,
+    StaleSafetyState,
+    FutureSafetyState,
+    TelemetryDeviceMismatch,
+    TelemetryNotSimulated,
+    TelemetrySequenceReplay,
+    InvalidTelemetryEvent,
+    StaleTelemetry,
+    FutureTelemetry,
 }
 
 pub fn validate_proposal(
@@ -176,8 +197,17 @@ pub fn validate_proposal(
     if !limits.max_velocity_mps.is_finite()
         || limits.max_velocity_mps < 0.0
         || limits.max_command_age_seconds < 0
+        || limits.max_safety_state_age_seconds < 0
+        || limits.max_future_clock_skew_seconds < 0
     {
         return Err(ProposalRejection::InvalidPolicyLimits);
+    }
+    let safety_age = now.signed_duration_since(safety.observed_at);
+    if safety_age > Duration::seconds(limits.max_safety_state_age_seconds) {
+        return Err(ProposalRejection::StaleSafetyState);
+    }
+    if safety_age < -Duration::seconds(limits.max_future_clock_skew_seconds) {
+        return Err(ProposalRejection::FutureSafetyState);
     }
     if proposal.expires_at <= proposal.issued_at
         || proposal.expires_at <= now
@@ -204,6 +234,42 @@ pub fn validate_proposal(
         if velocity.abs() > limits.max_velocity_mps {
             return Err(ProposalRejection::VelocityOutOfBounds);
         }
+    }
+    Ok(())
+}
+
+
+/// Validate simulator telemetry before it enters the development event stream.
+/// Physical-device telemetry requires authenticated enrollment and a separate gateway.
+pub fn validate_simulated_telemetry(
+    input: &TelemetryIngest,
+    path_device_id: &str,
+    last_sequence: Option<u64>,
+    now: DateTime<Utc>,
+    max_age_seconds: i64,
+    max_future_clock_skew_seconds: i64,
+) -> Result<(), ProposalRejection> {
+    if input.event_id.trim().is_empty() || input.event_id.len() > 128 {
+        return Err(ProposalRejection::InvalidTelemetryEvent);
+    }
+    if path_device_id.trim().is_empty() || path_device_id.len() > 128 {
+        return Err(ProposalRejection::TelemetryDeviceMismatch);
+    }
+    if input.quality != TelemetryQuality::Simulated {
+        return Err(ProposalRejection::TelemetryNotSimulated);
+    }
+    if last_sequence.is_some_and(|last| input.sequence <= last) {
+        return Err(ProposalRejection::TelemetrySequenceReplay);
+    }
+    if max_age_seconds < 0 || max_future_clock_skew_seconds < 0 {
+        return Err(ProposalRejection::InvalidPolicyLimits);
+    }
+    let age = now.signed_duration_since(input.observed_at);
+    if age > Duration::seconds(max_age_seconds) {
+        return Err(ProposalRejection::StaleTelemetry);
+    }
+    if age < -Duration::seconds(max_future_clock_skew_seconds) {
+        return Err(ProposalRejection::FutureTelemetry);
     }
     Ok(())
 }
@@ -244,8 +310,26 @@ mod tests {
             SafetyLimits {
                 max_velocity_mps: 0.5,
                 max_command_age_seconds: 5,
+                max_safety_state_age_seconds: 3,
+                max_future_clock_skew_seconds: 1,
             },
         )
+    }
+
+    #[test]
+    fn rejects_stale_or_future_safety_state() {
+        let (proposal, mut safety, now, mut limits) = fixture();
+        safety.observed_at = now - Duration::seconds(4);
+        assert_eq!(
+            validate_proposal(&proposal, "robot-1", true, &safety, 6, now, limits),
+            Err(ProposalRejection::StaleSafetyState)
+        );
+        safety.observed_at = now + Duration::seconds(2);
+        limits.max_future_clock_skew_seconds = 1;
+        assert_eq!(
+            validate_proposal(&proposal, "robot-1", true, &safety, 6, now, limits),
+            Err(ProposalRejection::FutureSafetyState)
+        );
     }
 
     #[test]
