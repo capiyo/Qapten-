@@ -402,4 +402,72 @@ mod tests {
             Err(ProposalRejection::DeviceMismatch)
         );
     }
+
+    #[test]
+    fn simulator_telemetry_requires_fresh_monotonic_events() {
+        let now = Utc::now();
+        let input = TelemetryIngest {
+            event_id: "event-1".into(),
+            sequence: 2,
+            observed_at: now - Duration::seconds(1),
+            kind: TelemetryKind::Heartbeat,
+            frame_id: None,
+            payload: serde_json::Map::new(),
+            quality: TelemetryQuality::Simulated,
+        };
+        assert_eq!(
+            validate_simulated_telemetry(&input, "sim-1", Some(1), now, 30, 2),
+            Ok(())
+        );
+        assert_eq!(
+            validate_simulated_telemetry(&input, "sim-1", Some(2), now, 30, 2),
+            Err(ProposalRejection::TelemetrySequenceReplay)
+        );
+    }
+
+    #[test]
+    fn simulator_telemetry_rejects_physical_claims_and_stale_observations() {
+        let now = Utc::now();
+        let mut input = TelemetryIngest {
+            event_id: "event-2".into(),
+            sequence: 1,
+            observed_at: now - Duration::seconds(31),
+            kind: TelemetryKind::Pose,
+            frame_id: None,
+            payload: serde_json::Map::new(),
+            quality: TelemetryQuality::Simulated,
+        };
+        assert_eq!(
+            validate_simulated_telemetry(&input, "sim-1", None, now, 30, 2),
+            Err(ProposalRejection::StaleTelemetry)
+        );
+        input.observed_at = now;
+        input.quality = TelemetryQuality::Measured;
+        assert_eq!(
+            validate_simulated_telemetry(&input, "sim-1", None, now, 30, 2),
+            Err(ProposalRejection::TelemetryNotSimulated)
+        );
+    }
+
+    #[test]
+    fn simulator_telemetry_rejects_future_clock_and_device_mismatch() {
+        let now = Utc::now();
+        let input = TelemetryIngest {
+            event_id: "event-3".into(),
+            sequence: 1,
+            observed_at: now + Duration::seconds(3),
+            kind: TelemetryKind::Heartbeat,
+            frame_id: None,
+            payload: serde_json::Map::new(),
+            quality: TelemetryQuality::Simulated,
+        };
+        assert_eq!(
+            validate_simulated_telemetry(&input, "sim-1", None, now, 30, 2),
+            Err(ProposalRejection::FutureTelemetry)
+        );
+        assert_eq!(
+            validate_simulated_telemetry(&input, "", None, now, 30, 2),
+            Err(ProposalRejection::TelemetryDeviceMismatch)
+        );
+    }
 }
