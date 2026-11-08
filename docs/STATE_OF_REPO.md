@@ -12,6 +12,11 @@
 - Architecture, protocol, risk, and roadmap documents are being established as design artifacts.
 
 ## Implemented
+- [x] Axum API skeleton with health, workspace, manual agent, artifact, and task endpoints.
+- [x] In-memory task lifecycle with version-checked transitions and context artifact validation.
+- [x] React web workspace creation screen connected to the local API.
+- [x] React Native / Expo app shell with API health status.
+- [x] GitHub Actions CI workflow for Rust checks and web build.
 
 - [x] Product purpose and design principles in README.
 - [x] Initial architecture boundaries.
@@ -20,6 +25,10 @@
 - [x] Outcome-based roadmap.
 
 ## Not implemented yet
+- No persistent database adapter; current API data is process-local memory.
+- No authentication, user identity, or real authorization.
+- No handoff response artifact/review UI in the frontend yet.
+- No live agent provider connections or browser capture.
 
 - No Axum service code.
 - No Drogon service code.
@@ -39,4 +48,4 @@ Begin with a modular Rust/Axum orchestration core and a provider-neutral protoco
 
 ## Verification status
 
-Documentation only. No application build or test has been run. Do not interpret the roadmap as implemented functionality.
+The API, web, and mobile foundations are committed on the open draft PR branch. No local build or test has been run through the GitHub connector. CI status must be checked before treating the code as build-verified. The API is a local-only, in-memory development prototype, not production-ready.
