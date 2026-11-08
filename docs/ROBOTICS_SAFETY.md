@@ -26,7 +26,7 @@ Axon coordinates people, software agents, simulators, and physical devices. Robo
 
 The Rust domain module validates authenticated device identity, explicit requester authorization, inactive emergency stop, healthy interlocks, manual/assisted operating mode, valid issue/expiry window, maximum command age, strictly increasing sequence, minimum idempotency-key length, and finite velocity within configured bounds.
 
-Safety-state observations are now checked for staleness and excessive future clock skew. A simulator-only telemetry endpoint enforces event-ID uniqueness within its bounded retention window, monotonic per-device sequences, simulated quality, and observation freshness. It retains at most 500 events per simulator in process memory.
+Safety-state observations are now checked for staleness and excessive future clock skew. A simulator-only telemetry endpoint enforces event-ID uniqueness within its bounded retention window, monotonic per-device sequences, simulated quality, observation freshness, valid frame identifiers, a maximum of 128 payload fields, and a 64 KiB serialized payload ceiling. API tests cover duplicate IDs, replayed sequences, measured-quality rejection, and bounded retention. It retains at most 500 events per simulator in process memory.
 
 The validators are pure domain logic. The endpoint does not authenticate cryptographic keys, persist replay state, approve a proposal, or communicate with a robot. All simulator telemetry disappears on process restart. A successful validation result must never be interpreted as permission to actuate.
 
