@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import hashlib
+import json
 from dataclasses import asdict, dataclass, field
 from datetime import UTC, datetime
 from typing import Any
@@ -52,7 +54,21 @@ class AxonEnvelope:
     source_provider: str = "claude"
     capture_method: str = "manual_import"
 
+    def __post_init__(self) -> None:
+        if not self.workspace_id.strip():
+            raise ValueError("Workspace ID is required.")
+        if not self.actor_id.strip():
+            raise ValueError("Actor provenance ID is required.")
+        if self.classification not in {"public", "workspace", "restricted", "secret"}:
+            raise ValueError("Unsupported AXP classification.")
+        if not isinstance(self.payload, dict):
+            raise ValueError("AXP envelope payload must be an object.")
+
     def to_dict(self) -> dict[str, Any]:
+        canonical_payload = json.dumps(
+            self.payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+        ).encode("utf-8")
+        content_hash = hashlib.sha256(canonical_payload).hexdigest()
         return {
             "protocol_version": self.protocol_version,
             "record_id": self.record_id,
@@ -66,6 +82,7 @@ class AxonEnvelope:
             },
             "classification": self.classification,
             "payload": self.payload,
+            "integrity": {"algorithm": "sha-256", "content_hash": content_hash},
         }
 
     @classmethod
