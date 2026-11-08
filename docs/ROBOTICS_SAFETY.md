@@ -18,6 +18,7 @@ Axon coordinates people, software agents, simulators, and physical devices. Robo
 
 - Device registration schema: registration metadata and identity-key fingerprint. Production registration must bind the fingerprint to a verified key challenge.
 - Telemetry event schema: sequenced observations with observation and receipt times. Consumers must reject duplicate event IDs and detect sequence gaps.
+- Simulator telemetry ingress schema: development-only requests marked `simulated`; the API stamps receipt time rather than trusting the client.
 - Command proposal schema: non-executable intent. It intentionally has no actuator URL, transport field, or executable payload format.
 - Safety state schema: emergency-stop, interlock, operating mode, and fault state.
 
@@ -25,7 +26,9 @@ Axon coordinates people, software agents, simulators, and physical devices. Robo
 
 The Rust domain module validates authenticated device identity, explicit requester authorization, inactive emergency stop, healthy interlocks, manual/assisted operating mode, valid issue/expiry window, maximum command age, strictly increasing sequence, minimum idempotency-key length, and finite velocity within configured bounds.
 
-The validator is pure domain logic. It does not authenticate cryptographic keys, persist replay state, approve a proposal, or communicate with a robot. A successful validation result must never be interpreted as permission to actuate.
+Safety-state observations are now checked for staleness and excessive future clock skew. A simulator-only telemetry endpoint enforces event-ID uniqueness within its bounded retention window, monotonic per-device sequences, simulated quality, and observation freshness. It retains at most 500 events per simulator in process memory.
+
+The validators are pure domain logic. The endpoint does not authenticate cryptographic keys, persist replay state, approve a proposal, or communicate with a robot. All simulator telemetry disappears on process restart. A successful validation result must never be interpreted as permission to actuate.
 
 ## Future gateway requirements (not implemented)
 
@@ -38,4 +41,4 @@ The validator is pure domain logic. It does not authenticate cryptographic keys,
 - Tamper-evident audit log and telemetry retention controls.
 - Simulation/HIL testing, fault injection, safety case, and per-platform review before any hardware pilot.
 
-No physical device should be connected to this API. No actuator endpoint is exposed.
+No physical device should be connected to this API. The simulator endpoint is development-only and the server refuses non-loopback binding until authentication is implemented. No actuator endpoint is exposed.
