@@ -1,4 +1,4 @@
-# Qapten Axum API
+# Axon Axum API
 
 Initial executable API foundation.
 
@@ -7,7 +7,7 @@ Initial executable API foundation.
 From the repository root:
 
 ```sh
-cargo run -p qapten-api
+cargo run -p axon-api
 ```
 
 The server binds to `127.0.0.1:8080` by default.
