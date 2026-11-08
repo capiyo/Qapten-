@@ -1,0 +1,16 @@
+{
+  "expo": {
+    "name": "Qapten",
+    "slug": "qapten",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "ios": { "supportsTablet": true },
+    "android": {
+      "package": "co.qapten.mobile",
+      "adaptiveIcon": {
+        "backgroundColor": "#eaf1fc"
+      }
+    }
+  }
+}
