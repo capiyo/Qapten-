@@ -46,6 +46,10 @@ The first milestone is a reliable, inspectable collaboration loop—not a large 
 6. The user reviews the result, accepts or rejects proposed decisions, and records feedback.
 7. The workspace timeline shows the complete chain of evidence, handoffs, decisions, and revisions.
 
+## Getting started
+
+See [docs/QUICKSTART.md](docs/QUICKSTART.md) for local setup and a manual two-agent handoff walkthrough. Current implementation limitations are recorded in [docs/STATE_OF_REPO.md](docs/STATE_OF_REPO.md).
+
 ## Repository map
 
 ```text
