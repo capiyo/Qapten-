@@ -220,7 +220,6 @@ pub async fn list_artifacts(
     Ok(Json(artifacts))
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
