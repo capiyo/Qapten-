@@ -11,11 +11,8 @@ import {
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
 
-type Workspace = { id: string; name: string; created_at: string };
-type Agent = { id: string; display_name: string; provider: string };
-type Artifact = { id: string; title: string; content: string };
-type Task = { id: string; title: string; objective: string; status: string; version: number; response_artifact_id: string | null };
-type Health = { status: string; storage: string; authentication: string };
+import type { Agent, Artifact, Health, Task, Workspace } from "../../packages/contracts/src";
+
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_QAPTEN_API_URL ?? "http://127.0.0.1:8080";
 
