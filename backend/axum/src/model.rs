@@ -61,6 +61,7 @@ pub struct Task {
     pub objective: String,
     pub assignee_agent_id: Uuid,
     pub context_artifact_ids: Vec<Uuid>,
+    pub response_artifact_id: Option<Uuid>,
     pub status: TaskStatus,
     pub version: u64,
     pub created_at: DateTime<Utc>,
@@ -90,6 +91,13 @@ pub struct CreateTask {
     pub assignee_agent_id: Uuid,
     #[serde(default)]
     pub context_artifact_ids: Vec<Uuid>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct SubmitTask {
+    pub expected_version: u64,
+    pub title: String,
+    pub content: String,
 }
 
 #[derive(Debug, Deserialize)]
