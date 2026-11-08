@@ -15,6 +15,8 @@ The server binds to `127.0.0.1:8080` by default.
 ## Endpoints
 
 - `GET /health`
+- `POST /api/v1/sim/devices/{device_id}/telemetry` — accepts simulated telemetry only; enforces event-ID uniqueness, monotonic per-device sequence, and observation freshness.
+- `GET /api/v1/sim/devices/{device_id}/telemetry` — returns the bounded in-memory simulator event stream.
 - `GET /api/v1/workspaces`
 - `POST /api/v1/workspaces` — JSON: `{"name":"My workspace"}`
 - `GET /api/v1/workspaces/{workspace_id}/agents`
@@ -28,6 +30,6 @@ The server binds to `127.0.0.1:8080` by default.
 
 ## Important limitations
 
-This first slice uses an in-process memory store. Data disappears when the process exits. It has no authentication or workspace membership enforcement yet, so it refuses non-loopback network binding by default. Do not expose it to a network or use it for sensitive information.
+This first slice uses an in-process memory store, including the bounded simulator telemetry stream. Data disappears when the process exits. The simulator telemetry endpoint is not a physical-device gateway and must not be exposed to a network. It has no authentication or workspace membership enforcement yet, so it refuses non-loopback network binding by default. Do not expose it to a network or use it for sensitive information.
 
 The next implementation step is persistent storage plus authentication and authorization before any shared or remote deployment.
