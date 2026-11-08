@@ -2,7 +2,7 @@
 
 ## 1. System boundary
 
-Qapten is a collaboration control plane between people and AI agents. It stores shared work products and coordinates explicit handoffs. It does not replace the underlying model providers, silently inspect their private sessions, or assume that every agent has permission to see every workspace artifact.
+Axon is a collaboration control plane between people and AI agents. It stores shared work products and coordinates explicit handoffs. It does not replace the underlying model providers, silently inspect their private sessions, or assume that every agent has permission to see every workspace artifact.
 
 The first release is a modular monolith around the orchestration domain. Splitting services before throughput or isolation requirements are measured would add operational cost without proving the core workflow.
 
