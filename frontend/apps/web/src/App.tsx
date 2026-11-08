@@ -59,7 +59,7 @@ export default function App() {
   }
 
   useEffect(() => {
-    void refreshWorkspaces().catch(cause => setError(cause instanceof Error ? cause.message : "Could not reach the Qapten API."));
+    void refreshWorkspaces().catch(cause => setError(cause instanceof Error ? cause.message : "Could not reach the Axon API."));
   }, []);
 
   useEffect(() => {
@@ -202,7 +202,7 @@ export default function App() {
   return (
     <main className="shell">
       <aside className="rail">
-        <div className="brand-mark">Q</div>
+        <div className="brand-mark">A</div>
         <span className="rail-label">WORKSPACES</span>
         <div className="rail-dot active" aria-label="Workspace area" />
         <div className="rail-bottom">0.1</div>
@@ -228,7 +228,7 @@ export default function App() {
                 <p>Capture work once. Hand it off with its evidence, decisions and history intact.</p>
               </div>
               <div className="orbit" aria-hidden="true">
-                <span className="orbit-core">Q</span>
+                <span className="orbit-core">A</span>
                 <span className="orbit-node node-a">A</span>
                 <span className="orbit-node node-b">B</span>
                 <span className="orbit-node node-c">↗</span>
@@ -338,7 +338,7 @@ export default function App() {
         )}
 
         {error && <div className="error" role="alert">{error} <button className="retry" onClick={() => selected ? void refreshWorkspace(selected) : void refreshWorkspaces()}>Retry</button></div>}
-        <footer><span>QAPTEN</span><span>Context should travel with the work.</span><span>FOUNDATION BUILD · 0.1</span></footer>
+        <footer><span>AXON</span><span>Context should travel with the work.</span><span>FOUNDATION BUILD · 0.1</span></footer>
         {health && health.storage !== "persistent" && (
           <p className="dev-warning">Development mode: data is temporary and this API has no authentication. Do not use sensitive or production data.</p>
         )}
