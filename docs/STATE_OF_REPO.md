@@ -2,50 +2,44 @@
 
 **Last updated:** 2026-11-08
 
-## Verified repository state
+## Repository
 
 - Repository: `capiyo/Qapten-`
 - Default branch: `main`
-- Visibility reported by GitHub: public
-- Initial repository was empty before this foundation was written.
-- Initial commit establishes README and product intent.
-- Architecture, protocol, risk, and roadmap documents are being established as design artifacts.
+- Visibility: public
+- Active implementation branch: `foundation/axum-web-skeleton`
+- Review: [Draft PR #1](https://github.com/capiyo/Qapten-/pull/1)
 
-## Implemented
-- [x] Axum API skeleton with health, workspace, manual agent, artifact, and task endpoints.
-- [x] In-memory task lifecycle with version-checked transitions and context artifact validation.
-- [x] React web workspace creation screen connected to the local API.
-- [x] React Native / Expo app shell with API health status.
-- [x] GitHub Actions CI workflow for Rust checks and web build.
+## Implemented on the draft branch
 
-- [x] Product purpose and design principles in README.
-- [x] Initial architecture boundaries.
-- [x] Draft Qapten Exchange Protocol (QEP).
-- [x] Initial risk policy.
-- [x] Outcome-based roadmap.
+- [x] Product purpose, design principles, architecture, protocol draft, risk policy, roadmap, and architecture decision record.
+- [x] Rust workspace and Axum API application.
+- [x] Health, workspace, manual agent registration, and artifact capture endpoints.
+- [x] Task creation/listing and version-checked lifecycle transitions.
+- [x] Workspace consistency checks for assigned agents and context artifact references.
+- [x] Default loopback-only API binding until authentication exists.
+- [x] React + TypeScript + Vite workspace creation screen connected to the API.
+- [x] React Native + Expo application shell with API health status.
+- [x] GitHub Actions workflow for Rust formatting, Clippy, tests, and web build.
 
-## Not implemented yet
-- No persistent database adapter; current API data is process-local memory.
-- No authentication, user identity, or real authorization.
-- No handoff response artifact/review UI in the frontend yet.
-- No live agent provider connections or browser capture.
+## Not implemented
 
-- No Axum service code.
-- No Drogon service code.
-- No Zig component.
-- No React web application.
-- No React Native application.
-- No database schema or migrations.
-- No authentication or authorization implementation.
-- No provider API integration.
-- No browser extension or browser capture implementation.
-- No automated tests or CI pipeline.
-- No deployment configuration.
+- Persistent MongoDB adapter, schema migrations, and durable event/audit storage.
+- Authentication, user identity, workspace membership, and real authorization.
+- Artifact content hashing, classification enforcement, context bundle read API, and retention controls.
+- Task response submission as a first-class artifact, human review UI, decision records, and feedback UI.
+- Agent provider APIs, browser-assisted capture, webhooks, and autonomous agent execution.
+- C++/Drogon service and Zig utilities (intentionally deferred until justified).
+- Production deployment, secrets management, and operational monitoring.
 
-## Architectural decision
+## Runtime limitations
 
-Begin with a modular Rust/Axum orchestration core and a provider-neutral protocol. Keep C++/Drogon and Zig as later, evidence-driven components rather than adding empty services. Use React for web and React Native for mobile, with shared contracts where practical. MongoDB is the planned initial persistence layer, pending implementation-level schema and consistency review.
+The current API uses an in-process memory store. All records disappear when the process exits. It has no authentication or real authorization. It refuses non-loopback binding by default; the explicit override is for isolated development only. Do not expose it to a network or use it for sensitive information.
 
-## Verification status
+## Verification
 
-The API, web, and mobile foundations are committed on the open draft PR branch. No local build or test has been run through the GitHub connector. CI status must be checked before treating the code as build-verified. The API is a local-only, in-memory development prototype, not production-ready.
+The GitHub connector was used to commit source files and open the draft PR. It did not run a local compiler or test suite. GitHub Actions checks must complete before this foundation is considered build-verified. The React Native app has not been built on Android or iOS.
+
+## Architecture direction
+
+Axum remains the initial orchestration authority. MongoDB is the planned persistence layer, subject to schema and transaction design. React and React Native are separate clients over the same API. Drogon and Zig remain evidence-driven extension points, not duplicated orchestration services.
