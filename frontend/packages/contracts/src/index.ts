@@ -120,7 +120,7 @@ export type CommandProposal = {
   expires_at: string;
   idempotency_key: string;
   reason: string;
-  simulation_only?: boolean;
+  simulation_only?: true;
 };
 
 export type DeviceSafetyState = {
