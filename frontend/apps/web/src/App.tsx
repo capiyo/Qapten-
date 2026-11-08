@@ -6,10 +6,19 @@ import type { Agent, Artifact, Health, Task, Workspace } from "../../../packages
 
 const api = async <T,>(path: string, init?: RequestInit): Promise<T> => {
   const apiBaseUrl = import.meta.env.VITE_AXON_API_URL ?? "";
-  const response = await fetch(`${apiBaseUrl}${path}`, {
-    ...init,
-    headers: { "Content-Type": "application/json", ...init?.headers }
-  });
+  const response = await (async () => {
+    for (let attempt = 0; ; attempt += 1) {
+      try {
+        return await fetch(`${apiBaseUrl}${path}`, {
+          ...init,
+          headers: { "Content-Type": "application/json", ...init?.headers }
+        });
+      } catch (cause) {
+        if (attempt >= 4) throw cause;
+        await new Promise(resolve => window.setTimeout(resolve, 100 * 2 ** attempt));
+      }
+    }
+  })();
   if (!response.ok) {
     const body = await response.json().catch(() => ({ error: response.statusText }));
     throw new Error(body.error ?? "Request failed");
