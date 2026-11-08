@@ -6,8 +6,9 @@
   "scripts": {
     "tauri": "tauri",
     "dev": "tauri dev",
-    "build": "tauri build",
-    "check": "tauri info"
+    "build": "npm run icons && tauri build",
+    "check": "tauri info",
+    "icons": "tauri icon assets/axon-mark.svg --output src-tauri/icons"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2.0.0"
