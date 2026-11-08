@@ -159,7 +159,7 @@ mod tests {
                 &principal,
                 workspace,
                 Capability::ArtifactRead,
-                &[grant.clone()],
+                std::slice::from_ref(&grant),
                 now
             ),
             Ok(())
@@ -169,7 +169,7 @@ mod tests {
                 &principal,
                 workspace,
                 Capability::AuditRead,
-                &[grant.clone()],
+                std::slice::from_ref(&grant),
                 now
             ),
             Err(AuthorizationDenial::CapabilityNotGranted)
@@ -195,7 +195,7 @@ mod tests {
                 &principal,
                 workspace,
                 Capability::ArtifactRead,
-                &[grant.clone()],
+                std::slice::from_ref(&grant),
                 now
             ),
             Err(AuthorizationDenial::GrantExpired)
@@ -207,7 +207,7 @@ mod tests {
                 &principal,
                 workspace,
                 Capability::ArtifactRead,
-                &[grant.clone()],
+                std::slice::from_ref(&grant),
                 now
             ),
             Err(AuthorizationDenial::GrantNotYetValid)
