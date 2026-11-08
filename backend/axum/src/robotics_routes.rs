@@ -127,3 +127,68 @@ pub async fn list_simulated_telemetry(
             .unwrap_or_default(),
     )
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use axum::{
+        body::Body,
+        http::Request,
+    };
+    use tower::ServiceExt;
+
+    #[tokio::test]
+    async fn simulator_ingress_accepts_fresh_event_and_rejects_duplicate_id() {
+        let state = AppState::default();
+        let app = crate::app(state);
+        let payload = serde_json::json!({
+            "event_id": "sim-event-1",
+            "sequence": 1,
+            "observed_at": Utc::now().to_rfc3339(),
+            "kind": "heartbeat",
+            "payload": {},
+            "quality": "simulated"
+        });
+        let request = || {
+            Request::builder()
+                .method("POST")
+                .uri("/api/v1/sim/devices/simulator-1/telemetry")
+                .header("content-type", "application/json")
+                .body(Body::from(serde_json::to_vec(&payload).unwrap()))
+                .unwrap()
+        };
+
+        let accepted = app.clone().oneshot(request()).await.unwrap();
+        assert_eq!(accepted.status(), StatusCode::ACCEPTED);
+
+        let duplicate = app.oneshot(request()).await.unwrap();
+        assert_eq!(duplicate.status(), StatusCode::CONFLICT);
+    }
+
+    #[tokio::test]
+    async fn simulator_ingress_rejects_measured_quality() {
+        let app = crate::app(AppState::default());
+        let payload = serde_json::json!({
+            "event_id": "physical-event-1",
+            "sequence": 1,
+            "observed_at": Utc::now().to_rfc3339(),
+            "kind": "heartbeat",
+            "payload": {},
+            "quality": "measured"
+        });
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri("/api/v1/sim/devices/simulator-1/telemetry")
+                    .header("content-type", "application/json")
+                    .body(Body::from(serde_json::to_vec(&payload).unwrap()))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::FORBIDDEN);
+    }
+}
