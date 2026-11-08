@@ -29,7 +29,12 @@ pub async fn list_audit_events(
     Path(workspace_id): Path<Uuid>,
 ) -> ApiResult<Json<Vec<AuditEvent>>> {
     if !state.workspaces.read().await.contains_key(&workspace_id) {
-        return Err((StatusCode::NOT_FOUND, Json(ApiError { error: "Workspace not found.".into() })));
+        return Err((
+            StatusCode::NOT_FOUND,
+            Json(ApiError {
+                error: "Workspace not found.".into(),
+            }),
+        ));
     }
     Ok(Json(state.audit.read().await.list_workspace(workspace_id)))
 }
@@ -85,7 +90,13 @@ pub async fn create_workspace(
         workspace.id.to_string(),
         serde_json::json!({ "name": workspace.name }),
     );
-    state.audit.write().await.append(Some(workspace.id), "workspace.created", "workspace", workspace.id.to_string(), serde_json::json!({"name": workspace.name}));
+    state.audit.write().await.append(
+        Some(workspace.id),
+        "workspace.created",
+        "workspace",
+        workspace.id.to_string(),
+        serde_json::json!({"name": workspace.name}),
+    );
 
     Ok((StatusCode::CREATED, Json(workspace)))
 }
@@ -131,7 +142,13 @@ pub async fn register_agent(
         created_at: Utc::now(),
     };
     state.agents.write().await.insert(agent.id, agent.clone());
-    state.audit.write().await.append(Some(workspace_id), "agent.registered", "agent", agent.id.to_string(), serde_json::json!({"provider": agent.provider, "connection_mode": "manual"}));
+    state.audit.write().await.append(
+        Some(workspace_id),
+        "agent.registered",
+        "agent",
+        agent.id.to_string(),
+        serde_json::json!({"provider": agent.provider, "connection_mode": "manual"}),
+    );
 
     Ok((StatusCode::CREATED, Json(agent)))
 }
@@ -193,7 +210,13 @@ pub async fn create_artifact(
         artifact.id.to_string(),
         serde_json::json!({ "title": artifact.title, "source_agent_id": artifact.source_agent_id }),
     );
-    state.audit.write().await.append(Some(workspace_id), "artifact.created", "artifact", artifact.id.to_string(), serde_json::json!({"title": artifact.title, "source_agent_id": artifact.source_agent_id}));
+    state.audit.write().await.append(
+        Some(workspace_id),
+        "artifact.created",
+        "artifact",
+        artifact.id.to_string(),
+        serde_json::json!({"title": artifact.title, "source_agent_id": artifact.source_agent_id}),
+    );
 
     Ok((StatusCode::CREATED, Json(artifact)))
 }
