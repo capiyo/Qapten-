@@ -73,7 +73,7 @@ pub async fn create_workspace(
 
 pub async fn list_workspaces(State(state): State<AppState>) -> Json<Vec<Workspace>> {
     let mut items: Vec<_> = state.workspaces.read().await.values().cloned().collect();
-    items.sort_by(|left, right| left.created_at.cmp(&right.created_at));
+    items.sort_by_key(|item| item.created_at);
     Json(items)
 }
 
@@ -236,7 +236,7 @@ pub async fn list_agents(
         .filter(|agent| agent.workspace_id == workspace_id)
         .cloned()
         .collect();
-    agents.sort_by(|left, right| left.created_at.cmp(&right.created_at));
+    agents.sort_by_key(|agent| agent.created_at);
     Ok(Json(agents))
 }
 
@@ -261,6 +261,6 @@ pub async fn list_artifacts(
         .filter(|artifact| artifact.workspace_id == workspace_id)
         .cloned()
         .collect();
-    artifacts.sort_by(|left, right| left.captured_at.cmp(&right.captured_at));
+    artifacts.sort_by_key(|artifact| artifact.captured_at);
     Ok(Json(artifacts))
 }
