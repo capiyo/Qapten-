@@ -255,7 +255,10 @@ pub fn validate_simulated_telemetry(
     if input.event_id.trim().is_empty()
         || input.event_id.len() > 128
         || input.payload.len() > 128
-        || input.frame_id.as_ref().is_some_and(|frame| frame.len() > 128)
+        || input
+            .frame_id
+            .as_ref()
+            .is_some_and(|frame| frame.len() > 128)
     {
         return Err(ProposalRejection::InvalidTelemetryEvent);
     }
