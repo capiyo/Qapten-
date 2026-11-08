@@ -50,6 +50,20 @@ The first milestone is a reliable, inspectable collaboration loop—not a large 
 
 See [docs/QUICKSTART.md](docs/QUICKSTART.md) for local setup and a manual two-agent handoff walkthrough. Current implementation limitations are recorded in [docs/STATE_OF_REPO.md](docs/STATE_OF_REPO.md).
 
+## Frontend and backend boundary
+
+Qapten is divided into two application layers with a language-neutral protocol boundary:
+
+- **Frontend (`frontend/`)**: React web, React Native mobile, and shared client-side TypeScript API types. It owns rendering and user interaction only.
+- **Backend (`backend/`)**: server-side API, domain rules, orchestration, persistence, authorization, and provider integrations. Axum is the current authoritative backend application.
+- **Protocol (`contracts/`)**: versioned schemas shared across languages and clients.
+
+Both clients call the same backend API. They must not implement their own task lifecycle, authorization, or persistence rules. See [the architecture guide](docs/ARCHITECTURE.md) and [frontend guide](frontend/README.md).
+
+## Open source
+
+Qapten is licensed under the [MIT License](LICENSE). See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution expectations and [SECURITY.md](SECURITY.md) for responsible vulnerability reporting.
+
 ## Repository map
 
 ```text
