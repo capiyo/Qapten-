@@ -1,0 +1,21 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "$id":"urn:axon:axp:v1:command-proposal",
+  "title":"Axon Robotics Command Proposal (non-executable)",
+  "description":"An intent for review and policy evaluation. This record is not an actuator command and MUST NOT be dispatched directly.",
+  "type":"object","additionalProperties":false,
+  "required":["proposal_id","device_id","requester_id","operation","parameters","sequence","issued_at","expires_at","idempotency_key","reason"],
+  "properties":{
+    "proposal_id":{"type":"string","minLength":1,"maxLength":128},
+    "device_id":{"type":"string","minLength":1,"maxLength":128},
+    "requester_id":{"type":"string","minLength":1,"maxLength":128},
+    "operation":{"enum":["move_base","set_joint_target","stop","home","custom"]},
+    "parameters":{"type":"object","maxProperties":64},
+    "sequence":{"type":"integer","minimum":1},
+    "issued_at":{"type":"string","format":"date-time"},
+    "expires_at":{"type":"string","format":"date-time"},
+    "idempotency_key":{"type":"string","minLength":16,"maxLength":256},
+    "reason":{"type":"string","minLength":1,"maxLength":1000},
+    "simulation_only":{"type":"boolean","default":true}
+  }
+}
