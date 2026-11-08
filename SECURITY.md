@@ -2,7 +2,7 @@
 
 ## Supported status
 
-Qapten is an early-stage project. The current foundation is a local development prototype, not a production-ready hosted service.
+Axon is an early-stage project. The current foundation is a local development prototype, not a production-ready hosted service.
 
 ## Reporting a vulnerability
 
