@@ -12,6 +12,7 @@ type Task = {
   context_artifact_ids: string[];
   status: string;
   version: number;
+  response_artifact_id: string | null;
   transitions: { from: string | null; to: string; note: string; occurred_at: string }[];
 };
 type Health = { status: string; storage: string; authentication: string };
@@ -43,6 +44,7 @@ export default function App() {
   const [taskObjective, setTaskObjective] = useState("");
   const [assignee, setAssignee] = useState("");
   const [selectedArtifactIds, setSelectedArtifactIds] = useState<string[]>([]);
+  const [responseDrafts, setResponseDrafts] = useState<Record<string, string>>({});
   const [health, setHealth] = useState<Health | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -168,6 +170,30 @@ export default function App() {
       await refreshWorkspace(selected);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Task update failed.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function submitTaskResponse(task: Task) {
+    if (!selected) return;
+    const content = responseDrafts[task.id]?.trim() ?? "";
+    if (!content || busy) return;
+    setBusy(true);
+    setError("");
+    try {
+      await api(`/api/v1/tasks/${task.id}/submit`, {
+        method: "POST",
+        body: JSON.stringify({
+          expected_version: task.version,
+          title: `${task.title} — response`,
+          content
+        })
+      });
+      setResponseDrafts(current => ({ ...current, [task.id]: "" }));
+      await refreshWorkspace(selected);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Response submission failed.");
     } finally {
       setBusy(false);
     }
@@ -308,7 +334,9 @@ export default function App() {
                     <div className="task-card-head"><div><span className="kicker">TASK · V{task.version}</span><h4>{task.title}</h4></div><span className={`task-status status-${task.status}`}>{task.status.replaceAll("_", " ")}</span></div>
                     <p>{task.objective}</p>
                     <div className="task-meta"><span>Assigned to <strong>{assigneeAgent?.display_name ?? "Unknown agent"}</strong></span><span>{task.transitions.length} events</span></div>
-                    {next && <button className="advance-button" disabled={busy} onClick={() => void advanceTask(task, next)}>Advance to {next.replaceAll("_", " ")} →</button>}
+                    {task.status === "in_progress" && <div className="response-capture"><label htmlFor={`response-${task.id}`}>Capture the agent's response</label><textarea id={`response-${task.id}`} rows={4} value={responseDrafts[task.id] ?? ""} onChange={event => setResponseDrafts(current => ({ ...current, [task.id]: event.target.value }))} placeholder="Paste the response returned by the assigned assistant…" /><button className="advance-button" disabled={busy || !(responseDrafts[task.id] ?? "").trim()} onClick={() => void submitTaskResponse(task)}>Submit response as artifact →</button></div>}
+                    {next && task.status !== "in_progress" && <button className="advance-button" disabled={busy} onClick={() => void advanceTask(task, next)}>Advance to {next.replaceAll("_", " ")} →</button>}
+                    {task.response_artifact_id && <p className="response-linked">Response artifact linked · {task.response_artifact_id.slice(0, 8)}</p>}
                     <details className="history"><summary>View handoff history</summary>{task.transitions.map((transition, index) => <div className="history-row" key={index}><strong>{transition.to.replaceAll("_", " ")}</strong><span>{transition.note}</span><small>{new Date(transition.occurred_at).toLocaleString()}</small></div>)}</details>
                   </article>;
                 })}
