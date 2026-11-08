@@ -1,0 +1,15 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "$id":"urn:axon:axp:v1:safety-state",
+  "title":"Axon Device Safety State","type":"object","additionalProperties":false,
+  "required":["device_id","emergency_stop","interlocks_healthy","operating_mode","observed_at","source"],
+  "properties":{
+    "device_id":{"type":"string","minLength":1,"maxLength":128},
+    "emergency_stop":{"type":"boolean"},
+    "interlocks_healthy":{"type":"boolean"},
+    "operating_mode":{"enum":["disabled","manual","assisted","autonomous","maintenance","fault"]},
+    "observed_at":{"type":"string","format":"date-time"},
+    "source":{"enum":["device_controller","safety_plc","simulator"]},
+    "fault_codes":{"type":"array","items":{"type":"string","maxLength":128},"maxItems":128}
+  }
+}
