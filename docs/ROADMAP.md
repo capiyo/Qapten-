@@ -23,7 +23,8 @@ The roadmap is outcome-driven. A phase is complete only when its acceptance crit
 **Acceptance:** A user can move a task between two manually represented assistants without manually reconstructing the entire context, and can inspect exactly what was shared and what changed.
 
 ## Phase 2 — Mobile and browser-assisted capture
-- [ ] React Native workspace and handoff review.
+- [x] React Native workspace creation/listing and basic agent, artifact, and task workflows.
+- [ ] Mobile context selection, response submission, and review controls.
 - [ ] Browser-assisted capture with user initiation, preview, and explicit submit.
 - [ ] Local-first draft capture with safe synchronization.
 - [ ] Export formats suitable for providers without APIs.
