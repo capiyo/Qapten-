@@ -7,5 +7,6 @@ use uuid::Uuid;
 pub struct AppState {
     pub workspaces: Arc<RwLock<HashMap<Uuid, Workspace>>>,
     pub agents: Arc<RwLock<HashMap<Uuid, Agent>>>,
-    pub artifacts: Arc<RwLock<HashMap<Uuid, Artifact>>>,\n    pub tasks: Arc<RwLock<HashMap<Uuid, Task>>>,
+    pub artifacts: Arc<RwLock<HashMap<Uuid, Artifact>>>,
+    pub tasks: Arc<RwLock<HashMap<Uuid, Task>>>,
 }
