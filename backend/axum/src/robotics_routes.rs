@@ -50,6 +50,11 @@ fn rejection_status(
             "future_telemetry",
             "Observed telemetry exceeds the allowed future clock-skew window.",
         ),
+        crate::robotics::ProposalRejection::TelemetryPayloadTooLarge => (
+            StatusCode::PAYLOAD_TOO_LARGE,
+            "telemetry_payload_too_large",
+            "Telemetry payload must contain at most 128 fields and 64 KiB of JSON.",
+        ),
         _ => (
             StatusCode::BAD_REQUEST,
             "invalid_telemetry",
