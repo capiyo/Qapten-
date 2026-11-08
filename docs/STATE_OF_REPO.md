@@ -23,12 +23,16 @@
 - [x] React + TypeScript + Vite web workspace for creating workspaces, registering agents, capturing artifacts, attaching context to tasks, submitting responses, and reviewing/advancing tasks.
 - [x] React Native + Expo workspace for workspace creation/listing, agent registration, artifact capture, context selection, task creation, response submission, and review transitions.
 - [x] Shared TypeScript API contract types consumed by web and mobile.
-- [x] GitHub Actions checks for Rust formatting, Clippy, tests, web production build, and mobile TypeScript validation.\n- [x] AXP robotics device-registration, telemetry, non-executable command-proposal, and safety-state schemas.\n- [x] Shared TypeScript robotics contracts and pure Rust proposal validation tests.\n- [x] Robotics safety boundary documented; no hardware dispatch or actuator endpoint.
+- [x] GitHub Actions checks for Rust formatting, Clippy, tests, web production build, and mobile TypeScript validation.
+- [x] AXP robotics device-registration, telemetry, non-executable command-proposal, and safety-state schemas.
+- [x] Shared TypeScript robotics contracts and pure Rust proposal validation tests.
+- [x] Robotics safety boundary documented; no hardware dispatch or actuator endpoint.
 - [x] Initial open-source project files: MIT license, contribution guidance, and security policy.
 
 ## Not implemented
 
-- Persistent MongoDB adapter, schema migrations, and durable event/audit storage.\n- Cryptographic device enrollment, persistent replay/idempotency enforcement, and device gateway.
+- Persistent MongoDB adapter, schema migrations, and durable event/audit storage.
+- Cryptographic device enrollment, persistent replay/idempotency enforcement, and device gateway.
 - Authentication, user identity, workspace membership, and real authorization.
 - Artifact content hashing, classification enforcement, context bundle read API, and retention controls.
 - Full decision records, audit timeline, permission management, and revocation UI.
