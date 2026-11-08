@@ -161,3 +161,17 @@ export type AxonCapabilityGrant = {
   expires_at: string | null;
   revoked_at: string | null;
 };
+
+
+/** Process-local audit event. Actor is explicitly unattributed until auth is integrated. */
+export type AxonAuditEvent = {
+  sequence: number;
+  event_id: string;
+  workspace_id: string | null;
+  actor: "system:local-development-unattributed" | string;
+  event_type: string;
+  entity_type: string;
+  entity_id: string;
+  occurred_at: string;
+  metadata: Record<string, unknown>;
+};
