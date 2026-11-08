@@ -6,8 +6,7 @@ import type { Agent, Artifact, Health, Task, Workspace } from "../../../packages
 
 const api = async <T,>(path: string, init?: RequestInit): Promise<T> => {
   const apiBaseUrl = import.meta.env.VITE_AXON_API_URL ?? "";
-
-const response = await fetch(`${apiBaseUrl}${path}`, {
+  const response = await fetch(`${apiBaseUrl}${path}`, {
     ...init,
     headers: { "Content-Type": "application/json", ...init?.headers }
   });
