@@ -52,7 +52,7 @@ The current API uses an in-process memory store. All records disappear when the 
 
 ## Verification
 
-GitHub Actions run [42491980806](https://github.com/capiyo/Qapten-/actions/runs/42491980806) passed all three jobs on commit `417224d2fb9d8f3f5e2e578bc933a743920ebf57`: Rust formatting, Clippy, and tests; React web production build; and React Native TypeScript validation. The simulator telemetry API, freshness validation, and protocol contracts are included in that run. This verifies CI builds and tests only; no physical Android/iOS build, hardware integration, or production deployment has been performed.
+GitHub Actions run [42491980806](https://github.com/capiyo/Qapten-/actions/runs/42491980806) passed all three jobs on commit `417224d2fb9d8f3f5e2e578bc933a743920ebf57`: Rust formatting, Clippy, and tests; React web production build; and React Native TypeScript validation. The simulator telemetry API, freshness validation, and protocol contracts are included in that run. This verifies the earlier foundation only; the identity/capability policy changes added after that run are awaiting a fresh CI result. No physical Android/iOS build, hardware integration, or production deployment has been performed.
 
 ## Architecture direction
 
