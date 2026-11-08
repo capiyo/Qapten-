@@ -34,8 +34,7 @@ pub async fn create_task(
     Path(workspace_id): Path<Uuid>,
     Json(input): Json<CreateTask>,
 ) -> TaskResult<(StatusCode, Json<Task>)> {
-    if !state.workspaces.read().await.contains_key(&workspace_id)
-    {
+    if !state.workspaces.read().await.contains_key(&workspace_id) {
         return Err(error(StatusCode::NOT_FOUND, "Workspace not found."));
     }
 
@@ -104,8 +103,7 @@ pub async fn list_tasks(
     State(state): State<AppState>,
     Path(workspace_id): Path<Uuid>,
 ) -> TaskResult<Json<Vec<Task>>> {
-    if !state.workspaces.read().await.contains_key(&workspace_id)
-    {
+    if !state.workspaces.read().await.contains_key(&workspace_id) {
         return Err(error(StatusCode::NOT_FOUND, "Workspace not found."));
     }
 
