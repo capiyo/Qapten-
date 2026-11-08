@@ -204,7 +204,13 @@ pub async fn submit_task(
         occurred_at: now,
     });
 
-    state.audit.write().await.append(Some(task.workspace_id), "task.response_submitted", "task", task.id.to_string(), serde_json::json!({"response_artifact_id": artifact.id, "version": task.version}));
+    state.audit.write().await.append(
+        Some(task.workspace_id),
+        "task.response_submitted",
+        "task",
+        task.id.to_string(),
+        serde_json::json!({"response_artifact_id": artifact.id, "version": task.version}),
+    );
 
     Ok(Json(TaskSubmission {
         task: task.clone(),
@@ -263,7 +269,13 @@ pub async fn transition_task(
         occurred_at: now,
     });
 
-    state.audit.write().await.append(Some(task.workspace_id), "task.transitioned", "task", task.id.to_string(), serde_json::json!({"to": task.status, "version": task.version}));
+    state.audit.write().await.append(
+        Some(task.workspace_id),
+        "task.transitioned",
+        "task",
+        task.id.to_string(),
+        serde_json::json!({"to": task.status, "version": task.version}),
+    );
     Ok(Json(task.clone()))
 }
 
