@@ -27,7 +27,8 @@ The roadmap is outcome-driven. A phase is complete only when its acceptance crit
 ## Phase 2 — Native desktop client
 - [x] Add Tauri 2 desktop shell reusing the React/Vite web client.
 - [x] Add Axon visual identity source mark and minimal desktop capability policy.
-- [ ] Add platform icon bundles, desktop CI builds, and signed Windows/macOS/Linux installers.
+- [x] Generate platform icon bundles from the Axon source mark and validate desktop compilation in CI.
+- [ ] Build and verify signed Windows/macOS/Linux installers.
 - [ ] Add secure local file access, credential vault integration, tray, notifications, and updater with explicit user permissions.
 - [x] Embed and manage the local Axum API lifecycle inside the Tauri desktop process (loopback-only; in-memory development store).\n- [ ] Add durable local storage and authenticated connection to the central API.
 
