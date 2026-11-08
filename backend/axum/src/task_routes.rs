@@ -86,7 +86,7 @@ pub async fn create_task(
         status: TaskStatus::Offered,
         version: 1,
         created_at: now,
-        updated_at: now.clone(),
+        updated_at: now,
         transitions: vec![TaskTransition {
             from: None,
             to: TaskStatus::Offered,
@@ -115,7 +115,7 @@ pub async fn list_tasks(
         .filter(|task| task.workspace_id == workspace_id)
         .cloned()
         .collect();
-    tasks.sort_by(|left, right| left.created_at.cmp(&right.created_at));
+    tasks.sort_by_key(|task| task.created_at);
     Ok(Json(tasks))
 }
 
@@ -181,7 +181,7 @@ pub async fn submit_task(
         title: title.to_owned(),
         content: content.to_owned(),
         source_agent_id: Some(task.assignee_agent_id),
-        captured_at: now.clone(),
+        captured_at: now,
     };
     state
         .artifacts
