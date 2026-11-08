@@ -83,9 +83,9 @@ pub fn authorize(
     grants: &[CapabilityGrant],
     now: DateTime<Utc>,
 ) -> Result<(), AuthorizationDenial> {
-    let matching = grants.iter().filter(|grant| {
-        grant.subject == principal.principal && grant.workspace_id == workspace_id
-    });
+    let matching = grants
+        .iter()
+        .filter(|grant| grant.subject == principal.principal && grant.workspace_id == workspace_id);
     let relevant: Vec<_> = matching.collect();
     if relevant.is_empty() {
         return Err(AuthorizationDenial::NoMatchingGrant);
