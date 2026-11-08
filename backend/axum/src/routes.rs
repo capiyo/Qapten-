@@ -90,13 +90,6 @@ pub async fn create_workspace(
         workspace.id.to_string(),
         serde_json::json!({ "name": workspace.name }),
     );
-    state.audit.write().await.append(
-        Some(workspace.id),
-        "workspace.created",
-        "workspace",
-        workspace.id.to_string(),
-        serde_json::json!({"name": workspace.name}),
-    );
 
     Ok((StatusCode::CREATED, Json(workspace)))
 }
@@ -209,13 +202,6 @@ pub async fn create_artifact(
         "artifact",
         artifact.id.to_string(),
         serde_json::json!({ "title": artifact.title, "source_agent_id": artifact.source_agent_id }),
-    );
-    state.audit.write().await.append(
-        Some(workspace_id),
-        "artifact.created",
-        "artifact",
-        artifact.id.to_string(),
-        serde_json::json!({"title": artifact.title, "source_agent_id": artifact.source_agent_id}),
     );
 
     Ok((StatusCode::CREATED, Json(artifact)))
