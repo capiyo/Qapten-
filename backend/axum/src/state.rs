@@ -1,4 +1,5 @@
 use crate::{
+    audit::AuditStore,
     model::{Agent, Artifact, Task, Workspace},
     robotics::TelemetryEvent,
 };
@@ -24,4 +25,6 @@ pub struct AppState {
     pub tasks: Arc<RwLock<HashMap<Uuid, Task>>>,
     /// Bounded in-memory simulator stream; never treated as durable device telemetry.
     pub telemetry: Arc<RwLock<TelemetryStore>>,
+    /// Process-local append-only audit stream; not durable and not tamper-proof.
+    pub audit: Arc<RwLock<AuditStore>>,
 }
