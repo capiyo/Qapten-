@@ -5,7 +5,7 @@ import type { Agent, Artifact, Health, Task, Workspace } from "../../../packages
 
 
 const api = async <T,>(path: string, init?: RequestInit): Promise<T> => {
-  const response = await fetch(path, {
+  const apiBaseUrl = import.meta.env.VITE_AXON_API_URL ?? "";\n\nconst response = await fetch(`${apiBaseUrl}${path}`, {
     ...init,
     headers: { "Content-Type": "application/json", ...init?.headers }
   });
@@ -202,7 +202,7 @@ export default function App() {
   return (
     <main className="shell">
       <aside className="rail">
-        <div className="brand-mark">A</div>
+        <div className="brand-mark"><img src="/axon-mark.svg" alt="Axon" /></div>
         <span className="rail-label">WORKSPACES</span>
         <div className="rail-dot active" aria-label="Workspace area" />
         <div className="rail-bottom">0.1</div>
