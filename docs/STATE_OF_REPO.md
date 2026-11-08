@@ -29,6 +29,7 @@
 - [x] Robotics safety boundary documented; no hardware dispatch or actuator endpoint.
 - [x] Workspace-scoped identity and capability grant domain primitives with deny-by-default policy evaluation and expiry/revocation tests.
 - [x] AXP identity grant schema and shared TypeScript principal/capability contracts.
+- [x] Process-local append-only audit event model, workspace audit read endpoint, and mutation events for workspace, agent, artifact, and task lifecycle changes.
 - [x] Proposal validation rejects stale/future safety-state observations.
 - [x] Development-only simulator telemetry API with simulated-source enforcement, event deduplication, monotonic per-device sequences, freshness checks, and 500-event per-device in-memory retention.
 - [x] Simulator telemetry ingress schema and shared TypeScript request contract.
@@ -40,7 +41,7 @@
 - Cryptographic device enrollment, persistent replay/idempotency enforcement, and device gateway.
 - Authentication adapters, verified caller identity, workspace membership persistence, grant issuance/revocation APIs, and route-level authorization enforcement.
 - Artifact content hashing, classification enforcement, context bundle read API, and retention controls.
-- Full decision records, audit timeline, permission management, and revocation UI.
+- Durable tamper-evident audit storage, verified actor attribution, full decision records, permission management, and revocation UI.
 - Agent provider APIs, browser-assisted capture, webhooks, and autonomous agent execution.
 - C++/Drogon service and Zig utilities (intentionally deferred until justified).
 - Production deployment, secrets management, and operational monitoring.
@@ -48,11 +49,11 @@
 
 ## Runtime limitations
 
-The current API uses an in-process memory store. All records disappear when the process exits. Simulator telemetry is bounded to 500 retained events per device; event-ID deduplication is limited to that retained window. This is not durable replay protection. It has no authentication or route-level authorization enforcement. The identity module evaluates grants only for principals supplied by a future trusted authentication adapter; it does not establish identity. It refuses non-loopback binding by default; the explicit override is for isolated development only. Do not expose it to a network or use it for sensitive information.
+The current API uses an in-process memory store. All records, including the audit stream, disappear when the process exits. The development audit stream is append-only within one process but is neither durable nor tamper-evident. Simulator telemetry is bounded to 500 retained events per device; event-ID deduplication is limited to that retained window. This is not durable replay protection. It has no authentication or route-level authorization enforcement. The identity module evaluates grants only for principals supplied by a future trusted authentication adapter; it does not establish identity. It refuses non-loopback binding by default; the explicit override is for isolated development only. Do not expose it to a network or use it for sensitive information.
 
 ## Verification
 
-GitHub Actions run [42491980806](https://github.com/capiyo/Qapten-/actions/runs/42491980806) passed all three jobs on commit `417224d2fb9d8f3f5e2e578bc933a743920ebf57`: Rust formatting, Clippy, and tests; React web production build; and React Native TypeScript validation. The simulator telemetry API, freshness validation, and protocol contracts are included in that run. This verifies the earlier foundation only; the identity/capability policy changes added after that run are awaiting a fresh CI result. No physical Android/iOS build, hardware integration, or production deployment has been performed.
+GitHub Actions run [42491980806](https://github.com/capiyo/Qapten-/actions/runs/42491980806) passed all three jobs on commit `417224d2fb9d8f3f5e2e578bc933a743920ebf57`: Rust formatting, Clippy, and tests; React web production build; and React Native TypeScript validation. The simulator telemetry API, freshness validation, and protocol contracts are included in that run. This verifies the earlier foundation only; the identity/capability and audit changes added after that run are awaiting a fresh CI result. No physical Android/iOS build, hardware integration, or production deployment has been performed.
 
 ## Architecture direction
 
