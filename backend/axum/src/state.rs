@@ -2,7 +2,10 @@ use crate::{
     model::{Agent, Artifact, Task, Workspace},
     robotics::TelemetryEvent,
 };
-use std::{collections::{HashMap, HashSet}, sync::Arc};
+use std::{
+    collections::{HashMap, HashSet},
+    sync::Arc,
+};
 use tokio::sync::RwLock;
 use uuid::Uuid;
 
