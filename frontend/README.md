@@ -8,7 +8,7 @@ The frontend is the client layer. It owns presentation, interaction state, acces
 - `apps/mobile`: React Native + Expo application for Android and iOS.
 - `packages/contracts`: shared TypeScript API payload types consumed by both clients.
 
-Both clients communicate with the same versioned Qapten API. The shared TypeScript types are a client convenience; the language-neutral schemas under the repository's `/contracts` directory remain the protocol source of truth.
+Both clients communicate with the same versioned Axon API. The shared TypeScript types are a client convenience; the language-neutral schemas under the repository's `/contracts` directory remain the protocol source of truth.
 
 ## Web
 
@@ -24,7 +24,7 @@ The Vite development server proxies `/api` and `/health` to the local Axum API a
     npm install
     npx expo start
 
-Set `EXPO_PUBLIC_QAPTEN_API_URL` to an address reachable from the device. On a physical phone, `127.0.0.1` points to the phone itself, not the development computer. Configure the computer's reachable LAN address for local device testing.
+Set `EXPO_PUBLIC_AXON_API_URL` to an address reachable from the device. On a physical phone, `127.0.0.1` points to the phone itself, not the development computer. Configure the computer's reachable LAN address for local device testing.
 
 ## Contract rule
 
