@@ -225,3 +225,63 @@ mod tests {
         assert_eq!(state.workspaces.read().await.len(), 1);
     }
 }
+
+pub async fn list_agents(
+    State(state): State<AppState>,
+    Path(workspace_id): Path<Uuid>,
+) -> Result<Json<Vec<Agent>>, (StatusCode, Json<ApiError>)> {
+    if !state
+        .workspaces
+        .read()
+        .await
+        .contains_key(&workspace_id)
+    {
+        return Err((
+            StatusCode::NOT_FOUND,
+            Json(ApiError {
+                error: "Workspace not found.".into(),
+            }),
+        ));
+    }
+
+    let mut agents: Vec<_> = state
+        .agents
+        .read()
+        .await
+        .values()
+        .filter(|agent| agent.workspace_id == workspace_id)
+        .cloned()
+        .collect();
+    agents.sort_by_key(|agent| agent.created_at);
+    Ok(Json(agents))
+}
+
+pub async fn list_artifacts(
+    State(state): State<AppState>,
+    Path(workspace_id): Path<Uuid>,
+) -> Result<Json<Vec<Artifact>>, (StatusCode, Json<ApiError>)> {
+    if !state
+        .workspaces
+        .read()
+        .await
+        .contains_key(&workspace_id)
+    {
+        return Err((
+            StatusCode::NOT_FOUND,
+            Json(ApiError {
+                error: "Workspace not found.".into(),
+            }),
+        ));
+    }
+
+    let mut artifacts: Vec<_> = state
+        .artifacts
+        .read()
+        .await
+        .values()
+        .filter(|artifact| artifact.workspace_id == workspace_id)
+        .cloned()
+        .collect();
+    artifacts.sort_by_key(|artifact| artifact.captured_at);
+    Ok(Json(artifacts))
+}
