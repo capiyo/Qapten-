@@ -5,7 +5,7 @@ The frontend is the client layer. It owns presentation, interaction state, acces
 ## Applications
 
 - `apps/web`: React + TypeScript + Vite browser application.
-- `apps/mobile`: React Native + Expo application for Android and iOS.
+- `apps/mobile`: React Native + Expo application for Android and iOS.\n- `apps/desktop`: Tauri 2 native desktop application for Windows, macOS, and Linux, reusing the web client.
 - `packages/contracts`: shared TypeScript API payload types consumed by both clients.
 
 Both clients communicate with the same versioned Axon API. The shared TypeScript types are a client convenience; the language-neutral schemas under the repository's `/contracts` directory remain the protocol source of truth.
