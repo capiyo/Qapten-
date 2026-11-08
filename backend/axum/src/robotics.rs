@@ -45,8 +45,52 @@ pub struct SafetyState {
     pub interlocks_healthy: bool,
     pub operating_mode: SafetyMode,
     pub observed_at: DateTime<Utc>,
-    pub source: String,
+    pub source: SafetyStateSource,
+    #[serde(default)]
     pub fault_codes: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum SafetyStateSource {
+    DeviceController,
+    SafetyPlc,
+    Simulator,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum TelemetryKind {
+    Pose,
+    Velocity,
+    JointState,
+    Battery,
+    Temperature,
+    SafetyState,
+    Diagnostic,
+    Heartbeat,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum TelemetryQuality {
+    Measured,
+    Estimated,
+    Simulated,
+    Unknown,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TelemetryEvent {
+    pub event_id: String,
+    pub device_id: String,
+    pub sequence: u64,
+    pub observed_at: DateTime<Utc>,
+    pub received_at: DateTime<Utc>,
+    pub kind: TelemetryKind,
+    pub frame_id: Option<String>,
+    pub payload: serde_json::Map<String, serde_json::Value>,
+    pub quality: Option<TelemetryQuality>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -190,7 +234,7 @@ mod tests {
             interlocks_healthy: true,
             operating_mode: SafetyMode::Assisted,
             observed_at: now,
-            source: "simulator".into(),
+            source: SafetyStateSource::Simulator,
             fault_codes: vec![],
         };
         (
