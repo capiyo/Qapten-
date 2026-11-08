@@ -66,12 +66,33 @@ mod tests {
     fn audit_sequence_is_monotonic_and_workspace_scoped() {
         let mut store = AuditStore::default();
         let workspace = Uuid::new_v4();
-        let first = store.append(Some(workspace), "workspace.created", "workspace", workspace.to_string(), Value::Null);
-        let second = store.append(Some(workspace), "task.created", "task", "task-1", Value::Null);
-        store.append(Some(Uuid::new_v4()), "workspace.created", "workspace", "other", Value::Null);
+        let first = store.append(
+            Some(workspace),
+            "workspace.created",
+            "workspace",
+            workspace.to_string(),
+            Value::Null,
+        );
+        let second = store.append(
+            Some(workspace),
+            "task.created",
+            "task",
+            "task-1",
+            Value::Null,
+        );
+        store.append(
+            Some(Uuid::new_v4()),
+            "workspace.created",
+            "workspace",
+            "other",
+            Value::Null,
+        );
         assert_eq!(first.sequence, 1);
         assert_eq!(second.sequence, 2);
         assert_eq!(store.list_workspace(workspace).len(), 2);
-        assert!(store.list_workspace(workspace).iter().all(|event| event.actor == "system:local-development-unattributed"));
+        assert!(store
+            .list_workspace(workspace)
+            .iter()
+            .all(|event| event.actor == "system:local-development-unattributed"));
     }
 }
