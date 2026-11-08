@@ -1,6 +1,6 @@
-# Contributing to Qapten
+# Contributing to Axon
 
-Thank you for considering a contribution. Qapten is an open collaboration infrastructure project; correctness, provenance, security boundaries, and inspectability matter more than adding integrations quickly.
+Thank you for considering a contribution. Axon is an open collaboration infrastructure project; correctness, provenance, security boundaries, and inspectability matter more than adding integrations quickly.
 
 ## Before starting
 
