@@ -82,8 +82,7 @@ pub async fn register_agent(
     Path(workspace_id): Path<Uuid>,
     Json(input): Json<RegisterAgent>,
 ) -> ApiResult<(StatusCode, Json<Agent>)> {
-    if !state.workspaces.read().await.contains_key(&workspace_id)
-    {
+    if !state.workspaces.read().await.contains_key(&workspace_id) {
         return Err((
             StatusCode::NOT_FOUND,
             Json(ApiError {
@@ -122,8 +121,7 @@ pub async fn create_artifact(
     Path(workspace_id): Path<Uuid>,
     Json(input): Json<CreateArtifact>,
 ) -> ApiResult<(StatusCode, Json<Artifact>)> {
-    if !state.workspaces.read().await.contains_key(&workspace_id)
-    {
+    if !state.workspaces.read().await.contains_key(&workspace_id) {
         return Err((
             StatusCode::NOT_FOUND,
             Json(ApiError {
@@ -221,8 +219,7 @@ pub async fn list_agents(
     State(state): State<AppState>,
     Path(workspace_id): Path<Uuid>,
 ) -> ApiResult<Json<Vec<Agent>>> {
-    if !state.workspaces.read().await.contains_key(&workspace_id)
-    {
+    if !state.workspaces.read().await.contains_key(&workspace_id) {
         return Err((
             StatusCode::NOT_FOUND,
             Json(ApiError {
@@ -247,8 +244,7 @@ pub async fn list_artifacts(
     State(state): State<AppState>,
     Path(workspace_id): Path<Uuid>,
 ) -> ApiResult<Json<Vec<Artifact>>> {
-    if !state.workspaces.read().await.contains_key(&workspace_id)
-    {
+    if !state.workspaces.read().await.contains_key(&workspace_id) {
         return Err((
             StatusCode::NOT_FOUND,
             Json(ApiError {
