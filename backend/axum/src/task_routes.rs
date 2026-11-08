@@ -34,11 +34,7 @@ pub async fn create_task(
     Path(workspace_id): Path<Uuid>,
     Json(input): Json<CreateTask>,
 ) -> TaskResult<(StatusCode, Json<Task>)> {
-    if !state
-        .workspaces
-        .read()
-        .await
-        .contains_key(&workspace_id)
+    if !state.workspaces.read().await.contains_key(&workspace_id)
     {
         return Err(error(StatusCode::NOT_FOUND, "Workspace not found."));
     }
@@ -108,11 +104,7 @@ pub async fn list_tasks(
     State(state): State<AppState>,
     Path(workspace_id): Path<Uuid>,
 ) -> TaskResult<Json<Vec<Task>>> {
-    if !state
-        .workspaces
-        .read()
-        .await
-        .contains_key(&workspace_id)
+    if !state.workspaces.read().await.contains_key(&workspace_id)
     {
         return Err(error(StatusCode::NOT_FOUND, "Workspace not found."));
     }
@@ -157,11 +149,7 @@ pub async fn submit_task(
 ) -> TaskResult<Json<TaskSubmission>> {
     let title = input.title.trim();
     let content = input.content.trim();
-    if title.is_empty()
-        || title.len() > 200
-        || content.is_empty()
-        || content.len() > 512_000
-    {
+    if title.is_empty() || title.len() > 200 || content.is_empty() || content.len() > 512_000 {
         return Err(error(
             StatusCode::BAD_REQUEST,
             "Response title must be 1–200 characters and response content 1–512000 bytes.",
