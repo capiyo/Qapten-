@@ -14,11 +14,10 @@
 
 - [x] Product purpose, design principles, architecture, protocol draft, risk policy, roadmap, and architecture decision record.
 - [x] Rust workspace and Axum API application.
-- [x] Health, workspace, manual agent registration, and artifact capture endpoints.
-- [x] Task creation/listing and version-checked lifecycle transitions.
-- [x] Workspace consistency checks for assigned agents and context artifact references.
-- [x] Default loopback-only API binding until authentication exists.
-- [x] React + TypeScript + Vite workspace creation screen connected to the API.
+- [x] Health, workspace, manual agent registration/listing, and artifact capture/listing endpoints.
+- [x] Task creation/listing, selected context artifact references, and version-checked lifecycle transitions.
+- [x] Manual task response submission as a linked artifact.
+- [x] React + TypeScript + Vite workspace screen for creating workspaces, registering agents, capturing artifacts, attaching context to tasks, submitting responses, and reviewing/advancing tasks.
 - [x] React Native + Expo application shell with API health status.
 - [x] GitHub Actions workflow for Rust formatting, Clippy, tests, and web build.
 
@@ -27,8 +26,9 @@
 - Persistent MongoDB adapter, schema migrations, and durable event/audit storage.
 - Authentication, user identity, workspace membership, and real authorization.
 - Artifact content hashing, classification enforcement, context bundle read API, and retention controls.
-- Task response submission as a first-class artifact, human review UI, decision records, and feedback UI.
+- Full decision records, audit timeline, permission management, and revocation UI.
 - Agent provider APIs, browser-assisted capture, webhooks, and autonomous agent execution.
+- Full mobile workspace and handoff workflows.
 - C++/Drogon service and Zig utilities (intentionally deferred until justified).
 - Production deployment, secrets management, and operational monitoring.
 
