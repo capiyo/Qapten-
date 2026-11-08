@@ -119,3 +119,10 @@ footer { display: flex; justify-content: space-between; gap: 16px; color: #a5afb
 .empty-state.compact { padding: 22px; }
 @media (max-width: 850px) { .workspace-columns { grid-template-columns: 1fr; } }
 @media (max-width: 560px) { .task-form { grid-template-columns: 1fr; }.task-form .task-objective, .context-picker { grid-column: auto; }.panel { padding: 15px; }.workspace-header h2 { font-size: 24px; } }
+
+.response-capture { display: flex; flex-direction: column; gap: 7px; margin-top: 12px; }
+.response-capture label { color: #63717e; font-size: 10px; font-weight: 700; }
+.response-capture textarea { width: 100%; min-width: 0; resize: vertical; border: 1px solid #e8edf1; border-radius: 9px; padding: 9px; color: #344656; font: 11px "DM Sans", sans-serif; outline: none; }
+.response-capture textarea:focus { border-color: #83aef0; box-shadow: 0 0 0 3px #edf4ff; }
+.request-changes-button { margin: 10px 0 0 7px; border: 0; border-radius: 9px; padding: 9px 11px; color: #986b29; background: #fff5e6; font-size: 10px; font-weight: 700; cursor: pointer; }
+.response-linked { color: #23855d !important; font-size: 10px !important; margin: 10px 0 0 !important; }
