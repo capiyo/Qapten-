@@ -9,6 +9,9 @@ edition = "2021"
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
+axon-api = { path = "../../../../backend/axum" }
+axum = { version = "0.7", features = ["json"] }
 tauri = { version = "2", features = [] }
+tokio = { version = "1", features = ["net", "rt-multi-thread", "sync"] }
 
 [workspace]
