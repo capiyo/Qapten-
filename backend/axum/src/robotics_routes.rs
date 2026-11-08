@@ -1,7 +1,5 @@
 use crate::{
-    robotics::{
-        validate_simulated_telemetry, TelemetryEvent, TelemetryIngest,
-    },
+    robotics::{validate_simulated_telemetry, TelemetryEvent, TelemetryIngest},
     state::AppState,
 };
 use axum::{
