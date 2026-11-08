@@ -18,7 +18,7 @@
 - [x] Task creation/listing, selected context artifact references, and version-checked lifecycle transitions.
 - [x] Manual task response submission as a linked artifact.
 - [x] React + TypeScript + Vite workspace screen for creating workspaces, registering agents, capturing artifacts, attaching context to tasks, submitting responses, and reviewing/advancing tasks.
-- [x] React Native + Expo application shell with API health status.
+- [x] React Native + Expo workspace creation/listing, agent registration, artifact capture, and task creation/listing.
 - [x] GitHub Actions workflow for Rust formatting, Clippy, tests, and web build.
 
 ## Not implemented
@@ -28,7 +28,7 @@
 - Artifact content hashing, classification enforcement, context bundle read API, and retention controls.
 - Full decision records, audit timeline, permission management, and revocation UI.
 - Agent provider APIs, browser-assisted capture, webhooks, and autonomous agent execution.
-- Full mobile workspace and handoff workflows.
+- Mobile context selection, response submission, review transitions, and full handoff history.
 - C++/Drogon service and Zig utilities (intentionally deferred until justified).
 - Production deployment, secrets management, and operational monitoring.
 
