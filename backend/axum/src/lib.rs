@@ -1,6 +1,7 @@
 mod model;
 mod routes;
-mod state;\nmod task_routes;
+mod state;
+mod task_routes;
 
 pub use state::AppState;
 
@@ -12,7 +13,9 @@ pub fn app(state: AppState) -> Router {
         .route("/health", get(routes::health))
         .route("/api/v1/workspaces", get(routes::list_workspaces).post(routes::create_workspace))
         .route("/api/v1/workspaces/:workspace_id/agents", post(routes::register_agent))
-        .route("/api/v1/workspaces/:workspace_id/artifacts", post(routes::create_artifact))\n        .route("/api/v1/workspaces/:workspace_id/tasks", get(task_routes::list_tasks).post(task_routes::create_task))\n        .route("/api/v1/tasks/:task_id/transitions", post(task_routes::transition_task))
+        .route("/api/v1/workspaces/:workspace_id/artifacts", post(routes::create_artifact))
+        .route("/api/v1/workspaces/:workspace_id/tasks", get(task_routes::list_tasks).post(task_routes::create_task))
+        .route("/api/v1/tasks/:task_id/transitions", post(task_routes::transition_task))
         .with_state(state)
         .layer(RequestBodyLimitLayer::new(1024 * 1024))
         .layer(TraceLayer::new_for_http())
