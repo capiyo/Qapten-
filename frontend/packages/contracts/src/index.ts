@@ -66,3 +66,59 @@ export type Health = {
   storage: "development_memory_only" | "persistent" | string;
   authentication: string;
 };
+
+
+export type AxonDeviceKind =
+  | "mobile_robot" | "robot_arm" | "drone" | "sensor" | "simulator" | "other";
+
+export type DeviceRegistration = {
+  device_id: string;
+  workspace_id: string;
+  device_type: AxonDeviceKind;
+  manufacturer: string;
+  model: string;
+  identity_key_fingerprint: string;
+  capabilities: string[];
+  firmware_version?: string;
+  registered_at: string;
+};
+
+export type TelemetryKind =
+  | "pose" | "velocity" | "joint_state" | "battery" | "temperature"
+  | "safety_state" | "diagnostic" | "heartbeat";
+
+export type TelemetryEvent = {
+  event_id: string;
+  device_id: string;
+  sequence: number;
+  observed_at: string;
+  received_at: string;
+  kind: TelemetryKind;
+  frame_id?: string;
+  payload: Record<string, unknown>;
+  quality?: "measured" | "estimated" | "simulated" | "unknown";
+};
+
+export type CommandProposal = {
+  proposal_id: string;
+  device_id: string;
+  requester_id: string;
+  operation: "move_base" | "set_joint_target" | "stop" | "home" | "custom";
+  parameters: Record<string, unknown>;
+  sequence: number;
+  issued_at: string;
+  expires_at: string;
+  idempotency_key: string;
+  reason: string;
+  simulation_only?: boolean;
+};
+
+export type DeviceSafetyState = {
+  device_id: string;
+  emergency_stop: boolean;
+  interlocks_healthy: boolean;
+  operating_mode: "disabled" | "manual" | "assisted" | "autonomous" | "maintenance" | "fault";
+  observed_at: string;
+  source: "device_controller" | "safety_plc" | "simulator";
+  fault_codes?: string[];
+};
