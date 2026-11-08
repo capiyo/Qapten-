@@ -76,7 +76,6 @@ pub fn app(state: AppState) -> Router {
         )
 }
 
-
 #[cfg(test)]
 mod cors_tests {
     use super::*;
@@ -105,7 +104,10 @@ mod cors_tests {
 
         assert_eq!(allowed.status(), StatusCode::OK);
         assert_eq!(
-            allowed.headers().get(header::ACCESS_CONTROL_ALLOW_ORIGIN).unwrap(),
+            allowed
+                .headers()
+                .get(header::ACCESS_CONTROL_ALLOW_ORIGIN)
+                .unwrap(),
             "tauri://localhost"
         );
 
