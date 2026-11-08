@@ -170,51 +170,6 @@ pub async fn create_artifact(
     Ok((StatusCode::CREATED, Json(artifact)))
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use axum::{
-        body::{to_bytes, Body},
-        http::Request,
-    };
-    use tower::ServiceExt;
-
-    #[tokio::test]
-    async fn health_reports_development_constraints() {
-        let response = crate::app(AppState::default())
-            .oneshot(
-                Request::builder()
-                    .uri("/health")
-                    .body(Body::empty())
-                    .unwrap(),
-            )
-            .await
-            .unwrap();
-
-        assert_eq!(response.status(), StatusCode::OK);
-        let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
-        let value: serde_json::Value = serde_json::from_slice(&body).unwrap();
-        assert_eq!(value["storage"], "development_memory_only");
-        assert_eq!(value["authentication"], "not_implemented_local_only");
-    }
-
-    #[tokio::test]
-    async fn workspace_creation_validates_and_persists_in_process() {
-        let state = AppState::default();
-        let response = create_workspace(
-            State(state.clone()),
-            Json(CreateWorkspace {
-                name: "Funspot engineering".into(),
-            }),
-        )
-        .await
-        .unwrap();
-
-        assert_eq!(response.0, StatusCode::CREATED);
-        assert_eq!(state.workspaces.read().await.len(), 1);
-    }
-}
-
 pub async fn list_agents(
     State(state): State<AppState>,
     Path(workspace_id): Path<Uuid>,
@@ -263,4 +218,50 @@ pub async fn list_artifacts(
         .collect();
     artifacts.sort_by_key(|artifact| artifact.captured_at);
     Ok(Json(artifacts))
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use axum::{
+        body::{to_bytes, Body},
+        http::Request,
+    };
+    use tower::ServiceExt;
+
+    #[tokio::test]
+    async fn health_reports_development_constraints() {
+        let response = crate::app(AppState::default())
+            .oneshot(
+                Request::builder()
+                    .uri("/health")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
+        let value: serde_json::Value = serde_json::from_slice(&body).unwrap();
+        assert_eq!(value["storage"], "development_memory_only");
+        assert_eq!(value["authentication"], "not_implemented_local_only");
+    }
+
+    #[tokio::test]
+    async fn workspace_creation_validates_and_persists_in_process() {
+        let state = AppState::default();
+        let response = create_workspace(
+            State(state.clone()),
+            Json(CreateWorkspace {
+                name: "Funspot engineering".into(),
+            }),
+        )
+        .await
+        .unwrap();
+
+        assert_eq!(response.0, StatusCode::CREATED);
+        assert_eq!(state.workspaces.read().await.len(), 1);
+    }
 }
