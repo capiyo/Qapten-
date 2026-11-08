@@ -153,9 +153,7 @@ pub fn validate_proposal(
         return Err(ProposalRejection::InvalidParameters);
     }
     if let Some(value) = proposal.parameters.get("linear_velocity_mps") {
-        let velocity = value
-            .as_f64()
-            .ok_or(ProposalRejection::InvalidParameters)?;
+        let velocity = value.as_f64().ok_or(ProposalRejection::InvalidParameters)?;
         if !velocity.is_finite() {
             return Err(ProposalRejection::InvalidParameters);
         }
