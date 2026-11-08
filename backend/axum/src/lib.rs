@@ -1,4 +1,5 @@
 mod model;
+mod robotics;
 mod routes;
 mod state;
 mod task_routes;
