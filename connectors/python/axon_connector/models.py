@@ -62,7 +62,7 @@ class AxonEnvelope:
         if self.classification not in {"public", "workspace", "restricted", "secret"}:
             raise ValueError("Unsupported AXP classification.")
         if not isinstance(self.payload, dict):
-            raise ValueError("AXP envelope payload must be an object.")
+            raise TypeError("AXP envelope payload must be an object.")
 
     def to_dict(self) -> dict[str, Any]:
         canonical_payload = json.dumps(
@@ -88,7 +88,7 @@ class AxonEnvelope:
     @classmethod
     def from_conversation(
         cls, conversation: ImportedConversation, workspace_id: str, actor_id: str
-    ) -> "AxonEnvelope":
+    ) -> AxonEnvelope:
         return cls(
             workspace_id=workspace_id,
             actor_id=actor_id,

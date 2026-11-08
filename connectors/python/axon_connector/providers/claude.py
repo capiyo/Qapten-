@@ -47,7 +47,7 @@ def parse_claude_export(data: dict[str, Any]) -> ImportedConversation:
 
     raw_messages = data.get("chat_messages") or data.get("messages")
     if not isinstance(raw_messages, list):
-        raise ValueError("Claude export must contain a chat_messages or messages array.")
+        raise TypeError("Claude export must contain a chat_messages or messages array.")
 
     messages: list[ConversationMessage] = []
     for item in raw_messages:
@@ -82,5 +82,5 @@ def load_claude_export(path: str | Path) -> ImportedConversation:
     with source.open("r", encoding="utf-8") as handle:
         data = json.load(handle)
     if not isinstance(data, dict):
-        raise ValueError("Expected a single Claude conversation JSON object.")
+        raise TypeError("Expected a single Claude conversation JSON object.")
     return parse_claude_export(data)
