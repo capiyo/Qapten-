@@ -1,6 +1,6 @@
 //! Robotics domain validation only. This module deliberately has no actuator or
 //! device-network client: accepted proposals remain records for later review.
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, Duration, Utc};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -61,7 +61,7 @@ pub enum ProposedOperation {
 
 /// An intent record, never a command to an actuator.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct CommandProposal {
+fn default_simulation_only() -> bool {\n    true\n}\n\n#[derive(Debug, Clone, Serialize, Deserialize)]\npub struct CommandProposal {
     pub proposal_id: String,
     pub device_id: String,
     pub requester_id: String,
@@ -72,6 +72,7 @@ pub struct CommandProposal {
     pub idempotency_key: String,
     pub reason: String,
     pub parameters: serde_json::Value,
+    #[serde(default = "default_simulation_only")]
     pub simulation_only: bool,
 }
 
@@ -94,6 +95,7 @@ pub enum ProposalRejection {
     VelocityOutOfBounds,
     NonFiniteVelocity,
     InvalidParameters,
+    InvalidPolicyLimits,
 }
 
 pub fn validate_proposal(
@@ -124,18 +126,24 @@ pub fn validate_proposal(
     ) {
         return Err(ProposalRejection::UnsafeOperatingMode);
     }
-    let age = now.signed_duration_since(proposal.issued_at).num_seconds();
+    if !limits.max_velocity_mps.is_finite()
+        || limits.max_velocity_mps < 0.0
+        || limits.max_command_age_seconds < 0
+    {
+        return Err(ProposalRejection::InvalidPolicyLimits);
+    }
     if proposal.expires_at <= proposal.issued_at
         || proposal.expires_at <= now
-        || age < 0
-        || age > limits.max_command_age_seconds
+        || proposal.issued_at > now
+        || now.signed_duration_since(proposal.issued_at)
+            > Duration::seconds(limits.max_command_age_seconds)
     {
         return Err(ProposalRejection::ExpiredOrInvalidWindow);
     }
     if proposal.sequence <= last_accepted_sequence {
         return Err(ProposalRejection::StaleSequence);
     }
-    if proposal.idempotency_key.len() < 16 {
+    if proposal.idempotency_key.trim().len() < 16 {
         return Err(ProposalRejection::InvalidIdempotencyKey);
     }
     if !proposal.parameters.is_object() {
