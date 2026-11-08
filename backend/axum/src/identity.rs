@@ -83,24 +83,19 @@ pub fn authorize(
     grants: &[CapabilityGrant],
     now: DateTime<Utc>,
 ) -> Result<(), AuthorizationDenial> {
-    let mut matching = grants.iter().filter(|grant| {
+    let matching = grants.iter().filter(|grant| {
         grant.subject == principal.principal && grant.workspace_id == workspace_id
     });
-
-    let Some(grant) = matching.next() else {
+    let relevant: Vec<_> = matching.collect();
+    if relevant.is_empty() {
         return Err(AuthorizationDenial::NoMatchingGrant);
-    };
+    }
 
-    // Multiple grants are supported, but a revoked/expired grant never
-    // overrides a separate valid grant. Evaluate all matching grants below.
-    for grant in std::iter::once(grant).chain(matching) {
-        if grant.revoked_at.is_some_and(|revoked_at| revoked_at <= now) {
-            continue;
-        }
-        if grant.issued_at > now {
-            continue;
-        }
-        if grant.expires_at.is_some_and(|expires_at| expires_at <= now) {
+    for grant in &relevant {
+        if grant.revoked_at.is_some_and(|revoked_at| revoked_at <= now)
+            || grant.issued_at > now
+            || grant.expires_at.is_some_and(|expires_at| expires_at <= now)
+        {
             continue;
         }
         if grant.capabilities.contains(&capability) {
@@ -108,17 +103,19 @@ pub fn authorize(
         }
     }
 
-    let relevant: Vec<_> = grants
+    if relevant
         .iter()
-        .filter(|grant| grant.subject == principal.principal && grant.workspace_id == workspace_id)
-        .collect();
-    if relevant.iter().all(|grant| grant.revoked_at.is_some_and(|at| at <= now)) {
+        .all(|grant| grant.revoked_at.is_some_and(|at| at <= now))
+    {
         return Err(AuthorizationDenial::GrantRevoked);
     }
     if relevant.iter().all(|grant| grant.issued_at > now) {
         return Err(AuthorizationDenial::GrantNotYetValid);
     }
-    if relevant.iter().all(|grant| grant.expires_at.is_some_and(|at| at <= now)) {
+    if relevant
+        .iter()
+        .all(|grant| grant.expires_at.is_some_and(|at| at <= now))
+    {
         return Err(AuthorizationDenial::GrantExpired);
     }
     Err(AuthorizationDenial::CapabilityNotGranted)
@@ -132,7 +129,10 @@ mod tests {
     fn fixture() -> (AuthenticatedPrincipal, CapabilityGrant, Uuid, DateTime<Utc>) {
         let now = Utc::now();
         let principal = AuthenticatedPrincipal {
-            principal: PrincipalRef { kind: PrincipalKind::Human, id: "human-1".into() },
+            principal: PrincipalRef {
+                kind: PrincipalKind::Human,
+                id: "human-1".into(),
+            },
         };
         let workspace_id = Uuid::new_v4();
         let grant = CapabilityGrant {
@@ -140,7 +140,10 @@ mod tests {
             subject: principal.principal.clone(),
             workspace_id,
             capabilities: vec![Capability::ArtifactRead, Capability::TaskCreate],
-            issued_by: PrincipalRef { kind: PrincipalKind::Human, id: "owner-1".into() },
+            issued_by: PrincipalRef {
+                kind: PrincipalKind::Human,
+                id: "owner-1".into(),
+            },
             issued_at: now - Duration::minutes(1),
             expires_at: Some(now + Duration::minutes(5)),
             revoked_at: None,
@@ -151,22 +154,76 @@ mod tests {
     #[test]
     fn allows_only_explicit_capability_in_matching_workspace() {
         let (principal, grant, workspace, now) = fixture();
-        assert_eq!(authorize(&principal, workspace, Capability::ArtifactRead, &[grant.clone()], now), Ok(()));
-        assert_eq!(authorize(&principal, workspace, Capability::AuditRead, &[grant.clone()], now), Err(AuthorizationDenial::CapabilityNotGranted));
-        assert_eq!(authorize(&principal, Uuid::new_v4(), Capability::ArtifactRead, &[grant], now), Err(AuthorizationDenial::NoMatchingGrant));
+        assert_eq!(
+            authorize(
+                &principal,
+                workspace,
+                Capability::ArtifactRead,
+                &[grant.clone()],
+                now
+            ),
+            Ok(())
+        );
+        assert_eq!(
+            authorize(
+                &principal,
+                workspace,
+                Capability::AuditRead,
+                &[grant.clone()],
+                now
+            ),
+            Err(AuthorizationDenial::CapabilityNotGranted)
+        );
+        assert_eq!(
+            authorize(
+                &principal,
+                Uuid::new_v4(),
+                Capability::ArtifactRead,
+                &[grant],
+                now
+            ),
+            Err(AuthorizationDenial::NoMatchingGrant)
+        );
     }
 
     #[test]
     fn denies_expired_future_and_revoked_grants() {
         let (principal, mut grant, workspace, now) = fixture();
         grant.expires_at = Some(now - Duration::seconds(1));
-        assert_eq!(authorize(&principal, workspace, Capability::ArtifactRead, &[grant.clone()], now), Err(AuthorizationDenial::GrantExpired));
+        assert_eq!(
+            authorize(
+                &principal,
+                workspace,
+                Capability::ArtifactRead,
+                &[grant.clone()],
+                now
+            ),
+            Err(AuthorizationDenial::GrantExpired)
+        );
         grant.expires_at = None;
         grant.issued_at = now + Duration::seconds(1);
-        assert_eq!(authorize(&principal, workspace, Capability::ArtifactRead, &[grant.clone()], now), Err(AuthorizationDenial::GrantNotYetValid));
+        assert_eq!(
+            authorize(
+                &principal,
+                workspace,
+                Capability::ArtifactRead,
+                &[grant.clone()],
+                now
+            ),
+            Err(AuthorizationDenial::GrantNotYetValid)
+        );
         grant.issued_at = now - Duration::minutes(1);
         grant.revoked_at = Some(now - Duration::seconds(1));
-        assert_eq!(authorize(&principal, workspace, Capability::ArtifactRead, &[grant], now), Err(AuthorizationDenial::GrantRevoked));
+        assert_eq!(
+            authorize(
+                &principal,
+                workspace,
+                Capability::ArtifactRead,
+                &[grant],
+                now
+            ),
+            Err(AuthorizationDenial::GrantRevoked)
+        );
     }
 
     #[test]
@@ -175,13 +232,31 @@ mod tests {
         let mut revoked = grant.clone();
         revoked.grant_id = Uuid::new_v4();
         revoked.revoked_at = Some(now - Duration::seconds(1));
-        assert_eq!(authorize(&principal, workspace, Capability::ArtifactRead, &[revoked, grant], now), Ok(()));
+        assert_eq!(
+            authorize(
+                &principal,
+                workspace,
+                Capability::ArtifactRead,
+                &[revoked, grant],
+                now
+            ),
+            Ok(())
+        );
     }
 
     #[test]
     fn principal_kind_is_part_of_identity() {
         let (mut principal, grant, workspace, now) = fixture();
         principal.principal.kind = PrincipalKind::Agent;
-        assert_eq!(authorize(&principal, workspace, Capability::ArtifactRead, &[grant], now), Err(AuthorizationDenial::NoMatchingGrant));
+        assert_eq!(
+            authorize(
+                &principal,
+                workspace,
+                Capability::ArtifactRead,
+                &[grant],
+                now
+            ),
+            Err(AuthorizationDenial::NoMatchingGrant)
+        );
     }
 }
