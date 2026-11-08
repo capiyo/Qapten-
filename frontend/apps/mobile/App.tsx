@@ -162,9 +162,52 @@ export default function App() {
       });
       setTaskTitle("");
       setTaskObjective("");
+      setSelectedArtifactIds([]);
       await refreshWorkspace(selected);
     });
   }
+
+  async function advanceTask(task: Task, status: string) {
+    if (!selected) return;
+    await perform(async () => {
+      await request<Task>(`/api/v1/tasks/${task.id}/transitions`, {
+        method: "POST",
+        body: JSON.stringify({
+          expected_version: task.version,
+          status,
+          note: `Moved to ${status.replaceAll("_", " ")} from the mobile workspace.`
+        })
+      });
+      await refreshWorkspace(selected);
+    });
+  }
+
+  async function submitTaskResponse(task: Task) {
+    if (!selected) return;
+    const content = responseDrafts[task.id]?.trim() ?? "";
+    if (!content) return;
+    await perform(async () => {
+      await request(`/api/v1/tasks/${task.id}/submit`, {
+        method: "POST",
+        body: JSON.stringify({
+          expected_version: task.version,
+          title: `${task.title} — response`,
+          content
+        })
+      });
+      setResponseDrafts(current => ({ ...current, [task.id]: "" }));
+      await refreshWorkspace(selected);
+    });
+  }
+
+  const nextTaskStatus: Record<string, string> = {
+    offered: "acknowledged",
+    acknowledged: "in_progress",
+    submitted: "review_required",
+    review_required: "accepted",
+    changes_requested: "in_progress",
+    accepted: "completed"
+  };
 
   return (
     <SafeAreaView style={styles.safe}>
