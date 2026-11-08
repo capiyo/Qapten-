@@ -7,7 +7,7 @@ The roadmap is outcome-driven. A phase is complete only when its acceptance crit
 - [x] Define domain vocabulary and initial service boundaries.
 - [x] Draft exchange protocol and security invariants.
 - [x] Add initial service and client skeletons (build verification pending).
-- [x] Add CI workflow for formatting, linting, tests, and web build (run status pending).
+- [x] Add CI workflow for Rust formatting, Clippy, Rust tests, web build, and mobile TypeScript check (all jobs passed in the verified run).
 
 ## Phase 1 — Two-agent manual collaboration
 - [ ] Workspace and membership model.
