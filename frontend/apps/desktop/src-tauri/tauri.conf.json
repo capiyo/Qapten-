@@ -4,9 +4,9 @@
   "version": "0.1.0",
   "identifier": "co.axon.desktop",
   "build": {
-    "beforeDevCommand": "npm --prefix ../web run dev",
+    "beforeDevCommand": "npm --prefix ../web run dev -- --mode desktop",
     "devUrl": "http://127.0.0.1:5173",
-    "beforeBuildCommand": "npm --prefix ../web run build",
+    "beforeBuildCommand": "npm --prefix ../web run build -- --mode desktop",
     "frontendDist": "../web/dist"
   },
   "app": {
