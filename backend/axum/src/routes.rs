@@ -78,6 +78,7 @@ pub async fn create_workspace(
         .write()
         .await
         .insert(workspace.id, workspace.clone());
+    state.audit.write().await.append(Some(workspace.id), "workspace.created", "workspace", workspace.id.to_string(), serde_json::json!({"name": workspace.name}));
 
     Ok((StatusCode::CREATED, Json(workspace)))
 }
@@ -178,6 +179,7 @@ pub async fn create_artifact(
         .write()
         .await
         .insert(artifact.id, artifact.clone());
+    state.audit.write().await.append(Some(workspace_id), "artifact.created", "artifact", artifact.id.to_string(), serde_json::json!({"title": artifact.title, "source_agent_id": artifact.source_agent_id}));
 
     Ok((StatusCode::CREATED, Json(artifact)))
 }
@@ -274,5 +276,8 @@ mod tests {
 
         assert_eq!(response.0, StatusCode::CREATED);
         assert_eq!(state.workspaces.read().await.len(), 1);
+        let audit = state.audit.read().await.list_workspace(response.1.id);
+        assert_eq!(audit.len(), 1);
+        assert_eq!(audit[0].event_type, "workspace.created");
     }
 }
