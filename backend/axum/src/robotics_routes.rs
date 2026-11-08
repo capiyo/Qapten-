@@ -128,14 +128,10 @@ pub async fn list_simulated_telemetry(
     )
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
-    use axum::{
-        body::Body,
-        http::Request,
-    };
+    use axum::{body::Body, http::Request};
     use tower::ServiceExt;
 
     #[tokio::test]
