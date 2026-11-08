@@ -32,7 +32,7 @@ pub async fn health() -> Json<Health> {
     })
 }
 
-#[derive(Serialize)]
+#[derive(Debug, Serialize)]
 pub struct ApiError {
     error: String,
 }
