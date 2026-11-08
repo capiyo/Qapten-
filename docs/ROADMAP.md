@@ -29,7 +29,7 @@ The roadmap is outcome-driven. A phase is complete only when its acceptance crit
 - [x] Add Axon visual identity source mark and minimal desktop capability policy.
 - [ ] Add platform icon bundles, desktop CI builds, and signed Windows/macOS/Linux installers.
 - [ ] Add secure local file access, credential vault integration, tray, notifications, and updater with explicit user permissions.
-- [ ] Add a managed local Axon runtime and authenticated connection to the central API.
+- [x] Embed and manage the local Axum API lifecycle inside the Tauri desktop process (loopback-only; in-memory development store).\n- [ ] Add durable local storage and authenticated connection to the central API.
 
 **Acceptance:** Axon installs as a native application on Windows, macOS, and Linux, reuses the same workspace UI, and exposes local computer capabilities only through scoped, user-approved operations.
 
