@@ -18,7 +18,11 @@ The first release is a modular monolith around the orchestration domain. Splitti
 - **Feedback:** a human or agent assessment tied to a specific artifact, handoff, or decision.
 - **Audit event:** append-only record of security-relevant and workflow-relevant actions.
 
-## 3. Initial logical topology
+## 3. Identity and authorization boundary
+
+AXON distinguishes identity from authorization. A principal is a human, agent, service, or device; a capability grant binds that principal to an explicit set of capabilities within one workspace, with issue, expiry, and revocation timestamps. The Rust policy module is deny-by-default and evaluates these grants. It is not an authentication system: only a future trusted adapter may construct an authenticated principal from verified credentials. Request JSON, caller-supplied IDs, and unsigned headers must never be treated as proof of identity. Route handlers remain local-only until authentication and authorization middleware are implemented and tested.
+
+## 4. Initial logical topology
 
 ```text
 React Web / React Native
@@ -44,7 +48,7 @@ Rust <-> Zig
 Only behind stable interfaces and benchmarks.
 ```
 
-## 4. Responsibility boundaries
+## 5. Responsibility boundaries
 
 ### Axum (initial system of record)
 Owns authentication integration, authorization, workspace membership, agent registry, artifact metadata, context assembly, task/handoff state transitions, decision records, audit events, and API contracts.
@@ -58,7 +62,7 @@ May implement isolated binary parsing, hashing, or other measured hot paths. No 
 ### Frontend
 Web and mobile clients are views over the same API and domain model. They must not independently invent authorization rules or task state transitions.
 
-## 5. Data and consistency
+## 6. Data and consistency
 
 MongoDB is the initial persistence choice. Use immutable artifact payloads and append-only audit records; mutable aggregate documents hold current task/workspace state with explicit versions. Every state-changing command must be authorized, validated against the current version, and recorded with an audit event.
 
@@ -66,7 +70,7 @@ Cross-document workflows must be idempotent. Use stable operation IDs and unique
 
 Large artifact bodies may move to object storage later. The first implementation should define an ArtifactStore interface so metadata and payload storage can evolve independently.
 
-## 6. Trust and provenance
+## 7. Trust and provenance
 
 Treat model output, imported text, filenames, and external metadata as untrusted content—not executable instructions. Preserve provenance and clearly separate:
 - captured source material;
@@ -77,13 +81,13 @@ Treat model output, imported text, filenames, and external metadata as untrusted
 
 Context bundles must be recipient-specific and purpose-limited. Secret-bearing artifacts should be rejected or redacted before sharing. Access checks happen at read time, not only when a bundle is created.
 
-## 7. Integration progression
+## 8. Integration progression
 
 1. Manual import/export and structured handoffs.
 2. Local browser-assisted capture initiated by the user, with preview and confirmation.
 3. Official provider APIs and webhooks where available and authorized.
 4. Delegated execution only after scoped credentials, approval gates, audit, and revocation are implemented.
 
-## 8. Initial vertical slice
+## 9. Initial vertical slice
 
 Implement one workspace, two manually registered agents, artifact capture, context bundle creation, task handoff, acknowledgement, response capture, decision proposal/acceptance, and an audit timeline. This validates the central value before adding provider-specific complexity.
