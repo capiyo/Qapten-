@@ -24,7 +24,7 @@ The roadmap is outcome-driven. A phase is complete only when its acceptance crit
 
 **Acceptance:** A user can move a task between two manually represented assistants without manually reconstructing the entire context, and can inspect exactly what was shared and what changed.
 
-## Phase 2 — Mobile and browser-assisted capture
+## Phase 2 — Native desktop client\n- [x] Add Tauri 2 desktop shell reusing the React/Vite web client.\n- [x] Add Axon visual identity source mark and minimal desktop capability policy.\n- [ ] Add platform icon bundles, desktop CI builds, and signed Windows/macOS/Linux installers.\n- [ ] Add secure local file access, credential vault integration, tray, notifications, and updater with explicit user permissions.\n- [ ] Add a managed local Axon runtime and authenticated connection to the central API.\n\n**Acceptance:** Axon installs as a native application on Windows, macOS, and Linux, reuses the same workspace UI, and exposes local computer capabilities only through scoped, user-approved operations.\n\n## Phase 3 — Mobile and browser-assisted capture
 - [x] React Native workspace creation/listing and basic agent, artifact, and task workflows.
 - [ ] Mobile context selection, response submission, and review controls.
 - [ ] Browser-assisted capture with user initiation, preview, and explicit submit.
@@ -33,7 +33,7 @@ The roadmap is outcome-driven. A phase is complete only when its acceptance crit
 
 **Acceptance:** Capture is user-visible, permissioned, reversible before submission, and does not read private provider sessions in the background.
 
-## Phase 3 — Official provider integrations
+## Phase 4 — Official provider integrations
 - [ ] Provider adapter interface.
 - [ ] First official API integration after provider capability and policy review.
 - [ ] Webhook verification and replay protection.
@@ -41,7 +41,7 @@ The roadmap is outcome-driven. A phase is complete only when its acceptance crit
 
 **Acceptance:** Provider integrations are optional adapters; manual workflows continue to work if a provider API is unavailable.
 
-## Phase 4 — Multi-agent collaboration
+## Phase 5 — Multi-agent collaboration
 - [ ] Agent capability registry.
 - [ ] Bounded delegation and task graph.
 - [ ] Conflict detection and decision comparison.
@@ -50,7 +50,7 @@ The roadmap is outcome-driven. A phase is complete only when its acceptance crit
 
 **Acceptance:** Multi-agent tasks are bounded, explainable, attributable, and interruptible by the user.
 
-## Phase 5 — Project engineering workspaces
+## Phase 6 — Project engineering workspaces
 - [ ] Repository-aware context adapters.
 - [ ] Read-only codebase analysis and review workflows.
 - [ ] Controlled patch proposals and test evidence.
