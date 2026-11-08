@@ -2,13 +2,15 @@
 
 **Last updated:** 2026-11-08
 
+**Product identity:** Axon (working name; public trademark/domain clearance not yet completed).
+
 ## Repository
 
-- Repository: `capiyo/Qapten-`
+- Repository: `capiyo/Axon-`
 - Default branch: `main`
 - Visibility: public
 - Active implementation branch: `foundation/axum-web-skeleton`
-- Review: [Draft PR #1](https://github.com/capiyo/Qapten-/pull/1)
+- Review: [Draft PR #1](https://github.com/capiyo/Axon-/pull/1)
 - License: MIT (see [LICENSE](../LICENSE))
 
 ## Implemented on the draft branch
