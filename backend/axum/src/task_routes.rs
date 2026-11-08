@@ -18,7 +18,13 @@ pub struct TaskApiError {
 }
 
 fn error(status: StatusCode, message: impl Into<String>) -> (StatusCode, Json<TaskApiError>) {
-    (status, Json(TaskApiError { error: message.into(), current_version: None }))
+    (
+        status,
+        Json(TaskApiError {
+            error: message.into(),
+            current_version: None,
+        }),
+    )
 }
 
 pub async fn create_task(
@@ -26,26 +32,48 @@ pub async fn create_task(
     Path(workspace_id): Path<Uuid>,
     Json(input): Json<CreateTask>,
 ) -> Result<(StatusCode, Json<Task>), (StatusCode, Json<TaskApiError>)> {
-    if !state.workspaces.read().await.contains_key(&workspace_id) {
+    if !state
+        .workspaces
+        .read()
+        .await
+        .contains_key(&workspace_id)
+    {
         return Err(error(StatusCode::NOT_FOUND, "Workspace not found."));
     }
+
     let title = input.title.trim();
     let objective = input.objective.trim();
     if title.is_empty() || title.len() > 160 || objective.is_empty() || objective.len() > 10_000 {
-        return Err(error(StatusCode::BAD_REQUEST, "Task title must be 1–160 characters and objective 1–10000 characters."));
+        return Err(error(
+            StatusCode::BAD_REQUEST,
+            "Task title must be 1–160 characters and objective 1–10000 characters.",
+        ));
     }
 
     let agents = state.agents.read().await;
-    if !agents.get(&input.assignee_agent_id).is_some_and(|agent| agent.workspace_id == workspace_id) {
-        return Err(error(StatusCode::BAD_REQUEST, "Assignee agent must belong to the target workspace."));
+    if !agents
+        .get(&input.assignee_agent_id)
+        .is_some_and(|agent| agent.workspace_id == workspace_id)
+    {
+        return Err(error(
+            StatusCode::BAD_REQUEST,
+            "Assignee agent must belong to the target workspace.",
+        ));
     }
     drop(agents);
 
     let artifacts = state.artifacts.read().await;
-    if input.context_artifact_ids.len() > 50 || input.context_artifact_ids.iter().any(|id| {
-        !artifacts.get(id).is_some_and(|artifact| artifact.workspace_id == workspace_id)
-    }) {
-        return Err(error(StatusCode::BAD_REQUEST, "Every context artifact must exist in this workspace; at most 50 references are allowed."));
+    if input.context_artifact_ids.len() > 50
+        || input.context_artifact_ids.iter().any(|id| {
+            !artifacts
+                .get(id)
+                .is_some_and(|artifact| artifact.workspace_id == workspace_id)
+        })
+    {
+        return Err(error(
+            StatusCode::BAD_REQUEST,
+            "Every context artifact must exist in this workspace; at most 50 references are allowed.",
+        ));
     }
     drop(artifacts);
 
@@ -68,6 +96,7 @@ pub async fn create_task(
             occurred_at: now,
         }],
     };
+
     state.tasks.write().await.insert(task.id, task.clone());
     Ok((StatusCode::CREATED, Json(task)))
 }
@@ -76,10 +105,20 @@ pub async fn list_tasks(
     State(state): State<AppState>,
     Path(workspace_id): Path<Uuid>,
 ) -> Result<Json<Vec<Task>>, (StatusCode, Json<TaskApiError>)> {
-    if !state.workspaces.read().await.contains_key(&workspace_id) {
+    if !state
+        .workspaces
+        .read()
+        .await
+        .contains_key(&workspace_id)
+    {
         return Err(error(StatusCode::NOT_FOUND, "Workspace not found."));
     }
-    let mut tasks: Vec<_> = state.tasks.read().await.values()
+
+    let mut tasks: Vec<_> = state
+        .tasks
+        .read()
+        .await
+        .values()
         .filter(|task| task.workspace_id == workspace_id)
         .cloned()
         .collect();
@@ -89,6 +128,7 @@ pub async fn list_tasks(
 
 fn allowed_transition(from: &TaskStatus, to: &TaskStatus) -> bool {
     use TaskStatus::*;
+
     matches!(
         (from, to),
         (Offered, Acknowledged | Rejected | Cancelled)
@@ -108,13 +148,17 @@ pub async fn transition_task(
 ) -> Result<Json<Task>, (StatusCode, Json<TaskApiError>)> {
     let note = input.note.trim();
     if note.is_empty() || note.len() > 2_000 {
-        return Err(error(StatusCode::BAD_REQUEST, "A transition note of 1–2000 characters is required."));
+        return Err(error(
+            StatusCode::BAD_REQUEST,
+            "A transition note of 1–2000 characters is required.",
+        ));
     }
 
     let mut tasks = state.tasks.write().await;
     let Some(task) = tasks.get_mut(&task_id) else {
         return Err(error(StatusCode::NOT_FOUND, "Task not found."));
     };
+
     if task.version != input.expected_version {
         return Err((
             StatusCode::CONFLICT,
@@ -124,10 +168,14 @@ pub async fn transition_task(
             }),
         ));
     }
+
     if !allowed_transition(&task.status, &input.status) {
         return Err(error(
             StatusCode::CONFLICT,
-            format!("Transition from {:?} to {:?} is not allowed.", task.status, input.status),
+            format!(
+                "Transition from {:?} to {:?} is not allowed.",
+                task.status, input.status
+            ),
         ));
     }
 
@@ -142,6 +190,7 @@ pub async fn transition_task(
         note: note.to_owned(),
         occurred_at: now,
     });
+
     Ok(Json(task.clone()))
 }
 
@@ -151,15 +200,33 @@ mod tests {
 
     #[test]
     fn task_lifecycle_rejects_skipping_review() {
-        assert!(!allowed_transition(&TaskStatus::Submitted, &TaskStatus::Completed));
-        assert!(!allowed_transition(&TaskStatus::Offered, &TaskStatus::InProgress));
+        assert!(!allowed_transition(
+            &TaskStatus::Submitted,
+            &TaskStatus::Completed
+        ));
+        assert!(!allowed_transition(
+            &TaskStatus::Offered,
+            &TaskStatus::InProgress
+        ));
     }
 
     #[test]
     fn task_lifecycle_supports_review_and_revision() {
-        assert!(allowed_transition(&TaskStatus::Submitted, &TaskStatus::ReviewRequired));
-        assert!(allowed_transition(&TaskStatus::ReviewRequired, &TaskStatus::ChangesRequested));
-        assert!(allowed_transition(&TaskStatus::ChangesRequested, &TaskStatus::InProgress));
-        assert!(allowed_transition(&TaskStatus::Accepted, &TaskStatus::Completed));
+        assert!(allowed_transition(
+            &TaskStatus::Submitted,
+            &TaskStatus::ReviewRequired
+        ));
+        assert!(allowed_transition(
+            &TaskStatus::ReviewRequired,
+            &TaskStatus::ChangesRequested
+        ));
+        assert!(allowed_transition(
+            &TaskStatus::ChangesRequested,
+            &TaskStatus::InProgress
+        ));
+        assert!(allowed_transition(
+            &TaskStatus::Accepted,
+            &TaskStatus::Completed
+        ));
     }
 }
