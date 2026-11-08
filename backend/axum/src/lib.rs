@@ -20,11 +20,11 @@ pub fn app(state: AppState) -> Router {
         )
         .route(
             "/api/v1/workspaces/:workspace_id/agents",
-            post(routes::register_agent),
+            get(routes::list_agents).post(routes::register_agent),
         )
         .route(
             "/api/v1/workspaces/:workspace_id/artifacts",
-            post(routes::create_artifact),
+            get(routes::list_artifacts).post(routes::create_artifact),
         )
         .route(
             "/api/v1/workspaces/:workspace_id/tasks",
