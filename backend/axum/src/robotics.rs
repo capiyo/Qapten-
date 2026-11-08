@@ -97,7 +97,6 @@ pub enum ProposalRejection {
     StaleSequence,
     InvalidIdempotencyKey,
     VelocityOutOfBounds,
-    NonFiniteVelocity,
     InvalidParameters,
     InvalidPolicyLimits,
 }
@@ -260,7 +259,7 @@ mod tests {
         proposal.parameters = serde_json::json!({"linear_velocity_mps": "not-a-number"});
         assert_eq!(
             validate_proposal(&proposal, "robot-1", true, &safety, 6, now, limits),
-            Err(ProposalRejection::NonFiniteVelocity)
+            Err(ProposalRejection::InvalidParameters)
         );
     }
 
