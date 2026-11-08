@@ -71,8 +71,8 @@ pub struct CommandProposal {
     pub expires_at: DateTime<Utc>,
     pub idempotency_key: String,
     pub reason: String,
+    pub parameters: serde_json::Value,
     pub simulation_only: bool,
-    pub requested_velocity_mps: Option<f64>,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -93,6 +93,7 @@ pub enum ProposalRejection {
     InvalidIdempotencyKey,
     VelocityOutOfBounds,
     NonFiniteVelocity,
+    InvalidParameters,
 }
 
 pub fn validate_proposal(
@@ -137,9 +138,15 @@ pub fn validate_proposal(
     if proposal.idempotency_key.len() < 16 {
         return Err(ProposalRejection::InvalidIdempotencyKey);
     }
-    if let Some(velocity) = proposal.requested_velocity_mps {
+    if !proposal.parameters.is_object() {
+        return Err(ProposalRejection::InvalidParameters);
+    }
+    if let Some(value) = proposal.parameters.get("linear_velocity_mps") {
+        let velocity = value
+            .as_f64()
+            .ok_or(ProposalRejection::InvalidParameters)?;
         if !velocity.is_finite() {
-            return Err(ProposalRejection::NonFiniteVelocity);
+            return Err(ProposalRejection::InvalidParameters);
         }
         if velocity.abs() > limits.max_velocity_mps {
             return Err(ProposalRejection::VelocityOutOfBounds);
@@ -165,8 +172,8 @@ mod tests {
             expires_at: now + Duration::seconds(10),
             idempotency_key: "idempotency-key-0001".into(),
             reason: "Navigate to waypoint".into(),
+            parameters: serde_json::json!({"linear_velocity_mps": 0.4}),
             simulation_only: true,
-            requested_velocity_mps: Some(0.4),
         };
         let safety = SafetyState {
             device_id: "robot-1".into(),
@@ -233,12 +240,12 @@ mod tests {
     #[test]
     fn rejects_out_of_bounds_and_non_finite_velocity() {
         let (mut proposal, safety, now, limits) = fixture();
-        proposal.requested_velocity_mps = Some(0.8);
+        proposal.parameters = serde_json::json!({"linear_velocity_mps": 0.8});
         assert_eq!(
             validate_proposal(&proposal, "robot-1", true, &safety, 6, now, limits),
             Err(ProposalRejection::VelocityOutOfBounds)
         );
-        proposal.requested_velocity_mps = Some(f64::NAN);
+        proposal.parameters = serde_json::json!({"linear_velocity_mps": "not-a-number"});
         assert_eq!(
             validate_proposal(&proposal, "robot-1", true, &safety, 6, now, limits),
             Err(ProposalRejection::NonFiniteVelocity)
