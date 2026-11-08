@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { SafeAreaView, ScrollView, StatusBar, StyleSheet, Text, View } from "react-native";
+import { SafeAreaView, ScrollView, StyleSheet, Text, View } from "react-native";
 import { StatusBar as ExpoStatusBar } from "expo-status-bar";
 
 type Health = { status: string; storage: string; authentication: string };
