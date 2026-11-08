@@ -5,10 +5,20 @@ import type { Agent, Artifact, Health, Task, Workspace } from "../../../packages
 
 
 const api = async <T,>(path: string, init?: RequestInit): Promise<T> => {
-  const response = await fetch(path, {
-    ...init,
-    headers: { "Content-Type": "application/json", ...init?.headers }
-  });
+  const apiBaseUrl = import.meta.env.VITE_AXON_API_URL ?? "";
+  const response = await (async () => {
+    for (let attempt = 0; ; attempt += 1) {
+      try {
+        return await fetch(`${apiBaseUrl}${path}`, {
+          ...init,
+          headers: { "Content-Type": "application/json", ...init?.headers }
+        });
+      } catch (cause) {
+        if (attempt >= 4) throw cause;
+        await new Promise(resolve => window.setTimeout(resolve, 100 * 2 ** attempt));
+      }
+    }
+  })();
   if (!response.ok) {
     const body = await response.json().catch(() => ({ error: response.statusText }));
     throw new Error(body.error ?? "Request failed");
@@ -202,7 +212,7 @@ export default function App() {
   return (
     <main className="shell">
       <aside className="rail">
-        <div className="brand-mark">A</div>
+        <div className="brand-mark"><img src="/axon-mark.svg" alt="Axon" /></div>
         <span className="rail-label">WORKSPACES</span>
         <div className="rail-dot active" aria-label="Workspace area" />
         <div className="rail-bottom">0.1</div>

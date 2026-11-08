@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="Axon">
+  <rect width="256" height="256" rx="64" fill="#155EEF"/>
+  <g fill="none" stroke="#FFFFFF" stroke-width="16" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M128 48v160M128 88L76 128M128 88l52 40M128 168l-52-40M128 168l52-40"/>
+  </g>
+  <g fill="#FFFFFF"><circle cx="128" cy="48" r="17"/><circle cx="76" cy="128" r="17"/><circle cx="180" cy="128" r="17"/><circle cx="128" cy="208" r="17"/><circle cx="128" cy="128" r="19"/></g>
+</svg>

@@ -1,0 +1,16 @@
+{
+  "name": "@axon/desktop",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "tauri": "tauri",
+    "dev": "tauri dev",
+    "build": "npm run icons && tauri build",
+    "check": "tauri info",
+    "icons": "tauri icon assets/axon-mark.svg --output src-tauri/icons"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.0.0"
+  }
+}

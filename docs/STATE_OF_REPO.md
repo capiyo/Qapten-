@@ -6,14 +6,25 @@
 
 ## Repository
 
-- Repository: `capiyo/Qapten-`
+- Repository: `capiyo/Qapten-` (rename to `capiyo/axon` still pending in GitHub repository settings)
 - Default branch: `main`
 - Visibility: public
-- Active implementation branch: `foundation/axum-web-skeleton`
-- Review: [Draft PR #1](https://github.com/capiyo/Qapten-/pull/1)
+- Active implementation branch: `foundation/axon-desktop-shell` (desktop work based on `foundation/axum-web-skeleton`)
+- Review: [Draft PR #1 — core foundation](https://github.com/capiyo/Qapten-/pull/1); [Draft PR #2 — desktop client](https://github.com/capiyo/Qapten-/pull/2)
 - License: MIT (see [LICENSE](../LICENSE))
 
 ## Implemented on the draft branch
+
+- [x] Initial Tauri 2 desktop shell for Windows, macOS, and Linux using the shared React/Vite web client.
+- [x] Desktop-specific API endpoint configuration, minimum-privilege capability file, window sizing, and restrictive initial CSP.
+- [x] Original Axon SVG identity mark shared by web and desktop; platform icon generation wired into the desktop packaging script.
+- [x] Tauri setup starts the Axum API inside the desktop process and gracefully stops it when the application exits.
+- [x] Local API binds to `127.0.0.1:8080`; requests are limited by a trusted Tauri/Vite origin allowlist, and the UI retries transient startup connection failures.
+- [x] Desktop CI job validates Tauri icon generation, desktop-mode web build, Rust formatting, and desktop host compilation; all five jobs passed on commit `7497521579dbe310e009a4ed87c6053e1cecff71`.
+
+## Desktop limitations
+
+The Tauri shell and embedded API runtime are committed on `foundation/axon-desktop-shell`. Native installers have not yet been built or tested on all target platforms. The embedded API still uses in-memory development storage and has no authentication or route-level authorization. No local filesystem, shell, process, credential-vault, tray, updater, or unrestricted network permission is enabled. Desktop is an integrated development runtime, not yet a production release.
 
 - [x] Product purpose, design principles, architecture, protocol draft, risk policy, roadmap, and architecture decision record.
 - [x] Rust workspace and Axum API application.
@@ -23,7 +34,7 @@
 - [x] React + TypeScript + Vite web workspace for creating workspaces, registering agents, capturing artifacts, attaching context to tasks, submitting responses, and reviewing/advancing tasks.
 - [x] React Native + Expo workspace for workspace creation/listing, agent registration, artifact capture, context selection, task creation, response submission, and review transitions.
 - [x] Shared TypeScript API contract types consumed by web and mobile.
-- [x] GitHub Actions checks for Rust formatting, Clippy, tests, web production build, and mobile TypeScript validation.
+- [x] GitHub Actions checks for Rust formatting, Clippy, tests, web production build, mobile TypeScript validation, Python connector tests, and the Tauri desktop host.
 - [x] AXP robotics device-registration, telemetry, non-executable command-proposal, and safety-state schemas.
 - [x] Shared TypeScript robotics contracts and pure Rust proposal validation tests.
 - [x] Robotics safety boundary documented; no hardware dispatch or actuator endpoint.
@@ -40,7 +51,7 @@
 
 ## Not implemented
 
-- Persistent MongoDB adapter, schema migrations, and durable event/audit storage.
+- Persistent local SQLite adapter for desktop, server-side MongoDB adapter, schema migrations, and durable event/audit storage.
 - Cryptographic device enrollment, persistent replay/idempotency enforcement, and device gateway.
 - Authentication adapters, verified caller identity, workspace membership persistence, grant issuance/revocation APIs, and route-level authorization enforcement.
 - Artifact content hashing, classification enforcement, context bundle read API, and retention controls.
@@ -64,12 +75,12 @@ The current API uses an in-process memory store. All records, including the audi
 
 ## Verification
 
-GitHub Actions run [42500672881](https://github.com/capiyo/Qapten-/actions/runs/42500672881) passed all four jobs on commit `5c199a8f364d5272f9525703f4e591a820652ef4`: Rust formatting, Clippy and tests; React web production build; React Native TypeScript validation; and Python connector Ruff/pytest. The Python suite verifies Claude export normalization, AXP provenance and payload hashing, preview-only behavior, explicit transfer approval, and context-size validation. This verifies the current branch head at the time of the run. No physical Android/iOS build, hardware integration, or production deployment has been performed.
+The latest desktop branch run [42513876839](https://github.com/capiyo/Qapten-/actions/runs/42513876839) passed all five jobs on commit `7497521579dbe310e009a4ed87c6053e1cecff71`: Python connector tests, Rust checks, Tauri desktop shell check, mobile TypeScript check, and web typecheck/build. The Python suite verifies Claude export normalization, AXP provenance and payload hashing, preview-only behavior, explicit transfer approval, and context-size validation. No physical Android/iOS build, hardware integration, native installer verification, or production deployment has been performed.
 
 ## Architecture direction
 
 - `frontend/` is the client layer: web, mobile, and frontend-only shared TypeScript contracts.
 - `backend/` is the server layer: Axum currently owns API behavior and authoritative domain state.
 - `contracts/` is the language-neutral, versioned protocol boundary.
-- Axum remains the initial orchestration authority. MongoDB is the planned persistence layer, subject to schema and transaction design.
+- Axum remains the initial orchestration authority. SQLite is the planned embedded desktop store; MongoDB is the planned shared/server persistence layer. Both require explicit migrations and transaction design.
 - Drogon and Zig remain evidence-driven extension points, not duplicated orchestration services.

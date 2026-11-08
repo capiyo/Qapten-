@@ -1,0 +1,17 @@
+[package]
+name = "axon-desktop"
+version = "0.1.0"
+description = "Axon desktop workspace"
+authors = ["Axon contributors"]
+edition = "2021"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+axon-api = { path = "../../../../backend/axum" }
+axum = { version = "0.7", features = ["json"] }
+tauri = { version = "2", features = [] }
+tokio = { version = "1", features = ["net", "rt-multi-thread", "sync"] }
+
+[workspace]
