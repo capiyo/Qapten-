@@ -47,7 +47,7 @@ The current API uses an in-process memory store. All records disappear when the 
 
 ## Verification
 
-The GitHub Actions run for commit `4e65ecceca94bb8412ae2543fe245b89d80c7b4e` passed all jobs: `cargo fmt --all -- --check`, `cargo clippy --workspace --all-targets -- -D warnings`, `cargo test --workspace`, the React web production build, and the React Native TypeScript check. Robotics changes after that commit require a fresh CI run. The first robotics CI attempt failed at Rust formatting; a formatting correction and schema-alignment fixes were committed afterward and require a fresh run. This verifies CI builds and tests only; no physical Android/iOS build or production deployment has been performed.
+GitHub Actions run [42489120800](https://github.com/capiyo/Qapten-/actions/runs/42489120800) passed all three jobs on commit `e9490797707b484782db800aa4de55c561ac8ff2`: Rust formatting, Clippy, and tests; React web production build; and React Native TypeScript validation. The robotics validator and telemetry model are included in that run. This verifies CI builds and tests only; no physical Android/iOS build, hardware integration, or production deployment has been performed.
 
 ## Architecture direction
 
