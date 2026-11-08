@@ -157,7 +157,11 @@ pub async fn submit_task(
 ) -> TaskResult<Json<TaskSubmission>> {
     let title = input.title.trim();
     let content = input.content.trim();
-    if title.is_empty() || title.len() > 200 || content.is_empty() || content.len() > 512_000 {
+    if title.is_empty()
+        || title.len() > 200
+        || content.is_empty()
+        || content.len() > 512_000
+    {
         return Err(error(
             StatusCode::BAD_REQUEST,
             "Response title must be 1–200 characters and response content 1–512000 bytes.",
@@ -193,7 +197,11 @@ pub async fn submit_task(
         source_agent_id: Some(task.assignee_agent_id),
         captured_at: now,
     };
-    state.artifacts.write().await.insert(artifact.id, artifact.clone());
+    state
+        .artifacts
+        .write()
+        .await
+        .insert(artifact.id, artifact.clone());
 
     task.response_artifact_id = Some(artifact.id);
     task.status = TaskStatus::Submitted;
@@ -202,7 +210,10 @@ pub async fn submit_task(
     task.transitions.push(TaskTransition {
         from: Some(TaskStatus::InProgress),
         to: TaskStatus::Submitted,
-        note: format!("Response captured as artifact {artifact_id}.", artifact_id = artifact.id),
+        note: format!(
+            "Response captured as artifact {artifact_id}.",
+            artifact_id = artifact.id
+        ),
         occurred_at: now,
     });
 
@@ -244,8 +255,9 @@ pub async fn transition_task(
         return Err(error(
             StatusCode::CONFLICT,
             format!(
-                "Transition from {:?} to {:?} is not allowed.",
-                task.status, input.status
+                "Transition from {from:?} to {to:?} is not allowed.",
+                from = task.status,
+                to = input.status
             ),
         ));
     }
