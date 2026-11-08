@@ -132,3 +132,32 @@ export type DeviceSafetyState = {
   source: "device_controller" | "safety_plc" | "simulator";
   fault_codes?: string[];
 };
+
+
+export type AxonPrincipalKind = "human" | "agent" | "service" | "device";
+
+export type AxonPrincipalRef = {
+  kind: AxonPrincipalKind;
+  id: string;
+};
+
+export type AxonCapability =
+  | "workspace_read" | "workspace_manage"
+  | "agent_register" | "agent_manage"
+  | "artifact_read" | "artifact_create" | "artifact_classify"
+  | "task_read" | "task_create" | "task_assign" | "task_review"
+  | "decision_propose" | "decision_accept" | "audit_read"
+  | "device_enroll" | "device_telemetry_read" | "device_telemetry_write"
+  | "device_command_propose";
+
+/** Authorization grant only; never use this as evidence that a caller is authenticated. */
+export type AxonCapabilityGrant = {
+  grant_id: string;
+  subject: AxonPrincipalRef;
+  workspace_id: string;
+  capabilities: AxonCapability[];
+  issued_by: AxonPrincipalRef;
+  issued_at: string;
+  expires_at: string | null;
+  revoked_at: string | null;
+};
