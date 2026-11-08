@@ -1,6 +1,6 @@
 # Risk Policy
 
-Qapten moves information and proposed work across agent boundaries. Its primary risks are unauthorized disclosure, corrupted context, false provenance, and unintended action.
+Axon moves information and proposed work across agent boundaries. Its primary risks are unauthorized disclosure, corrupted context, false provenance, and unintended action.
 
 ## Security invariants
 
