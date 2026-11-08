@@ -35,6 +35,9 @@
 - [x] Simulator telemetry ingress schema and shared TypeScript request contract.
 - [x] Initial open-source project files: MIT license, contribution guidance, and security policy.
 
+- [x] Initial Python Claude-export to DeepSeek API connector with AXP normalization, explicit approval gating, CLI preview, and unit tests.
+- [x] Python connector Ruff/pytest CI job.
+
 ## Not implemented
 
 - Persistent MongoDB adapter, schema migrations, and durable event/audit storage.
@@ -42,10 +45,18 @@
 - Authentication adapters, verified caller identity, workspace membership persistence, grant issuance/revocation APIs, and route-level authorization enforcement.
 - Artifact content hashing, classification enforcement, context bundle read API, and retention controls.
 - Durable tamper-evident audit storage, verified actor attribution, full decision records, permission management, and revocation UI.
-- Agent provider APIs, browser-assisted capture, webhooks, and autonomous agent execution.
+- Firebase ID-token verification and server-side route authorization.
+- AXON backend API integration for Python transfer persistence and response artifact creation.
+- Direct Claude chat-history API access; current import uses user-authorized exports, not browser scraping.
+- Attachment/image/tool-use transfer and resumable large-context transfer.
+- Additional agent provider APIs, webhooks, and autonomous agent execution.
 - C++/Drogon service and Zig utilities (intentionally deferred until justified).
 - Production deployment, secrets management, and operational monitoring.
 - Published standalone npm package for shared frontend contracts.
+
+## Python connector limitations
+
+The Python connector imports one user-authorized Claude conversation export and calls DeepSeek's API after explicit approval. Its standalone actor ID is provenance metadata, not authentication. The transfer is not yet persisted in the AXON backend, and DeepSeek output is returned locally rather than stored as a task response artifact. Do not commit provider API keys. Production integration must verify Firebase ID tokens and enforce workspace/capability authorization on the backend.
 
 ## Runtime limitations
 
