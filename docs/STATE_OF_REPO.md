@@ -38,7 +38,7 @@ The current API uses an in-process memory store. All records disappear when the 
 
 ## Verification
 
-The GitHub connector was used to commit source files and open the draft PR. It did not run a local compiler or test suite. GitHub Actions checks must complete before this foundation is considered build-verified. The React Native app has not been built on Android or iOS.
+The GitHub Actions run for the current foundation passed all jobs: `cargo fmt --all -- --check`, `cargo clippy --workspace --all-targets -- -D warnings`, `cargo test --workspace`, the React web production build, and the React Native TypeScript check. This verifies CI builds and tests only; no physical Android/iOS build or production deployment has been performed. The React Native app has not been built on Android or iOS.
 
 ## Architecture direction
 
