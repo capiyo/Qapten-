@@ -99,6 +99,16 @@ export type TelemetryEvent = {
   quality?: "measured" | "estimated" | "simulated" | "unknown";
 };
 
+export type SimulatorTelemetryIngest = {
+  event_id: string;
+  sequence: number;
+  observed_at: string;
+  kind: TelemetryKind;
+  frame_id?: string;
+  payload: Record<string, unknown>;
+  quality: "simulated";
+};
+
 export type CommandProposal = {
   proposal_id: string;
   device_id: string;
