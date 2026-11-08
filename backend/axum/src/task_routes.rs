@@ -11,6 +11,8 @@ use chrono::Utc;
 use serde::Serialize;
 use uuid::Uuid;
 
+type TaskResult<T> = Result<T, (StatusCode, Json<TaskApiError>)>;
+
 #[derive(Serialize)]
 pub struct TaskApiError {
     error: String,
@@ -31,7 +33,7 @@ pub async fn create_task(
     State(state): State<AppState>,
     Path(workspace_id): Path<Uuid>,
     Json(input): Json<CreateTask>,
-) -> Result<(StatusCode, Json<Task>), (StatusCode, Json<TaskApiError>)> {
+) -> TaskResult<(StatusCode, Json<Task>)> {
     if !state
         .workspaces
         .read()
@@ -104,7 +106,7 @@ pub async fn create_task(
 pub async fn list_tasks(
     State(state): State<AppState>,
     Path(workspace_id): Path<Uuid>,
-) -> Result<Json<Vec<Task>>, (StatusCode, Json<TaskApiError>)> {
+) -> TaskResult<Json<Vec<Task>>> {
     if !state
         .workspaces
         .read()
@@ -145,7 +147,7 @@ pub async fn transition_task(
     State(state): State<AppState>,
     Path(task_id): Path<Uuid>,
     Json(input): Json<TransitionTask>,
-) -> Result<Json<Task>, (StatusCode, Json<TaskApiError>)> {
+) -> TaskResult<Json<Task>> {
     let note = input.note.trim();
     if note.is_empty() || note.len() > 2_000 {
         return Err(error(
