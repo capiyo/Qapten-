@@ -14,7 +14,7 @@ import { StatusBar } from "expo-status-bar";
 import type { Agent, Artifact, Health, Task, Workspace } from "../../packages/contracts/src";
 
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_QAPTEN_API_URL ?? "http://127.0.0.1:8080";
+const API_BASE_URL = process.env.EXPO_PUBLIC_AXON_API_URL ?? "http://127.0.0.1:8080";
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${API_BASE_URL}${path}`, {
@@ -212,7 +212,7 @@ export default function App() {
       <ScrollView contentContainerStyle={styles.page} keyboardShouldPersistTaps="handled">
         <View style={styles.brandRow}>
           <View style={styles.logo}><Text style={styles.logoText}>Q</Text></View>
-          <Text style={styles.brand}>QAPTEN</Text>
+          <Text style={styles.brand}>AXON</Text>
           <View style={styles.version}><Text style={styles.versionText}>0.1</Text></View>
         </View>
 
