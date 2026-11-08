@@ -56,6 +56,18 @@ The roadmap is outcome-driven. A phase is complete only when its acceptance crit
 
 **Acceptance:** Axon can coordinate analysis and review for Funspot and Qoin without silently changing their repositories or deployment settings.
 
+## Robotics foundation — protocol draft
+
+- [x] Define AXP device registration, telemetry, command proposal, and safety-state schemas.
+- [x] Add shared TypeScript contract types.
+- [x] Add deterministic Rust proposal validation and safety rejection tests.
+- [x] Document the no-actuator boundary and future gateway requirements.
+- [ ] Add cryptographic device enrollment, durable replay/idempotency storage, and append-only robotics audit events.
+- [ ] Add simulator and hardware-in-the-loop test harness before any physical integration.
+- [ ] Implement a separately secured device gateway only after safety review.
+
+**Acceptance:** AI-generated intent remains non-executable; device identity, authorization, freshness, sequence, interlocks, emergency-stop state, and configured motion bounds are checked before any future dispatch authorization. No hardware dispatch is part of this phase.
+
 ## Explicit non-goals for the first release
 
 - A model marketplace or benchmark leaderboard.
