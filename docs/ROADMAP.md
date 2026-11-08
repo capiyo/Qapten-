@@ -10,8 +10,10 @@ The roadmap is outcome-driven. A phase is complete only when its acceptance crit
 - [x] Add CI workflow for Rust formatting, Clippy, Rust tests, web build, and mobile TypeScript check (all jobs passed in the verified run).
 
 ## Phase 1 — Two-agent manual collaboration
-- [ ] Workspace and membership model.
-- [ ] Human authentication integration and workspace authorization.
+- [x] Define principal types and workspace-scoped capability grant policy primitives (policy engine only; no authentication).
+- [ ] Workspace membership persistence and grant issuance/revocation workflows.
+- [ ] Human authentication integration and verified-principal adapter.
+- [ ] Enforce capabilities at every workspace/task/artifact route.
 - [ ] Manual agent registration (no provider credentials).
 - [ ] Artifact import with provenance, preview, classification, and content limits.
 - [ ] Context bundle manifest and recipient-specific sharing.
