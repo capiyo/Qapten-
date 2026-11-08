@@ -16,6 +16,6 @@
     "expires_at":{"type":"string","format":"date-time"},
     "idempotency_key":{"type":"string","minLength":16,"maxLength":256},
     "reason":{"type":"string","minLength":1,"maxLength":1000},
-    "simulation_only":{"type":"boolean","default":true}
+    "simulation_only":{"const":true,"default":true}
   }
 }
