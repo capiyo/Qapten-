@@ -27,6 +27,9 @@
 - [x] AXP robotics device-registration, telemetry, non-executable command-proposal, and safety-state schemas.
 - [x] Shared TypeScript robotics contracts and pure Rust proposal validation tests.
 - [x] Robotics safety boundary documented; no hardware dispatch or actuator endpoint.
+- [x] Proposal validation rejects stale/future safety-state observations.
+- [x] Development-only simulator telemetry API with simulated-source enforcement, event deduplication, monotonic per-device sequences, freshness checks, and 500-event per-device in-memory retention.
+- [x] Simulator telemetry ingress schema and shared TypeScript request contract.
 - [x] Initial open-source project files: MIT license, contribution guidance, and security policy.
 
 ## Not implemented
@@ -43,11 +46,11 @@
 
 ## Runtime limitations
 
-The current API uses an in-process memory store. All records disappear when the process exits. It has no authentication or real authorization. It refuses non-loopback binding by default; the explicit override is for isolated development only. Do not expose it to a network or use it for sensitive information.
+The current API uses an in-process memory store. All records disappear when the process exits. Simulator telemetry is bounded to 500 retained events per device; event-ID deduplication is limited to that retained window. This is not durable replay protection. It has no authentication or real authorization. It refuses non-loopback binding by default; the explicit override is for isolated development only. Do not expose it to a network or use it for sensitive information.
 
 ## Verification
 
-GitHub Actions run [42489120800](https://github.com/capiyo/Qapten-/actions/runs/42489120800) passed all three jobs on commit `e9490797707b484782db800aa4de55c561ac8ff2`: Rust formatting, Clippy, and tests; React web production build; and React Native TypeScript validation. The robotics validator and telemetry model are included in that run. This verifies CI builds and tests only; no physical Android/iOS build, hardware integration, or production deployment has been performed.
+GitHub Actions run [42491980806](https://github.com/capiyo/Qapten-/actions/runs/42491980806) passed all three jobs on commit `417224d2fb9d8f3f5e2e578bc933a743920ebf57`: Rust formatting, Clippy, and tests; React web production build; and React Native TypeScript validation. The simulator telemetry API, freshness validation, and protocol contracts are included in that run. This verifies CI builds and tests only; no physical Android/iOS build, hardware integration, or production deployment has been performed.
 
 ## Architecture direction
 
