@@ -91,6 +91,8 @@ export default function App() {
 
   useEffect(() => {
     if (selected) {
+      setSelectedArtifactIds([]);
+      setResponseDrafts({});
       refreshWorkspace(selected).catch(cause => setError(cause instanceof Error ? cause.message : "Could not load workspace"));
     }
   }, [selected?.id]);
