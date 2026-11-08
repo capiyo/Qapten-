@@ -13,6 +13,8 @@ use chrono::Utc;
 use serde::Serialize;
 use uuid::Uuid;
 
+type ApiResult<T> = Result<T, (StatusCode, Json<ApiError>)>;
+
 #[derive(Serialize)]
 pub struct Health {
     status: &'static str,
@@ -47,7 +49,7 @@ fn bad_request(message: impl Into<String>) -> (StatusCode, Json<ApiError>) {
 pub async fn create_workspace(
     State(state): State<AppState>,
     Json(input): Json<CreateWorkspace>,
-) -> Result<(StatusCode, Json<Workspace>), (StatusCode, Json<ApiError>)> {
+) -> ApiResult<(StatusCode, Json<Workspace>)> {
     let name = input.name.trim();
     if name.is_empty() || name.len() > 120 {
         return Err(bad_request(
@@ -79,7 +81,7 @@ pub async fn register_agent(
     State(state): State<AppState>,
     Path(workspace_id): Path<Uuid>,
     Json(input): Json<RegisterAgent>,
-) -> Result<(StatusCode, Json<Agent>), (StatusCode, Json<ApiError>)> {
+) -> ApiResult<(StatusCode, Json<Agent>)> {
     if !state
         .workspaces
         .read()
@@ -123,7 +125,7 @@ pub async fn create_artifact(
     State(state): State<AppState>,
     Path(workspace_id): Path<Uuid>,
     Json(input): Json<CreateArtifact>,
-) -> Result<(StatusCode, Json<Artifact>), (StatusCode, Json<ApiError>)> {
+) -> ApiResult<(StatusCode, Json<Artifact>)> {
     if !state
         .workspaces
         .read()
@@ -229,7 +231,7 @@ mod tests {
 pub async fn list_agents(
     State(state): State<AppState>,
     Path(workspace_id): Path<Uuid>,
-) -> Result<Json<Vec<Agent>>, (StatusCode, Json<ApiError>)> {
+) -> ApiResult<Json<Vec<Agent>>> {
     if !state
         .workspaces
         .read()
@@ -259,7 +261,7 @@ pub async fn list_agents(
 pub async fn list_artifacts(
     State(state): State<AppState>,
     Path(workspace_id): Path<Uuid>,
-) -> Result<Json<Vec<Artifact>>, (StatusCode, Json<ApiError>)> {
+) -> ApiResult<Json<Vec<Artifact>>> {
     if !state
         .workspaces
         .read()
