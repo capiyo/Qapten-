@@ -27,6 +27,8 @@
 - [x] AXP robotics device-registration, telemetry, non-executable command-proposal, and safety-state schemas.
 - [x] Shared TypeScript robotics contracts and pure Rust proposal validation tests.
 - [x] Robotics safety boundary documented; no hardware dispatch or actuator endpoint.
+- [x] Workspace-scoped identity and capability grant domain primitives with deny-by-default policy evaluation and expiry/revocation tests.
+- [x] AXP identity grant schema and shared TypeScript principal/capability contracts.
 - [x] Proposal validation rejects stale/future safety-state observations.
 - [x] Development-only simulator telemetry API with simulated-source enforcement, event deduplication, monotonic per-device sequences, freshness checks, and 500-event per-device in-memory retention.
 - [x] Simulator telemetry ingress schema and shared TypeScript request contract.
@@ -36,7 +38,7 @@
 
 - Persistent MongoDB adapter, schema migrations, and durable event/audit storage.
 - Cryptographic device enrollment, persistent replay/idempotency enforcement, and device gateway.
-- Authentication, user identity, workspace membership, and real authorization.
+- Authentication adapters, verified caller identity, workspace membership persistence, grant issuance/revocation APIs, and route-level authorization enforcement.
 - Artifact content hashing, classification enforcement, context bundle read API, and retention controls.
 - Full decision records, audit timeline, permission management, and revocation UI.
 - Agent provider APIs, browser-assisted capture, webhooks, and autonomous agent execution.
@@ -46,7 +48,7 @@
 
 ## Runtime limitations
 
-The current API uses an in-process memory store. All records disappear when the process exits. Simulator telemetry is bounded to 500 retained events per device; event-ID deduplication is limited to that retained window. This is not durable replay protection. It has no authentication or real authorization. It refuses non-loopback binding by default; the explicit override is for isolated development only. Do not expose it to a network or use it for sensitive information.
+The current API uses an in-process memory store. All records disappear when the process exits. Simulator telemetry is bounded to 500 retained events per device; event-ID deduplication is limited to that retained window. This is not durable replay protection. It has no authentication or route-level authorization enforcement. The identity module evaluates grants only for principals supplied by a future trusted authentication adapter; it does not establish identity. It refuses non-loopback binding by default; the explicit override is for isolated development only. Do not expose it to a network or use it for sensitive information.
 
 ## Verification
 
