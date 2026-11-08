@@ -429,6 +429,33 @@ mod tests {
     }
 
     #[test]
+    fn simulator_telemetry_rejects_oversized_payload_and_invalid_frame() {
+        let now = Utc::now();
+        let mut input = TelemetryIngest {
+            event_id: "event-size".into(),
+            sequence: 1,
+            observed_at: now,
+            kind: TelemetryKind::Diagnostic,
+            frame_id: Some(" ".into()),
+            payload: serde_json::Map::new(),
+            quality: TelemetryQuality::Simulated,
+        };
+        assert_eq!(
+            validate_simulated_telemetry(&input, "sim-1", None, now, 30, 2),
+            Err(ProposalRejection::InvalidTelemetryEvent)
+        );
+        input.frame_id = None;
+        input.payload.insert(
+            "large".into(),
+            serde_json::Value::String("x".repeat(65 * 1024)),
+        );
+        assert_eq!(
+            validate_simulated_telemetry(&input, "sim-1", None, now, 30, 2),
+            Err(ProposalRejection::TelemetryPayloadTooLarge)
+        );
+    }
+
+    #[test]
     fn simulator_telemetry_requires_fresh_monotonic_events() {
         let now = Utc::now();
         let input = TelemetryIngest {
