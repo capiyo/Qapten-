@@ -31,6 +31,10 @@ pub fn app(state: AppState) -> Router {
             get(task_routes::list_tasks).post(task_routes::create_task),
         )
         .route(
+            "/api/v1/tasks/:task_id/submit",
+            post(task_routes::submit_task),
+        )
+        .route(
             "/api/v1/tasks/:task_id/transitions",
             post(task_routes::transition_task),
         )
