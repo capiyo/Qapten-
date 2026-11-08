@@ -20,7 +20,7 @@
 - [x] Original Axon SVG identity mark shared by web and desktop; platform icon generation wired into the desktop packaging script.
 - [x] Tauri setup starts the Axum API inside the desktop process and gracefully stops it when the application exits.
 - [x] Local API binds to `127.0.0.1:8080`; requests are limited by a trusted Tauri/Vite origin allowlist, and the UI retries transient startup connection failures.
-- [x] Desktop CI job added for Tauri icon generation, web build in desktop mode, Rust formatting, and desktop host compilation (latest run pending).
+- [x] Desktop CI job validates Tauri icon generation, desktop-mode web build, Rust formatting, and desktop host compilation; all five jobs passed on commit `7497521579dbe310e009a4ed87c6053e1cecff71`.
 
 ## Desktop limitations
 
@@ -51,7 +51,7 @@ The Tauri shell and embedded API runtime are committed on `foundation/axon-deskt
 
 ## Not implemented
 
-- Persistent MongoDB adapter, schema migrations, and durable event/audit storage.
+- Persistent local SQLite adapter for desktop, server-side MongoDB adapter, schema migrations, and durable event/audit storage.
 - Cryptographic device enrollment, persistent replay/idempotency enforcement, and device gateway.
 - Authentication adapters, verified caller identity, workspace membership persistence, grant issuance/revocation APIs, and route-level authorization enforcement.
 - Artifact content hashing, classification enforcement, context bundle read API, and retention controls.
@@ -75,12 +75,12 @@ The current API uses an in-process memory store. All records, including the audi
 
 ## Verification
 
-The last verified core-foundation run [42500672881](https://github.com/capiyo/Qapten-/actions/runs/42500672881) passed Rust, web, mobile, and Python checks on its then-current commit; it predates the Tauri desktop integration. Desktop branch run [42509094589](https://github.com/capiyo/Qapten-/actions/runs/42509094589) is queued for commit `20a88b945250481e0506c612ffa6ecf62f0aa838`; no result is claimed yet. The Python suite verifies Claude export normalization, AXP provenance and payload hashing, preview-only behavior, explicit transfer approval, and context-size validation. No physical Android/iOS build, hardware integration, native installer verification, or production deployment has been performed.
+The latest desktop branch run [42513876839](https://github.com/capiyo/Qapten-/actions/runs/42513876839) passed all five jobs on commit `7497521579dbe310e009a4ed87c6053e1cecff71`: Python connector tests, Rust checks, Tauri desktop shell check, mobile TypeScript check, and web typecheck/build. The Python suite verifies Claude export normalization, AXP provenance and payload hashing, preview-only behavior, explicit transfer approval, and context-size validation. No physical Android/iOS build, hardware integration, native installer verification, or production deployment has been performed.
 
 ## Architecture direction
 
 - `frontend/` is the client layer: web, mobile, and frontend-only shared TypeScript contracts.
 - `backend/` is the server layer: Axum currently owns API behavior and authoritative domain state.
 - `contracts/` is the language-neutral, versioned protocol boundary.
-- Axum remains the initial orchestration authority. MongoDB is the planned persistence layer, subject to schema and transaction design.
+- Axum remains the initial orchestration authority. SQLite is the planned embedded desktop store; MongoDB is the planned shared/server persistence layer. Both require explicit migrations and transaction design.
 - Drogon and Zig remain evidence-driven extension points, not duplicated orchestration services.
