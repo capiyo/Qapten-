@@ -13,7 +13,7 @@ use uuid::Uuid;
 
 type TaskResult<T> = Result<T, (StatusCode, Json<TaskApiError>)>;
 
-#[derive(Serialize)]
+#[derive(Debug, Serialize)]
 pub struct TaskApiError {
     error: String,
     current_version: Option<u64>,
