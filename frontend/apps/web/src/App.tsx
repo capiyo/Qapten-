@@ -77,6 +77,8 @@ export default function App() {
 
   useEffect(() => {
     if (selected) {
+      setSelectedArtifactIds([]);
+      setResponseDrafts({});
       void refreshWorkspace(selected).catch(cause => setError(cause instanceof Error ? cause.message : "Could not load workspace."));
     } else {
       setAgents([]);
@@ -150,6 +152,7 @@ export default function App() {
       });
       setTaskTitle("");
       setTaskObjective("");
+      setSelectedArtifactIds([]);
       await refreshWorkspace(selected);
     });
   }
