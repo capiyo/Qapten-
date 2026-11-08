@@ -61,6 +61,8 @@ The roadmap is outcome-driven. A phase is complete only when its acceptance crit
 - [x] Define AXP device registration, telemetry, command proposal, and safety-state schemas.
 - [x] Add shared TypeScript contract types.
 - [x] Add deterministic Rust proposal validation and safety rejection tests.
+- [x] Reject stale or future safety-state observations.
+- [x] Add simulator-only telemetry ingress with event deduplication, monotonic sequence checks, freshness limits, bounded retention, and shared request contract.
 - [x] Document the no-actuator boundary and future gateway requirements.
 - [ ] Add cryptographic device enrollment, durable replay/idempotency storage, and append-only robotics audit events.
 - [ ] Add simulator and hardware-in-the-loop test harness before any physical integration.
