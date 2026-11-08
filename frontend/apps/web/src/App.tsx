@@ -1,21 +1,8 @@
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 
-type Workspace = { id: string; name: string; created_at: string };
-type Agent = { id: string; display_name: string; provider: string; connection_mode: string };
-type Artifact = { id: string; title: string; content: string; source_agent_id: string | null; captured_at: string };
-type Task = {
-  id: string;
-  title: string;
-  objective: string;
-  assignee_agent_id: string;
-  context_artifact_ids: string[];
-  status: string;
-  version: number;
-  response_artifact_id: string | null;
-  transitions: { from: string | null; to: string; note: string; occurred_at: string }[];
-};
-type Health = { status: string; storage: string; authentication: string };
+import type { Agent, Artifact, Health, Task, Workspace } from "../../../packages/contracts/src";
+
 
 const api = async <T,>(path: string, init?: RequestInit): Promise<T> => {
   const response = await fetch(path, {
