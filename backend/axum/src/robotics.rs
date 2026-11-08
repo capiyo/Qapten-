@@ -60,8 +60,12 @@ pub enum ProposedOperation {
 }
 
 /// An intent record, never a command to an actuator.
+fn default_simulation_only() -> bool {
+    true
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
-fn default_simulation_only() -> bool {\n    true\n}\n\n#[derive(Debug, Clone, Serialize, Deserialize)]\npub struct CommandProposal {
+pub struct CommandProposal {
     pub proposal_id: String,
     pub device_id: String,
     pub requester_id: String,
