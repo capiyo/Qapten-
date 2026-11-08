@@ -14,7 +14,7 @@ import { StatusBar } from "expo-status-bar";
 type Workspace = { id: string; name: string; created_at: string };
 type Agent = { id: string; display_name: string; provider: string };
 type Artifact = { id: string; title: string; content: string };
-type Task = { id: string; title: string; objective: string; status: string; version: number };
+type Task = { id: string; title: string; objective: string; status: string; version: number; response_artifact_id: string | null };
 type Health = { status: string; storage: string; authentication: string };
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_QAPTEN_API_URL ?? "http://127.0.0.1:8080";
@@ -59,6 +59,8 @@ export default function App() {
   const [taskTitle, setTaskTitle] = useState("");
   const [taskObjective, setTaskObjective] = useState("");
   const [assignee, setAssignee] = useState("");
+  const [selectedArtifactIds, setSelectedArtifactIds] = useState<string[]>([]);
+  const [responseDrafts, setResponseDrafts] = useState<Record<string, string>>({});
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -153,7 +155,7 @@ export default function App() {
           title: taskTitle.trim(),
           objective: taskObjective.trim(),
           assignee_agent_id: assignee,
-          context_artifact_ids: []
+          context_artifact_ids: selectedArtifactIds
         })
       });
       setTaskTitle("");
@@ -207,8 +209,29 @@ export default function App() {
                   <Text style={styles.rowTitle}>{agent.display_name}</Text><Text style={styles.rowMeta}>{agent.provider}</Text>
                 </Pressable>
               ))}
+              <Text style={styles.fieldLabel}>ATTACH CONTEXT</Text>
+              {artifacts.map(artifact => (
+                <Pressable key={artifact.id} onPress={() => setSelectedArtifactIds(current => current.includes(artifact.id) ? current.filter(id => id !== artifact.id) : [...current, artifact.id])} style={styles.contextChoice}>
+                  <Text style={styles.rowTitle}>{selectedArtifactIds.includes(artifact.id) ? "☑" : "□"}  {artifact.title}</Text>
+                </Pressable>
+              ))}
               <ActionButton label="Create handoff" onPress={createTask} disabled={!taskTitle.trim() || !taskObjective.trim() || !assignee || busy} />
-              {tasks.map(task => <View key={task.id} style={styles.listRow}><Text style={styles.rowTitle}>{task.title}</Text><Text style={styles.rowMeta}>{task.status.replaceAll("_", " ")} · version {task.version}</Text><Text style={styles.rowMeta}>{task.objective}</Text></View>)}
+              {tasks.map(task => (
+                <View key={task.id} style={styles.listRow}>
+                  <Text style={styles.rowTitle}>{task.title}</Text>
+                  <Text style={styles.rowMeta}>{task.status.replaceAll("_", " ")} · version {task.version}</Text>
+                  <Text style={styles.rowMeta}>{task.objective}</Text>
+                  {task.status === "in_progress" ? (
+                    <>
+                      <TextInput value={responseDrafts[task.id] ?? ""} onChangeText={value => setResponseDrafts(current => ({ ...current, [task.id]: value }))} placeholder="Paste the assistant response…" style={[styles.input, styles.multiline]} multiline textAlignVertical="top" />
+                      <ActionButton label="Submit response" onPress={() => void submitTaskResponse(task)} disabled={!(responseDrafts[task.id] ?? "").trim() || busy} />
+                    </>
+                  ) : null}
+                  {task.status === "review_required" ? <ActionButton label="Request changes" onPress={() => void advanceTask(task, "changes_requested")} disabled={busy} secondary /> : null}
+                  {nextTaskStatus[task.status] ? <ActionButton label={`Advance to ${nextTaskStatus[task.status].replaceAll("_", " ")}`} onPress={() => void advanceTask(task, nextTaskStatus[task.status])} disabled={busy} secondary /> : null}
+                  {task.response_artifact_id ? <Text style={styles.responseNote}>Response artifact linked · {task.response_artifact_id.slice(0, 8)}</Text> : null}
+                </View>
+              ))}
               {tasks.length === 0 && <Text style={styles.muted}>No handoffs yet.</Text>}
             </View>
           </>
@@ -276,6 +299,8 @@ const styles = StyleSheet.create({
   secondaryButtonText: { color: "#1d6be5" },
   disabled: { opacity: 0.45 },
   listRow: { borderTopWidth: 1, borderTopColor: "#edf0f3", paddingVertical: 11, marginTop: 7 },
+  contextChoice: { paddingVertical: 7, paddingHorizontal: 9, borderRadius: 9, backgroundColor: "#f8fafc", marginBottom: 5 },
+  responseNote: { color: "#23855d", fontSize: 10, marginTop: 8 },
   rowTitle: { color: "#344656", fontSize: 12, fontWeight: "700" },
   rowMeta: { color: "#8995a0", fontSize: 10, lineHeight: 15, marginTop: 4 },
   muted: { color: "#98a3ae", fontSize: 11, lineHeight: 17, marginTop: 10 },
