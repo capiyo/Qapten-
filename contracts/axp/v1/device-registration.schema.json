@@ -1,0 +1,17 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "$id":"urn:axon:axp:v1:device-registration",
+  "title":"Axon Device Registration","type":"object","additionalProperties":false,
+  "required":["device_id","workspace_id","device_type","manufacturer","model","identity_key_fingerprint","capabilities","registered_at"],
+  "properties":{
+    "device_id":{"type":"string","minLength":1,"maxLength":128,"pattern":"^[A-Za-z0-9._:-]+$"},
+    "workspace_id":{"type":"string","minLength":1,"maxLength":128},
+    "device_type":{"enum":["mobile_robot","robot_arm","drone","sensor","simulator","other"]},
+    "manufacturer":{"type":"string","minLength":1,"maxLength":120},
+    "model":{"type":"string","minLength":1,"maxLength":120},
+    "identity_key_fingerprint":{"type":"string","minLength":32,"maxLength":256},
+    "capabilities":{"type":"array","items":{"type":"string","minLength":1,"maxLength":80},"uniqueItems":true,"maxItems":64},
+    "firmware_version":{"type":"string","maxLength":80},
+    "registered_at":{"type":"string","format":"date-time"}
+  }
+}
