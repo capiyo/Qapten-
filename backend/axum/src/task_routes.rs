@@ -96,6 +96,7 @@ pub async fn create_task(
     };
 
     state.tasks.write().await.insert(task.id, task.clone());
+    state.audit.write().await.append(Some(workspace_id), "task.created", "task", task.id.to_string(), serde_json::json!({"assignee_agent_id": task.assignee_agent_id, "context_artifact_count": task.context_artifact_ids.len()}));
     Ok((StatusCode::CREATED, Json(task)))
 }
 
@@ -203,6 +204,8 @@ pub async fn submit_task(
         occurred_at: now,
     });
 
+    state.audit.write().await.append(Some(task.workspace_id), "task.response_submitted", "task", task.id.to_string(), serde_json::json!({"response_artifact_id": artifact.id, "version": task.version}));
+
     Ok(Json(TaskSubmission {
         task: task.clone(),
         artifact,
@@ -260,6 +263,7 @@ pub async fn transition_task(
         occurred_at: now,
     });
 
+    state.audit.write().await.append(Some(task.workspace_id), "task.transitioned", "task", task.id.to_string(), serde_json::json!({"to": task.status, "version": task.version}));
     Ok(Json(task.clone()))
 }
 
