@@ -1,6 +1,6 @@
 # Shared frontend contracts
 
-This package contains TypeScript representations of the Qapten API payloads consumed by both frontend clients.
+This package contains TypeScript representations of the Axon API payloads consumed by both frontend clients.
 
 - Web and mobile import from this package instead of defining parallel copies of API entities.
 - The language-neutral, versioned protocol source of truth remains under `/contracts`.
