@@ -41,7 +41,8 @@ export default function App() {
   const [artifactContent, setArtifactContent] = useState("");
   const [taskTitle, setTaskTitle] = useState("");
   const [taskObjective, setTaskObjective] = useState("");
-  const [assignee, setAssignee] = useState("");\n  const [selectedArtifactIds, setSelectedArtifactIds] = useState<string[]>([]);
+  const [assignee, setAssignee] = useState("");
+  const [selectedArtifactIds, setSelectedArtifactIds] = useState<string[]>([]);
   const [health, setHealth] = useState<Health | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
