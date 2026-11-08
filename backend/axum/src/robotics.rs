@@ -165,6 +165,7 @@ pub enum ProposalRejection {
     InvalidTelemetryEvent,
     StaleTelemetry,
     FutureTelemetry,
+    TelemetryPayloadTooLarge,
 }
 
 pub fn validate_proposal(
@@ -254,13 +255,17 @@ pub fn validate_simulated_telemetry(
 ) -> Result<(), ProposalRejection> {
     if input.event_id.trim().is_empty()
         || input.event_id.len() > 128
-        || input.payload.len() > 128
-        || input
-            .frame_id
-            .as_ref()
-            .is_some_and(|frame| frame.len() > 128)
+        || input.frame_id.as_ref().is_some_and(|frame| frame.trim().is_empty() || frame.len() > 128)
     {
         return Err(ProposalRejection::InvalidTelemetryEvent);
+    }
+    if input.payload.len() > 128
+        || serde_json::to_vec(&input.payload)
+            .map_err(|_| ProposalRejection::InvalidTelemetryEvent)?
+            .len()
+            > 64 * 1024
+    {
+        return Err(ProposalRejection::TelemetryPayloadTooLarge);
     }
     if path_device_id.trim().is_empty() || path_device_id.len() > 128 {
         return Err(ProposalRejection::TelemetryDeviceMismatch);
