@@ -6,7 +6,8 @@ body { margin: 0; min-width: 320px; }
 button, input { font: inherit; }
 .shell { min-height: 100vh; display: flex; }
 .rail { width: 76px; flex: 0 0 76px; border-right: 1px solid #e9edf0; display: flex; flex-direction: column; align-items: center; padding: 24px 0; background: #fff; }
-.brand-mark img { width: 25px; height: 25px; display: block; }\n.brand-mark { width: 38px; height: 38px; border-radius: 13px; display: grid; place-items: center; background: #1d6be5; color: white; font: 800 21px Manrope; box-shadow: 0 7px 18px #1d6be52b; }
+.brand-mark img { width: 25px; height: 25px; display: block; }
+.brand-mark { width: 38px; height: 38px; border-radius: 13px; display: grid; place-items: center; background: #1d6be5; color: white; font: 800 21px Manrope; box-shadow: 0 7px 18px #1d6be52b; }
 .rail-label, .kicker, .eyebrow, .count, .card-foot, footer, .rail-bottom { font: 500 10px "DM Mono", monospace; letter-spacing: .11em; }
 .rail-label { writing-mode: vertical-rl; transform: rotate(180deg); color: #9ba5af; margin-top: 42px; }
 .rail-dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 22px; background: #1d6be5; box-shadow: 0 0 0 5px #e9f1ff; }
