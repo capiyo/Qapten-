@@ -1,13 +1,13 @@
 {
   "expo": {
-    "name": "Qapten",
-    "slug": "qapten",
+    "name": "Axon",
+    "slug": "axon",
     "version": "0.1.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "ios": { "supportsTablet": true },
     "android": {
-      "package": "co.qapten.mobile",
+      "package": "co.axon.mobile",
       "adaptiveIcon": {
         "backgroundColor": "#eaf1fc"
       }
