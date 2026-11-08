@@ -18,7 +18,7 @@ The server binds to `127.0.0.1:8080` by default.
 - `GET /api/v1/workspaces`
 - `POST /api/v1/workspaces` — JSON: `{"name":"My workspace"}`
 - `POST /api/v1/workspaces/{workspace_id}/agents` — JSON: `{"display_name":"Reviewer","provider":"claude"}`
-- `POST /api/v1/workspaces/{workspace_id}/artifacts` — JSON: `{"title":"Investigation","content":"Captured response","source_agent_id":null}`
+- `POST /api/v1/workspaces/{workspace_id}/artifacts` — JSON: `{"title":"Investigation","content":"Captured response","source_agent_id":null}`\n- `GET /api/v1/workspaces/{workspace_id}/tasks`\n- `POST /api/v1/workspaces/{workspace_id}/tasks` — JSON: `{"title":"Review the fixture status bug","objective":"Inspect the event timing logic and report evidence.","assignee_agent_id":"<agent-uuid>","context_artifact_ids":[]}`\n- `POST /api/v1/tasks/{task_id}/transitions` — JSON: `{"expected_version":1,"status":"acknowledged","note":"I accept this handoff."}`
 
 ## Important limitations
 
