@@ -1,9 +1,6 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use std::{
-    net::TcpListener as StdTcpListener,
-    sync::Mutex,
-};
+use std::{net::TcpListener as StdTcpListener, sync::Mutex};
 use tauri::{Manager, RunEvent};
 use tokio::sync::oneshot;
 
