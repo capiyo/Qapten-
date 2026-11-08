@@ -1,5 +1,5 @@
 use crate::{
-    model::{CreateTask, Task, TaskStatus, TaskTransition, TransitionTask},
+    model::{Artifact, CreateTask, SubmitTask, Task, TaskStatus, TaskTransition, TransitionTask},
     AppState,
 };
 use axum::{
@@ -87,6 +87,7 @@ pub async fn create_task(
         objective: objective.to_owned(),
         assignee_agent_id: input.assignee_agent_id,
         context_artifact_ids: input.context_artifact_ids,
+        response_artifact_id: None,
         status: TaskStatus::Offered,
         version: 1,
         created_at: now,
@@ -141,6 +142,74 @@ fn allowed_transition(from: &TaskStatus, to: &TaskStatus) -> bool {
             | (ChangesRequested, InProgress | Cancelled)
             | (Accepted, Completed)
     )
+}
+
+#[derive(Serialize)]
+pub struct TaskSubmission {
+    pub task: Task,
+    pub artifact: Artifact,
+}
+
+pub async fn submit_task(
+    State(state): State<AppState>,
+    Path(task_id): Path<Uuid>,
+    Json(input): Json<SubmitTask>,
+) -> TaskResult<Json<TaskSubmission>> {
+    let title = input.title.trim();
+    let content = input.content.trim();
+    if title.is_empty() || title.len() > 200 || content.is_empty() || content.len() > 512_000 {
+        return Err(error(
+            StatusCode::BAD_REQUEST,
+            "Response title must be 1–200 characters and response content 1–512000 bytes.",
+        ));
+    }
+
+    let mut tasks = state.tasks.write().await;
+    let Some(task) = tasks.get_mut(&task_id) else {
+        return Err(error(StatusCode::NOT_FOUND, "Task not found."));
+    };
+    if task.version != input.expected_version {
+        return Err((
+            StatusCode::CONFLICT,
+            Json(TaskApiError {
+                error: "Task version conflict. Reload the task before retrying.".into(),
+                current_version: Some(task.version),
+            }),
+        ));
+    }
+    if task.status != TaskStatus::InProgress {
+        return Err(error(
+            StatusCode::CONFLICT,
+            "A response can only be submitted while the task is in progress.",
+        ));
+    }
+
+    let now = Utc::now();
+    let artifact = Artifact {
+        id: Uuid::new_v4(),
+        workspace_id: task.workspace_id,
+        title: title.to_owned(),
+        content: content.to_owned(),
+        source_agent_id: Some(task.assignee_agent_id),
+        captured_at: now,
+    };
+    state.artifacts.write().await.insert(artifact.id, artifact.clone());
+
+    task.response_artifact_id = Some(artifact.id);
+    task.status = TaskStatus::Submitted;
+    task.version += 1;
+    task.updated_at = now;
+    task.transitions.push(TaskTransition {
+        from: Some(TaskStatus::InProgress),
+        to: TaskStatus::Submitted,
+        note: format!("Response captured as artifact {}.", artifact.id),
+        occurred_at: now,
+    });
+
+    Ok(Json(TaskSubmission {
+        task: task.clone(),
+        artifact,
+    }))
 }
 
 pub async fn transition_task(
