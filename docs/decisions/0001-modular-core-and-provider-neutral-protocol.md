@@ -5,7 +5,7 @@
 
 ## Context
 
-Qapten must connect agents that differ in provider, model, interface, and available integration method. Prematurely splitting every responsibility into independent services would increase operational complexity before the collaboration workflow is proven.
+Axon must connect agents that differ in provider, model, interface, and available integration method. Prematurely splitting every responsibility into independent services would increase operational complexity before the collaboration workflow is proven.
 
 ## Decision
 
