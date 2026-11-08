@@ -1,4 +1,4 @@
-use crate::model::{Agent, Artifact, Workspace};
+use crate::model::{Agent, Artifact, Task, Workspace};
 use std::{collections::HashMap, sync::Arc};
 use tokio::sync::RwLock;
 use uuid::Uuid;
@@ -7,5 +7,5 @@ use uuid::Uuid;
 pub struct AppState {
     pub workspaces: Arc<RwLock<HashMap<Uuid, Workspace>>>,
     pub agents: Arc<RwLock<HashMap<Uuid, Agent>>>,
-    pub artifacts: Arc<RwLock<HashMap<Uuid, Artifact>>>,
+    pub artifacts: Arc<RwLock<HashMap<Uuid, Artifact>>>,\n    pub tasks: Arc<RwLock<HashMap<Uuid, Task>>>,
 }
