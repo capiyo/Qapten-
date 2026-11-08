@@ -202,7 +202,7 @@ pub async fn submit_task(
     task.transitions.push(TaskTransition {
         from: Some(TaskStatus::InProgress),
         to: TaskStatus::Submitted,
-        note: format!("Response captured as artifact {}.", artifact.id),
+        note: format!("Response captured as artifact {artifact_id}.", artifact_id = artifact.id),
         occurred_at: now,
     });
 
