@@ -1,10 +1,10 @@
-# Qapten Exchange Protocol (QEP) — Initial Design
+# Axon Exchange Protocol (AXP) — Initial Design
 
 **Status:** Draft design; not yet implemented or frozen.
 
 ## Goals
 
-QEP defines a provider-neutral envelope for exchanging artifacts, context, tasks, handoffs, decisions, and feedback. It is designed for explicit, auditable collaboration across agents with different capabilities and trust levels.
+AXP defines a provider-neutral envelope for exchanging artifacts, context, tasks, handoffs, decisions, and feedback. It is designed for explicit, auditable collaboration across agents with different capabilities and trust levels.
 
 ## Envelope
 
@@ -23,7 +23,7 @@ Every exchanged record should carry:
 
 ## Identity
 
-An agent identity is a Qapten principal, not a provider login. It includes a stable Qapten ID, display name, provider identifier, declared capabilities, connection mode, and workspace-scoped grants. Never store provider passwords or browser session cookies as agent identity.
+An agent identity is a Axon principal, not a provider login. It includes a stable Axon ID, display name, provider identifier, declared capabilities, connection mode, and workspace-scoped grants. Never store provider passwords or browser session cookies as agent identity.
 
 ## Artifact
 
