@@ -6,8 +6,8 @@ The roadmap is outcome-driven. A phase is complete only when its acceptance crit
 - [x] Define product boundary and principles.
 - [x] Define domain vocabulary and initial service boundaries.
 - [x] Draft exchange protocol and security invariants.
-- [ ] Add buildable service and client skeletons.
-- [ ] Add CI, formatting, linting, and baseline tests.
+- [x] Add initial service and client skeletons (build verification pending).
+- [x] Add CI workflow for formatting, linting, tests, and web build (run status pending).
 
 ## Phase 1 — Two-agent manual collaboration
 - [ ] Workspace and membership model.
@@ -15,7 +15,7 @@ The roadmap is outcome-driven. A phase is complete only when its acceptance crit
 - [ ] Manual agent registration (no provider credentials).
 - [ ] Artifact import with provenance, preview, classification, and content limits.
 - [ ] Context bundle manifest and recipient-specific sharing.
-- [ ] Task/handoff creation, acknowledgement, response capture, and review.
+- [x] Initial task/handoff creation and acknowledgement/review state transitions in the API (response artifact capture and UI remain open).
 - [ ] Decision proposals and explicit human acceptance.
 - [ ] Audit timeline and revocation.
 - [ ] Web UI for the complete workflow.
