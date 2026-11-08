@@ -23,6 +23,7 @@ The server binds to `127.0.0.1:8080` by default.
 - `POST /api/v1/workspaces/{workspace_id}/artifacts` — JSON: `{"title":"Investigation","content":"Captured response","source_agent_id":null}`
 - `GET /api/v1/workspaces/{workspace_id}/tasks`
 - `POST /api/v1/workspaces/{workspace_id}/tasks` — JSON: `{"title":"Review the fixture status bug","objective":"Inspect the event timing logic and report evidence.","assignee_agent_id":"<agent-uuid>","context_artifact_ids":[]}`
+- `POST /api/v1/tasks/{task_id}/submit` — captures a response as a linked artifact while the task is in progress.
 - `POST /api/v1/tasks/{task_id}/transitions` — JSON: `{"expected_version":1,"status":"acknowledged","note":"I accept this handoff."}`
 
 ## Important limitations
