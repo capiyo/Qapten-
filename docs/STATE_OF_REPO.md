@@ -56,7 +56,7 @@
 
 ## Python connector limitations
 
-The Python connector imports one user-authorized Claude conversation export and calls DeepSeek's API after explicit approval. Its standalone actor ID is provenance metadata, not authentication. The transfer is not yet persisted in the AXON backend, and DeepSeek output is returned locally rather than stored as a task response artifact. Do not commit provider API keys. Production integration must verify Firebase ID tokens and enforce workspace/capability authorization on the backend.
+The Python connector imports one user-authorized Claude conversation export and calls DeepSeek's API after explicit approval. Preview can display the exact AXP context; the payload carries a SHA-256 digest for change detection, not a signature or proof of origin. Its standalone actor ID is provenance metadata, not authentication. The transfer is not yet persisted in the AXON backend, and DeepSeek output is returned locally rather than stored as a task response artifact. Do not commit provider API keys. Production integration must verify Firebase ID tokens and enforce workspace/capability authorization on the backend.
 
 ## Runtime limitations
 
@@ -64,7 +64,7 @@ The current API uses an in-process memory store. All records, including the audi
 
 ## Verification
 
-GitHub Actions run [42491980806](https://github.com/capiyo/Qapten-/actions/runs/42491980806) passed all three jobs on commit `417224d2fb9d8f3f5e2e578bc933a743920ebf57`: Rust formatting, Clippy, and tests; React web production build; and React Native TypeScript validation. The simulator telemetry API, freshness validation, and protocol contracts are included in that run. This verifies the earlier foundation only; the identity/capability and audit changes added after that run are awaiting a fresh CI result. No physical Android/iOS build, hardware integration, or production deployment has been performed.
+GitHub Actions run [42500672881](https://github.com/capiyo/Qapten-/actions/runs/42500672881) passed all four jobs on commit `5c199a8f364d5272f9525703f4e591a820652ef4`: Rust formatting, Clippy and tests; React web production build; React Native TypeScript validation; and Python connector Ruff/pytest. The Python suite verifies Claude export normalization, AXP provenance and payload hashing, preview-only behavior, explicit transfer approval, and context-size validation. This verifies the current branch head at the time of the run. No physical Android/iOS build, hardware integration, or production deployment has been performed.
 
 ## Architecture direction
 
