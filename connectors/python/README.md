@@ -7,8 +7,8 @@ The Python connector is the provider-adapter boundary for explicit, inspectable 
 1. Export a conversation from Claude using the provider's supported export controls.
 2. Select one conversation JSON file from that export.
 3. Run the connector in preview mode. It reports source, message count and context size without sending content.
-4. Add \`--print-context\` to inspect the exact normalized AXP envelope before transfer. Treat this output as private conversation data.
-5. Re-run with \`--approve-transfer\` to send that selected context to DeepSeek through its API.
+4. Add `--print-context` to inspect the exact normalized AXP envelope before transfer. Treat this output as private conversation data.
+5. Re-run with `--approve-transfer` to send that selected context to DeepSeek through its API.
 6. DeepSeek's response is returned to the terminal. AXON API persistence and UI handoff integration are a subsequent integration step.
 
 Claude's consumer chat history is not exposed by the standard Anthropic Messages API. This implementation therefore imports user-authorized export files; it does not scrape logged-in browser pages, inspect cookies, automate private endpoints, or bypass provider controls.
@@ -17,53 +17,53 @@ Claude's consumer chat history is not exposed by the standard Anthropic Messages
 
 Requires Python 3.11+.
 
-\`\`\`bash
+```bash
 cd connectors/python
 python -m venv .venv
-# Windows: .venv\\\\Scripts\\\\activate
+# Windows: .venv\Scripts\activate
 # macOS/Linux: source .venv/bin/activate
 pip install -e ".[dev]"
-\`\`\`
+```
 
 Set the DeepSeek API key in the environment. Do not put it in source code or commit it.
 
-\`\`\`powershell
+```powershell
 $env:DEEPSEEK_API_KEY="your-key"
-\`\`\`
+```
 
-\`\`\`bash
+```bash
 export DEEPSEEK_API_KEY="your-key"
-\`\`\`
+```
 
 ## Preview a conversation
 
-\`\`\`bash
-axon-bridge ./conversation.json \\
-  --workspace-id YOUR_WORKSPACE_ID \\
-  --actor-id YOUR_AXON_ACTOR_PROVENANCE_ID \\
-  --instruction "Independently review the architecture and identify risks." \\
+```bash
+axon-bridge ./conversation.json \
+  --workspace-id YOUR_WORKSPACE_ID \
+  --actor-id YOUR_AXON_ACTOR_PROVENANCE_ID \
+  --instruction "Independently review the architecture and identify risks." \
   --print-context
-\`\`\`
+```
 
 Preview is the default. No provider request is made without explicit approval. The context preview can contain private conversation data; do not paste it into public logs or tickets.
 
 ## Approve the handoff
 
-\`\`\`bash
-axon-bridge ./conversation.json \\
-  --workspace-id YOUR_WORKSPACE_ID \\
-  --actor-id YOUR_AXON_ACTOR_PROVENANCE_ID \\
-  --instruction "Independently review the architecture and identify risks." \\
+```bash
+axon-bridge ./conversation.json \
+  --workspace-id YOUR_WORKSPACE_ID \
+  --actor-id YOUR_AXON_ACTOR_PROVENANCE_ID \
+  --instruction "Independently review the architecture and identify risks." \
   --approve-transfer
-\`\`\`
+```
 
-The \`--actor-id\` is provenance metadata only. It is not authentication and must not be trusted as an identity claim. When integrated into AXON, the backend must derive the actor from a verified Firebase ID token and authorize the workspace and context transfer server-side. Never trust a client-provided actor ID as proof of identity.
+The `--actor-id` is provenance metadata only. It is not authentication and must not be trusted as an identity claim. When integrated into AXON, the backend must derive the actor from a verified Firebase ID token and authorize the workspace and context transfer server-side. Never trust a client-provided actor ID as proof of identity.
 
 ## Configuration
 
-- \`DEEPSEEK_API_KEY\`: required for approved transfers.
-- \`DEEPSEEK_MODEL\`: optional model override; defaults to \`deepseek-chat\`.
-- DeepSeek endpoint defaults to \`https://api.deepseek.com\`.
+- `DEEPSEEK_API_KEY`: required for approved transfers.
+- `DEEPSEEK_MODEL`: optional model override; defaults to `deepseek-chat`.
+- DeepSeek endpoint defaults to `https://api.deepseek.com`.
 
 ## Current boundaries
 
