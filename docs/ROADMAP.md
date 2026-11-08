@@ -54,7 +54,7 @@ The roadmap is outcome-driven. A phase is complete only when its acceptance crit
 - [ ] Controlled patch proposals and test evidence.
 - [ ] Optional GitHub integration with least-privilege scopes.
 
-**Acceptance:** Qapten can coordinate analysis and review for Funspot and Qoin without silently changing their repositories or deployment settings.
+**Acceptance:** Axon can coordinate analysis and review for Funspot and Qoin without silently changing their repositories or deployment settings.
 
 ## Explicit non-goals for the first release
 
