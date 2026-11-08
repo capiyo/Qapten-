@@ -1,5 +1,5 @@
 mod model;
-mod robotics;
+pub mod robotics;
 mod routes;
 mod state;
 mod task_routes;
