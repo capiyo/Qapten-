@@ -1,5 +1,6 @@
 use crate::{
     audit::AuditEvent,
+    storage::StoredEntity,
     model::{
         Agent, Artifact, ConnectionMode, CreateArtifact, CreateWorkspace, RegisterAgent, Workspace,
     },
@@ -57,6 +58,15 @@ pub struct ApiError {
     error: String,
 }
 
+fn storage_failure() -> (StatusCode, Json<ApiError>) {
+    (
+        StatusCode::INTERNAL_SERVER_ERROR,
+        Json(ApiError {
+            error: "The change could not be committed. Please retry.".into(),
+        }),
+    )
+}
+
 fn bad_request(message: impl Into<String>) -> (StatusCode, Json<ApiError>) {
     (
         StatusCode::BAD_REQUEST,
@@ -83,17 +93,22 @@ pub async fn create_workspace(
         created_at: Utc::now(),
     };
     state
+        .persist_entity(
+            StoredEntity::Workspace(workspace.clone()),
+            Vec::new(),
+            Some(workspace.id),
+            "workspace.created",
+            "workspace",
+            &workspace.id.to_string(),
+            serde_json::json!({ "name": workspace.name }),
+        )
+        .await
+        .map_err(|_| storage_failure())?;
+    state
         .workspaces
         .write()
         .await
         .insert(workspace.id, workspace.clone());
-    state.audit.write().await.append(
-        Some(workspace.id),
-        "workspace.created",
-        "workspace",
-        workspace.id.to_string(),
-        serde_json::json!({ "name": workspace.name }),
-    );
 
     Ok((StatusCode::CREATED, Json(workspace)))
 }
@@ -138,14 +153,19 @@ pub async fn register_agent(
         connection_mode: ConnectionMode::Manual,
         created_at: Utc::now(),
     };
+    state
+        .persist_entity(
+            StoredEntity::Agent(agent.clone()),
+            Vec::new(),
+            Some(workspace_id),
+            "agent.registered",
+            "agent",
+            &agent.id.to_string(),
+            serde_json::json!({"provider": agent.provider, "connection_mode": "manual"}),
+        )
+        .await
+        .map_err(|_| storage_failure())?;
     state.agents.write().await.insert(agent.id, agent.clone());
-    state.audit.write().await.append(
-        Some(workspace_id),
-        "agent.registered",
-        "agent",
-        agent.id.to_string(),
-        serde_json::json!({"provider": agent.provider, "connection_mode": "manual"}),
-    );
 
     Ok((StatusCode::CREATED, Json(agent)))
 }
@@ -196,17 +216,22 @@ pub async fn create_artifact(
         captured_at: Utc::now(),
     };
     state
+        .persist_entity(
+            StoredEntity::Artifact(artifact.clone()),
+            Vec::new(),
+            Some(workspace_id),
+            "artifact.created",
+            "artifact",
+            &artifact.id.to_string(),
+            serde_json::json!({ "title": artifact.title, "source_agent_id": artifact.source_agent_id }),
+        )
+        .await
+        .map_err(|_| storage_failure())?;
+    state
         .artifacts
         .write()
         .await
         .insert(artifact.id, artifact.clone());
-    state.audit.write().await.append(
-        Some(workspace_id),
-        "artifact.created",
-        "artifact",
-        artifact.id.to_string(),
-        serde_json::json!({ "title": artifact.title, "source_agent_id": artifact.source_agent_id }),
-    );
 
     Ok((StatusCode::CREATED, Json(artifact)))
 }
