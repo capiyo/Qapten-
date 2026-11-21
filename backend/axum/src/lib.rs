@@ -1,5 +1,6 @@
 pub mod audit;
 pub mod capability;
+mod capability_routes;
 pub mod identity;
 pub mod memory;
 mod memory_routes;
@@ -21,6 +22,22 @@ use tower_http::{limit::RequestBodyLimitLayer, trace::TraceLayer};
 pub fn app(state: AppState) -> Router {
     Router::new()
         .route("/health", get(routes::health))
+        .route(
+            "/api/v1/workspaces/:workspace_id/capability-polls",
+            post(capability_routes::create_poll),
+        )
+        .route(
+            "/api/v1/workspaces/:workspace_id/capability-polls/:poll_id",
+            get(capability_routes::get_poll),
+        )
+        .route(
+            "/api/v1/workspaces/:workspace_id/capability-polls/:poll_id/nominations",
+            post(capability_routes::submit_nomination),
+        )
+        .route(
+            "/api/v1/workspaces/:workspace_id/capability-polls/:poll_id/finalize",
+            post(capability_routes::finalize_poll),
+        )
         .route(
             "/api/v1/workspaces/:workspace_id/memory/imports",
             post(memory_routes::import_conversation),
