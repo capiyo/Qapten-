@@ -21,6 +21,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="axon-memory")
     parser.add_argument("conversation_export", help="Path to one exported conversation JSON file.")
     parser.add_argument("--provider", choices=("chatgpt", "claude"), required=True)
+    parser.add_argument("--conversation-id", help="Select one conversation from ChatGPT conversations.json.")
     parser.add_argument("--workspace-id", required=True)
     parser.add_argument(
         "--actor-id",
@@ -53,7 +54,10 @@ async def _run(args: argparse.Namespace) -> int:
             raise ValueError("--approve-persist also requires --approve-provider-transfer.")
 
         if args.provider == "chatgpt":
-            conversation = load_chatgpt_export(args.conversation_export)
+            conversation = load_chatgpt_export(
+                args.conversation_export,
+                conversation_id=args.conversation_id,
+            )
         else:
             conversation = load_claude_export(args.conversation_export)
 
