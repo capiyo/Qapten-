@@ -70,7 +70,7 @@ The current API uses an in-process memory store. All records, including the audi
 - [x] Proposed-by-default memory lifecycle with approve/reject/supersede transitions and optimistic version checks.
 - [x] Memory import, create, list/search, active-only context retrieval, and review API routes.
 - [x] Strict-majority capability nomination engine with fixed electorate/candidate set, explicit external-sharing approval, one ballot per voter, self-vote rejection, and no-winner outcome for ties or plurality.
-- [x] MongoDB persistence for capability polls and nominations with optimistic version checks.
+- [x] MongoDB persistence for capability polls and nominations with optimistic version checks, including verified references to active workspace memories.
 - [x] Capability poll API: create, retrieve, nominate, and finalize.
 - [x] Generic OpenAI-compatible provider adapter driven by a local model catalog and environment-held API keys.
 - [x] Python `axon-route` worker: parallel model nominations, persisted strict-majority result, winner-only task execution, and opt-in active-memory context after explicit provider-sharing approval.
