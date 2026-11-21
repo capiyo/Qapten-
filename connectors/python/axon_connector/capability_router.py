@@ -224,7 +224,7 @@ async def run_majority_route(
     models = tuple(
         model
         for model in models
-        if os.getenv(model.api_key_env)
+        if os.getenv(model.api_key_env, "").strip()
         and (capability in model.capabilities or "*" in model.capabilities)
         and (
             max_cost_per_1k_tokens is None
