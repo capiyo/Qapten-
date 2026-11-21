@@ -50,6 +50,11 @@ def load_model_catalog(path: str | Path) -> tuple[ModelConfig, ...]:
             not isinstance(value, str) or not value.strip() for value in capabilities
         ):
             raise ValueError(f"Model {model_id} must declare one or more capabilities.")
+        parsed_url = urlparse(item["base_url"])
+        if not parsed_url.netloc or parsed_url.scheme not in {"https", "http"}:
+            raise ValueError(f"Model {model_id} has an invalid base URL.")
+        if parsed_url.scheme == "http" and parsed_url.hostname not in {"127.0.0.1", "localhost", "::1"}:
+            raise ValueError(f"Model {model_id} must use HTTPS for a remote provider.")
         cost = item.get("estimated_cost_per_1k_tokens")
         if cost is not None and (
             isinstance(cost, bool)
