@@ -1,11 +1,11 @@
 use chrono::{DateTime, Utc};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use uuid::Uuid;
 
 /// In-memory development audit record. Actor attribution is explicitly local
 /// and unauthenticated until a verified principal is supplied by middleware.
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AuditEvent {
     pub sequence: u64,
     pub event_id: Uuid,
