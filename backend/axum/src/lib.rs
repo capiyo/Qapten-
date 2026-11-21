@@ -26,6 +26,10 @@ pub fn app(state: AppState) -> Router {
             post(memory_routes::import_conversation),
         )
         .route(
+            "/api/v1/workspaces/:workspace_id/memory/imports/:import_id",
+            get(memory_routes::get_import),
+        )
+        .route(
             "/api/v1/workspaces/:workspace_id/memories",
             get(memory_routes::list_memories).post(memory_routes::create_memory),
         )
