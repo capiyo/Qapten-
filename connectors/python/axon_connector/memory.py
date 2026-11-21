@@ -11,6 +11,7 @@ from urllib.parse import urlparse
 import httpx
 
 from .models import AxonEnvelope, ImportedConversation
+from .transfer import transfer_to_deepseek
 
 
 ALLOWED_MEMORY_KINDS = {
@@ -158,9 +159,16 @@ async def extract_memory_candidates(
     client: Any,
     envelope: AxonEnvelope,
     conversation: ImportedConversation,
+    *,
+    approved: bool,
 ) -> tuple[MemoryCandidate, ...]:
-    """Call a compatible model client and validate its structured memory output."""
-    response = await client.analyze(envelope, extraction_instruction())
+    """Call a compatible model client only after explicit transfer approval."""
+    response = await transfer_to_deepseek(
+        envelope,
+        extraction_instruction(),
+        client,
+        approved=approved,
+    )
     return parse_memory_candidates(response, conversation)
 
 
