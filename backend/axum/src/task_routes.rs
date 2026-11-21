@@ -174,7 +174,8 @@ pub async fn submit_task(
         ));
     }
 
-    let Some(mut task) = state.tasks.read().await.get(&task_id).cloned() else {
+    let mut tasks = state.tasks.write().await;
+    let Some(mut task) = tasks.get(&task_id).cloned() else {
         return Err(error(StatusCode::NOT_FOUND, "Task not found."));
     };
     if task.version != input.expected_version {
@@ -230,7 +231,7 @@ pub async fn submit_task(
         .map_err(|_| storage_failure())?;
 
     state.artifacts.write().await.insert(artifact.id, artifact.clone());
-    state.tasks.write().await.insert(task.id, task.clone());
+    tasks.insert(task.id, task.clone());
 
     Ok(Json(TaskSubmission { task, artifact }))
 }
@@ -297,7 +298,7 @@ pub async fn transition_task(
         )
         .await
         .map_err(|_| storage_failure())?;
-    state.tasks.write().await.insert(task.id, task.clone());
+    tasks.insert(task.id, task.clone());
     Ok(Json(task))
 }
 
