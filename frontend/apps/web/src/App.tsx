@@ -29,6 +29,7 @@ export default function App() {
   const [memorySummary, setMemorySummary] = useState("");
   const [memoryContent, setMemoryContent] = useState("");
   const [memoryTags, setMemoryTags] = useState("");
+  const [memorySearch, setMemorySearch] = useState("");
   const [name, setName] = useState("");
   const [agentName, setAgentName] = useState("");
   const [provider, setProvider] = useState("claude");
@@ -64,7 +65,9 @@ export default function App() {
     setTasks(taskItems);
     setAssignee(current => agentItems.some(agent => agent.id === current) ? current : agentItems[0]?.id ?? "");
     try {
-      const memoryItems = await api<MemoryRecord[]>(`/api/v1/workspaces/${workspace.id}/memories`);
+      const memoryItems = await api<MemoryRecord[]>(
+        `/api/v1/workspaces/${workspace.id}/memories${memorySearch.trim() ? `?q=${encodeURIComponent(memorySearch.trim())}` : ""}`
+      );
       setMemories(memoryItems);
       setMemoryAvailable(true);
     } catch {
@@ -429,6 +432,37 @@ export default function App() {
                       {busy ? "Saving…" : "Save proposed memory"}
                     </button>
                     <span className="memory-note">New memories start as proposed. They do not enter AI context until approved.</span>
+                  </form>
+                  <form
+                    className="memory-search"
+                    onSubmit={event => {
+                      event.preventDefault();
+                      if (selected) {
+                        void refreshWorkspace(selected).catch(cause =>
+                          setError(cause instanceof Error ? cause.message : "Memory search failed.")
+                        );
+                      }
+                    }}
+                  >
+                    <input
+                      aria-label="Search memories"
+                      value={memorySearch}
+                      onChange={event => setMemorySearch(event.target.value)}
+                      maxLength={120}
+                      placeholder="Search approved and proposed memories…"
+                    />
+                    <button type="submit" disabled={busy}>Search</button>
+                    <button
+                      type="button"
+                      className="memory-clear"
+                      disabled={!memorySearch}
+                      onClick={() => {
+                        setMemorySearch("");
+                        if (selected) void refreshWorkspace(selected);
+                      }}
+                    >
+                      Clear
+                    </button>
                   </form>
                   <div className="memory-list">
                     {memories.map(memory => (
