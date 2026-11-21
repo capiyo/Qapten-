@@ -43,7 +43,7 @@ pub async fn health() -> Json<Health> {
     Json(Health {
         status: "ok",
         service: "axon-api",
-        storage: "development_memory_only",
+        storage: if state.memory.is_some() { "mongodb" } else { "development_memory_only" },
         authentication: "not_implemented_local_only",
     })
 }
