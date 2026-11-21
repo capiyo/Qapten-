@@ -110,7 +110,9 @@ def parse_memory_candidates(
         confidence = item.get("confidence")
         message_ids = item.get("message_ids", [])
 
-        if not isinstance(kind, str) or kind not in ALLOWED_MEMORY_KINDS:
+        if not isinstance(kind, str):
+            raise TypeError("Memory kind must be a string.")
+        if kind not in ALLOWED_MEMORY_KINDS:
             raise ValueError(f"Unsupported memory kind: {kind!r}.")
         if not isinstance(title, str) or not title.strip() or len(title) > 240:
             raise ValueError("Memory title must contain 1–240 characters.")
