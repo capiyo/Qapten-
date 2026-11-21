@@ -1,9 +1,9 @@
 use crate::{
     audit::AuditEvent,
-    storage::StoredEntity,
     model::{
         Agent, Artifact, ConnectionMode, CreateArtifact, CreateWorkspace, RegisterAgent, Workspace,
     },
+    storage::StoredEntity,
     AppState,
 };
 use axum::{
