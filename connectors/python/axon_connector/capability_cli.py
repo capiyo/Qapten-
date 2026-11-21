@@ -15,6 +15,7 @@ from .capability_router import (
     load_model_catalog,
     run_majority_route,
 )
+from .providers.openai_compatible import ModelProviderError
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -92,6 +93,7 @@ async def _run(args: argparse.Namespace) -> int:
         OSError,
         ValueError,
         CapabilityRoutingError,
+        ModelProviderError,
         httpx.HTTPError,
     ) as exc:
         print(f"axon-route: {exc}", file=sys.stderr)
