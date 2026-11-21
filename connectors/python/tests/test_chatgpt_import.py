@@ -39,3 +39,30 @@ def test_rejects_chatgpt_export_without_conversation_id() -> None:
 
     with pytest.raises(ValueError, match="conversation ID"):
         parse_chatgpt_export({"mapping": {}})
+
+
+
+def test_loads_one_conversation_from_full_export_with_explicit_selection(tmp_path) -> None:
+    import json
+
+    import pytest
+
+    from axon_connector.providers.chatgpt import load_chatgpt_export
+
+    export = tmp_path / "conversations.json"
+    export.write_text(
+        json.dumps(
+            [
+                {"id": "chat-1", "title": "First", "mapping": {}},
+                {"id": "chat-2", "title": "Second", "mapping": {}},
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="multiple conversations"):
+        load_chatgpt_export(export)
+
+    selected = load_chatgpt_export(export, conversation_id="chat-2")
+    assert selected.conversation_id == "chat-2"
+    assert selected.title == "Second"
