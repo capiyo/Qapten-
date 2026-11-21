@@ -22,7 +22,12 @@ fn api_error(
     status: StatusCode,
     message: impl Into<String>,
 ) -> (StatusCode, Json<CapabilityApiError>) {
-    (status, Json(CapabilityApiError { error: message.into() }))
+    (
+        status,
+        Json(CapabilityApiError {
+            error: message.into(),
+        }),
+    )
 }
 
 fn repository(state: &AppState) -> ApiResult<&MemoryRepository> {
@@ -161,6 +166,9 @@ pub async fn get_poll(
         .await
         .map_err(|error| api_error(StatusCode::INTERNAL_SERVER_ERROR, error.to_string()))?;
     poll.map(Json).ok_or_else(|| {
-        api_error(StatusCode::NOT_FOUND, "Capability poll was not found in this workspace.")
+        api_error(
+            StatusCode::NOT_FOUND,
+            "Capability poll was not found in this workspace.",
+        )
     })
 }
