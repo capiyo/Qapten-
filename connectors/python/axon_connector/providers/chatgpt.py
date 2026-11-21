@@ -68,7 +68,7 @@ def parse_chatgpt_export(data: dict[str, Any]) -> ImportedConversation:
     for item in sorted(raw_messages, key=sort_key):
         author = item.get("author")
         role = author.get("role") if isinstance(author, dict) else item.get("role")
-        if role not in {"system", "user", "assistant"}:
+        if not isinstance(role, str) or role not in {"system", "user", "assistant"}:
             continue
         content = item.get("content")
         if isinstance(content, dict):
