@@ -40,6 +40,7 @@ Configure `MONGODB_URI` and optionally `MONGODB_DATABASE` (default: `axon`). Whe
 - `GET /api/v1/workspaces/{workspace_id}/memory/imports/{import_id}`: retrieve the original imported conversation for an authorized extraction worker.
 - `POST /api/v1/workspaces/{workspace_id}/memories`: create a proposed memory from an imported source.
 - `GET /api/v1/workspaces/{workspace_id}/memories?status=active&q=...`: list or text-search memories.
+- `GET /api/v1/workspaces/{workspace_id}/memory/context?q=...&limit=...`: retrieve only active, approved memories for downstream task context.
 - `POST /api/v1/workspaces/{workspace_id}/memories/{memory_id}/review`: approve, reject, or supersede with optimistic version checking.
 
 The import endpoint accepts at most 5,000 messages and 900 KB of message content. The API request body limit remains 1 MB. Search is capped at 200 records.
