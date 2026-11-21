@@ -30,13 +30,13 @@ def load_model_catalog(path: str | Path) -> tuple[ModelConfig, ...]:
     if isinstance(data, dict):
         data = data.get("models")
     if not isinstance(data, list):
-        raise ValueError("Model catalog must be a JSON array or an object with a models array.")
+        raise TypeError("Model catalog must be a JSON array or an object with a models array.")
 
     models: list[ModelConfig] = []
     seen: set[str] = set()
     for item in data:
         if not isinstance(item, dict):
-            raise ValueError("Every model catalog entry must be an object.")
+            raise TypeError("Every model catalog entry must be an object.")
         required = ("id", "provider", "display_name", "model", "base_url", "api_key_env")
         if any(not isinstance(item.get(key), str) or not item[key].strip() for key in required):
             raise ValueError(
