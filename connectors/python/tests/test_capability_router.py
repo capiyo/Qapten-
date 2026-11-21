@@ -1,3 +1,4 @@
+import asyncio
 import json
 
 import pytest
@@ -6,6 +7,7 @@ from axon_connector.capability_router import (
     CapabilityRoutingError,
     _decode_nomination,
     load_model_catalog,
+    run_majority_route,
 )
 
 
@@ -65,4 +67,17 @@ def test_decodes_only_eligible_non_self_nominations() -> None:
             '{"nominated_model_id":"unknown","rationale":"Unknown model."}',
             "model-a",
             candidate_ids,
+        )
+
+
+
+def test_capability_router_requires_explicit_provider_sharing() -> None:
+    with pytest.raises(PermissionError, match="explicit provider-sharing approval"):
+        asyncio.run(
+            run_majority_route(
+                workspace_id="workspace-1",
+                capability="visual_design",
+                task_brief="Design a dashboard.",
+                models=(),
+            )
         )
