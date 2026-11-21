@@ -177,7 +177,6 @@ async def persist_memory_candidates(
     candidates: tuple[MemoryCandidate, ...],
     *,
     workspace_id: str,
-    *,
     approved: bool,
     api_url: str = "http://127.0.0.1:8080",
 ) -> tuple[str, tuple[dict[str, Any], ...]]:
