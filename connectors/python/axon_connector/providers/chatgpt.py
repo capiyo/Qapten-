@@ -93,11 +93,40 @@ def parse_chatgpt_export(data: dict[str, Any]) -> ImportedConversation:
     )
 
 
-def load_chatgpt_export(path: str | Path) -> ImportedConversation:
-    """Load one conversation JSON object from a user-authorized ChatGPT export."""
+def load_chatgpt_export(
+    path: str | Path,
+    conversation_id: str | None = None,
+) -> ImportedConversation:
+    """Load one conversation from a ChatGPT export object or conversations.json array."""
     source = Path(path)
     with source.open("r", encoding="utf-8") as handle:
         data = json.load(handle)
+
+    if isinstance(data, dict) and isinstance(data.get("conversations"), list):
+        data = data["conversations"]
+    if isinstance(data, list):
+        conversations = [item for item in data if isinstance(item, dict)]
+        if conversation_id:
+            selected = next(
+                (
+                    item
+                    for item in conversations
+                    if item.get("id") == conversation_id
+                    or item.get("conversation_id") == conversation_id
+                ),
+                None,
+            )
+            if selected is None:
+                raise ValueError(f"ChatGPT conversation {conversation_id!r} was not found.")
+            data = selected
+        elif len(conversations) == 1:
+            data = conversations[0]
+        else:
+            raise ValueError(
+                "ChatGPT conversations.json contains multiple conversations; "
+                "select one with --conversation-id."
+            )
+
     if not isinstance(data, dict):
-        raise TypeError("Expected a single ChatGPT conversation JSON object.")
+        raise TypeError("Expected a ChatGPT conversation object or conversations array.")
     return parse_chatgpt_export(data)
