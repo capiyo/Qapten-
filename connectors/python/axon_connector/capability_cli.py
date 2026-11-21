@@ -21,10 +21,17 @@ from .providers.openai_compatible import ModelProviderError
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="axon-route")
     parser.add_argument("--task", required=True, help="The task brief to route and execute.")
-    parser.add_argument("--capability", required=True, help="Capability category, e.g. visual_design.")
+    parser.add_argument(
+        "--capability",
+        required=True,
+        help="Capability category, e.g. visual_design.",
+    )
     parser.add_argument("--workspace-id", required=True)
     parser.add_argument("--models", required=True, help="Path to the JSON model catalog.")
-    parser.add_argument("--api-url", default=os.getenv("AXON_API_URL", "http://127.0.0.1:8080"))
+    parser.add_argument(
+        "--api-url",
+        default=os.getenv("AXON_API_URL", "http://127.0.0.1:8080"),
+    )
     parser.add_argument(
         "--approve-provider-sharing",
         action="store_true",
@@ -49,7 +56,8 @@ async def _run(args: argparse.Namespace) -> int:
         )
         if len(available_models) < 3:
             raise ValueError(
-                f"Only {len(available_models)} models have configured API keys; at least 3 are required."
+                f"Only {len(available_models)} models have configured API keys; "
+                "at least 3 are required."
             )
 
         print(f"Capability: {args.capability}")
