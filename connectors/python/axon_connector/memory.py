@@ -256,7 +256,7 @@ async def fetch_active_memory_context(
         response.raise_for_status()
         records = response.json()
     if not isinstance(records, list):
-        raise ValueError("Axon memory context endpoint returned an invalid response.")
+        raise TypeError("Axon memory context endpoint returned an invalid response.")
     return tuple(
         record
         for record in records
