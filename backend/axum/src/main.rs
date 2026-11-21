@@ -19,11 +19,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .parse::<u16>()?;
     let address: SocketAddr = format!("{host}:{port}").parse()?;
 
-    if !address.ip().is_loopback()
-        && env::var("AXON_ALLOW_INSECURE_REMOTE").as_deref() != Ok("true")
-    {
+    if !address.ip().is_loopback() {
         return Err(
-            "Refusing non-loopback bind before authentication is implemented. Set AXON_ALLOW_INSECURE_REMOTE=true only for an isolated development environment."
+            "Refusing non-loopback bind until verified authentication and route authorization are implemented."
                 .into(),
         );
     }
