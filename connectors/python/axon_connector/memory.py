@@ -215,3 +215,37 @@ async def persist_memory_candidates(
             response.raise_for_status()
             stored.append(response.json())
     return import_id, tuple(stored)
+
+
+
+async def fetch_active_memory_context(
+    workspace_id: str,
+    task_brief: str,
+    *,
+    api_url: str = "http://127.0.0.1:8080",
+    limit: int = 10,
+) -> tuple[dict[str, Any], ...]:
+    """Retrieve only approved active memories relevant to a task from local Axon."""
+    parsed = urlparse(api_url)
+    if parsed.scheme != "http" or parsed.hostname not in {"127.0.0.1", "localhost", "::1"}:
+        raise ValueError("Memory retrieval is restricted to a local HTTP Axon API.")
+    if not task_brief.strip() or len(task_brief) > 10_000:
+        raise ValueError("Task brief must contain 1–10000 characters.")
+    if not 1 <= limit <= 50:
+        raise ValueError("Memory retrieval limit must be between 1 and 50.")
+
+    base_url = api_url.rstrip("/")
+    async with httpx.AsyncClient(timeout=20.0) as client:
+        response = await client.get(
+            f"{base_url}/api/v1/workspaces/{workspace_id}/memory/context",
+            params={"q": task_brief, "limit": limit},
+        )
+        response.raise_for_status()
+        records = response.json()
+    if not isinstance(records, list):
+        raise ValueError("Axon memory context endpoint returned an invalid response.")
+    return tuple(
+        record
+        for record in records
+        if isinstance(record, dict) and record.get("status") == "active"
+    )
