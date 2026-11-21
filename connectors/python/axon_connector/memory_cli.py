@@ -88,7 +88,12 @@ async def _run(args: argparse.Namespace) -> int:
             return 0
 
         extractor = DeepSeekClient(model=args.model)
-        candidates = await extract_memory_candidates(extractor, envelope, conversation)
+        candidates = await extract_memory_candidates(
+            extractor,
+            envelope,
+            conversation,
+            approved=args.approve_provider_transfer,
+        )
         print("\n--- Proposed memories (not yet persisted) ---\n")
         print(
             json.dumps(
