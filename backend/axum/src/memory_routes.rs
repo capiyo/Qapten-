@@ -113,3 +113,16 @@ pub async fn review_memory(
         )
     })
 }
+
+pub async fn get_import(
+    State(state): State<AppState>,
+    Path((workspace_id, import_id)): Path<(Uuid, Uuid)>,
+) -> ApiResult<Json<crate::memory::ConversationImport>> {
+    let record = repository(&state)?
+        .get_import(workspace_id, import_id)
+        .await
+        .map_err(|error| api_error(StatusCode::INTERNAL_SERVER_ERROR, error.to_string()))?;
+    record.map(Json).ok_or_else(|| {
+        api_error(StatusCode::NOT_FOUND, "Conversation import was not found in this workspace.")
+    })
+}
