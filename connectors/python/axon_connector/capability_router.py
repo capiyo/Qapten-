@@ -38,7 +38,9 @@ def load_model_catalog(path: str | Path) -> tuple[ModelConfig, ...]:
             raise ValueError("Every model catalog entry must be an object.")
         required = ("id", "provider", "display_name", "model", "base_url", "api_key_env")
         if any(not isinstance(item.get(key), str) or not item[key].strip() for key in required):
-            raise ValueError("Every model requires id, provider, display_name, model, base_url, and api_key_env.")
+            raise ValueError(
+                "Every model requires id, provider, display_name, model, base_url, and api_key_env."
+            )
         model_id = item["id"].strip()
         if model_id in seen:
             raise ValueError(f"Duplicate model ID in catalog: {model_id}.")
@@ -99,7 +101,11 @@ def _decode_nomination(response: str, voter_id: str, candidate_ids: set[str]) ->
         raise CapabilityRoutingError(f"{voter_id} attempted a self-nomination.")
     if not isinstance(rationale, str) or not rationale.strip() or len(rationale) > 2_000:
         raise CapabilityRoutingError(f"{voter_id} returned an invalid nomination rationale.")
-    return {"voter_model_id": voter_id, "nominated_model_id": candidate_id, "rationale": rationale.strip()}
+    return {
+        "voter_model_id": voter_id,
+        "nominated_model_id": candidate_id,
+        "rationale": rationale.strip(),
+    }
 
 
 async def _ask_model_to_nominate(
@@ -206,7 +212,8 @@ async def run_majority_route(
 
     if len(nominations) < 3:
         raise CapabilityRoutingError(
-            f"Only {len(nominations)} valid model nominations were received; at least 3 are required. "
+            f"Only {len(nominations)} valid model nominations were received; "
+            "at least 3 are required. "
             f"Unavailable or invalid voters: {', '.join(failures) or 'none'}."
         )
 
@@ -227,7 +234,10 @@ async def run_majority_route(
 
         for nomination in nominations:
             response = await client.post(
-                f"{base_url}/api/v1/workspaces/{workspace_id}/capability-polls/{poll_id}/nominations",
+                (
+                    f"{base_url}/api/v1/workspaces/{workspace_id}/capability-polls/"
+                    f"{poll_id}/nominations"
+                ),
                 json=nomination,
             )
             response.raise_for_status()
