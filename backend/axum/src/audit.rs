@@ -18,6 +18,28 @@ pub struct AuditEvent {
     pub metadata: Value,
 }
 
+impl AuditEvent {
+    pub fn unattributed(
+        workspace_id: Option<Uuid>,
+        event_type: impl Into<String>,
+        entity_type: impl Into<String>,
+        entity_id: impl Into<String>,
+        metadata: Value,
+    ) -> Self {
+        Self {
+            sequence: 0,
+            event_id: Uuid::new_v4(),
+            workspace_id,
+            actor: "system:local-development-unattributed".into(),
+            event_type: event_type.into(),
+            entity_type: entity_type.into(),
+            entity_id: entity_id.into(),
+            occurred_at: Utc::now(),
+            metadata,
+        }
+    }
+}
+
 #[derive(Debug, Default)]
 pub struct AuditStore {
     next_sequence: u64,
@@ -33,17 +55,13 @@ impl AuditStore {
         entity_id: impl Into<String>,
         metadata: Value,
     ) -> AuditEvent {
-        self.append_event(AuditEvent {
-            sequence: 0,
-            event_id: Uuid::new_v4(),
+        self.append_event(AuditEvent::unattributed(
             workspace_id,
-            actor: "system:local-development-unattributed".into(),
-            event_type: event_type.into(),
-            entity_type: entity_type.into(),
-            entity_id: entity_id.into(),
-            occurred_at: Utc::now(),
+            event_type,
+            entity_type,
+            entity_id,
             metadata,
-        })
+        ))
     }
 
     pub fn append_event(&mut self, mut event: AuditEvent) -> AuditEvent {
