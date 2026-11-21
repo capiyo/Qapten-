@@ -40,7 +40,12 @@ async def _run(args: argparse.Namespace) -> int:
             raise ValueError("Capability must contain 1–120 characters.")
 
         models = load_model_catalog(args.models)
-        available_models = tuple(model for model in models if os.getenv(model.api_key_env))
+        available_models = tuple(
+            model
+            for model in models
+            if os.getenv(model.api_key_env)
+            and (args.capability in model.capabilities or "*" in model.capabilities)
+        )
         if len(available_models) < 3:
             raise ValueError(
                 f"Only {len(available_models)} models have configured API keys; at least 3 are required."
