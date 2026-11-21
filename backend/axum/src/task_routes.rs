@@ -1,4 +1,5 @@
 use crate::{
+    audit::AuditEvent,
     model::{Artifact, CreateTask, SubmitTask, Task, TaskStatus, TaskTransition, TransitionTask},
     storage::StoredEntity,
     AppState,
@@ -107,11 +108,13 @@ pub async fn create_task(
         .persist_entity(
             StoredEntity::Task(task.clone()),
             Vec::new(),
-            Some(workspace_id),
-            "task.created",
-            "task",
-            &task.id.to_string(),
-            serde_json::json!({"assignee_agent_id": task.assignee_agent_id, "context_artifact_count": task.context_artifact_ids.len()}),
+            AuditEvent::unattributed(
+                Some(workspace_id),
+                "task.created",
+                "task",
+                task.id.to_string(),
+                serde_json::json!({"assignee_agent_id": task.assignee_agent_id, "context_artifact_count": task.context_artifact_ids.len()}),
+            ),
         )
         .await
         .map_err(|_| storage_failure())?;
@@ -221,11 +224,13 @@ pub async fn submit_task(
         .persist_entity(
             StoredEntity::Task(task.clone()),
             vec![StoredEntity::Artifact(artifact.clone())],
-            Some(task.workspace_id),
-            "task.response_submitted",
-            "task",
-            &task.id.to_string(),
-            serde_json::json!({"response_artifact_id": artifact.id, "version": task.version}),
+            AuditEvent::unattributed(
+                Some(task.workspace_id),
+                "task.response_submitted",
+                "task",
+                task.id.to_string(),
+                serde_json::json!({"response_artifact_id": artifact.id, "version": task.version}),
+            ),
         )
         .await
         .map_err(|_| storage_failure())?;
@@ -295,11 +300,13 @@ pub async fn transition_task(
         .persist_entity(
             StoredEntity::Task(task.clone()),
             Vec::new(),
-            Some(task.workspace_id),
-            "task.transitioned",
-            "task",
-            &task.id.to_string(),
-            serde_json::json!({"to": task.status, "version": task.version}),
+            AuditEvent::unattributed(
+                Some(task.workspace_id),
+                "task.transitioned",
+                "task",
+                task.id.to_string(),
+                serde_json::json!({"to": task.status, "version": task.version}),
+            ),
         )
         .await
         .map_err(|_| storage_failure())?;
