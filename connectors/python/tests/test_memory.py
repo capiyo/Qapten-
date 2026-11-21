@@ -1,9 +1,10 @@
+import asyncio
 import json
 
 import pytest
 
-from axon_connector.memory import parse_memory_candidates
-from axon_connector.models import ConversationMessage, ImportedConversation
+from axon_connector.memory import extract_memory_candidates, parse_memory_candidates
+from axon_connector.models import AxonEnvelope, ConversationMessage, ImportedConversation
 
 
 @pytest.fixture
@@ -88,3 +89,27 @@ def test_rejects_non_finite_confidence(conversation: ImportedConversation) -> No
 def test_rejects_non_json_or_unexpected_model_output(conversation: ImportedConversation) -> None:
     with pytest.raises(ValueError, match="invalid JSON"):
         parse_memory_candidates("I think these are the memories.", conversation)
+
+
+
+def test_memory_extraction_requires_explicit_provider_approval(
+    conversation: ImportedConversation,
+) -> None:
+    class NeverCalledClient:
+        async def analyze(self, envelope, instruction):
+            raise AssertionError("Provider must not be called without approval.")
+
+    envelope = AxonEnvelope.from_conversation(
+        conversation,
+        workspace_id="workspace-1",
+        actor_id="local-test",
+    )
+    with pytest.raises(PermissionError, match="explicit user approval"):
+        asyncio.run(
+            extract_memory_candidates(
+                NeverCalledClient(),
+                envelope,
+                conversation,
+                approved=False,
+            )
+        )
