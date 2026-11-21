@@ -236,7 +236,7 @@ mod tests {
     #[tokio::test]
     async fn simulator_ingress_rejects_replayed_sequence_without_mutating_store() {
         let state = AppState::default();
-        ingest_simulated_telemetry(
+        let (_status, _event) = ingest_simulated_telemetry(
             State(state.clone()),
             Path("sim-test".into()),
             Json(input("event-1", 5)),
@@ -261,7 +261,7 @@ mod tests {
     async fn simulator_ingress_retains_only_latest_five_hundred_events() {
         let state = AppState::default();
         for sequence in 1..=501 {
-            ingest_simulated_telemetry(
+            let (_status, _event) = ingest_simulated_telemetry(
                 State(state.clone()),
                 Path("sim-test".into()),
                 Json(input(&format!("event-{sequence}"), sequence)),
