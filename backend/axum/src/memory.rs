@@ -150,7 +150,11 @@ impl MemoryRepository {
             .create_index(
                 IndexModel::builder()
                     .keys(doc! { "workspace_id": 1, "status": 1, "updated_at": -1 })
-                    .options(IndexOptions::builder().name("memory_workspace_status_updated".into()).build())
+                    .options(
+                        IndexOptions::builder()
+                            .name("memory_workspace_status_updated".into())
+                            .build(),
+                    )
                     .build(),
                 None,
             )
@@ -158,7 +162,12 @@ impl MemoryRepository {
         memories
             .create_index(
                 IndexModel::builder()
-                    .keys(doc! { "title": "text", "content": "text", "summary": "text", "tags": "text" })
+                    .keys(doc! {
+                        "title": "text",
+                        "content": "text",
+                        "summary": "text",
+                        "tags": "text"
+                    })
                     .options(IndexOptions::builder().name("memory_text_search".into()).build())
                     .build(),
                 None,
@@ -167,8 +176,18 @@ impl MemoryRepository {
         imports
             .create_index(
                 IndexModel::builder()
-                    .keys(doc! { "workspace_id": 1, "provider": 1, "conversation_id": 1, "content_sha256": 1 })
-                    .options(IndexOptions::builder().name("conversation_import_identity".into()).unique(true).build())
+                    .keys(doc! {
+                        "workspace_id": 1,
+                        "provider": 1,
+                        "conversation_id": 1,
+                        "content_sha256": 1
+                    })
+                    .options(
+                        IndexOptions::builder()
+                            .name("conversation_import_identity".into())
+                            .unique(true)
+                            .build(),
+                    )
                     .build(),
                 None,
             )
@@ -227,15 +246,28 @@ impl MemoryRepository {
         let source = self
             .imports
             .find_one(
-                doc! { "id": input.import_id.to_string(), "workspace_id": workspace_id.to_string() },
+                doc! {
+                    "id": input.import_id.to_string(),
+                    "workspace_id": workspace_id.to_string()
+                },
                 None,
             )
             .await?
-            .ok_or_else(|| mongodb::error::Error::custom("Source conversation import was not found in this workspace."))?;
+            .ok_or_else(|| {
+                mongodb::error::Error::custom(
+                    "Source conversation import was not found in this workspace.",
+                )
+            })?;
 
-        let imported_message_ids: std::collections::HashSet<String> = source.messages.iter().filter_map(|message| message.id.clone()).collect();
+        let imported_message_ids: std::collections::HashSet<String> = source
+            .messages
+            .iter()
+            .filter_map(|message| message.id.clone())
+            .collect();
         if input.message_ids.iter().any(|message_id| !imported_message_ids.contains(message_id)) {
-            return Err(mongodb::error::Error::custom("A memory source message ID does not exist in the referenced conversation import."));
+            return Err(mongodb::error::Error::custom(
+                "A memory source message ID does not exist in the referenced conversation import.",
+            ));
         }
 
         let now = Utc::now();
@@ -304,7 +336,9 @@ impl MemoryRepository {
         }
         if matches!(&input.decision, MemoryReviewDecision::Supersede) {
             let replacement_id = input.superseded_by_id.ok_or_else(|| {
-                mongodb::error::Error::custom("superseded_by_id is required when superseding a memory.")
+                mongodb::error::Error::custom(
+                    "superseded_by_id is required when superseding a memory.",
+                )
             })?;
             let replacement = self.memories.find_one(doc! {
                 "id": replacement_id.to_string(),
@@ -312,7 +346,9 @@ impl MemoryRepository {
                 "status": "active",
             }, None).await?;
             if replacement.is_none() {
-                return Err(mongodb::error::Error::custom("Replacement memory must exist and be active in this workspace."));
+                return Err(mongodb::error::Error::custom(
+                    "Replacement memory must exist and be active in this workspace.",
+                ));
             }
         }
         let next_status = match input.decision {
@@ -412,8 +448,15 @@ pub fn validate_memory(input: &CreateMemoryRequest) -> Result<(), &'static str> 
     if input.summary.trim().is_empty() || input.summary.len() > 2_000 {
         return Err("Memory summary must contain 1–2000 characters.");
     }
-    if input.tags.len() > 30 || input.tags.iter().any(|tag| tag.trim().is_empty() || tag.len() > 60) {
-        return Err("Memory tags must be non-empty and limited to 30 tags of at most 60 characters.");
+    if input.tags.len() > 30
+        || input
+            .tags
+            .iter()
+            .any(|tag| tag.trim().is_empty() || tag.len() > 60)
+    {
+        return Err(
+            "Memory tags must be non-empty and limited to 30 tags of at most 60 characters.",
+        );
     }
     if !input.confidence.is_finite() || !(0.0..=1.0).contains(&input.confidence) {
         return Err("Confidence must be a finite number between 0 and 1.");
