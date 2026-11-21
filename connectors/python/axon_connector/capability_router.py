@@ -71,6 +71,8 @@ def load_model_catalog(path: str | Path) -> tuple[ModelConfig, ...]:
         )
     if len(models) < 3:
         raise ValueError("At least three configured models are required for a majority poll.")
+    if len(models) > 30:
+        raise ValueError("A capability poll supports at most 30 voters.")
     return tuple(models)
 
 
@@ -165,9 +167,16 @@ async def run_majority_route(
 ) -> dict[str, Any]:
     """Ask configured models to nominate, persist the vote, and execute only the winner."""
     base_url = _require_local_api(api_url)
-    models = tuple(model for model in models if os.getenv(model.api_key_env))
+    models = tuple(
+        model
+        for model in models
+        if os.getenv(model.api_key_env)
+        and (capability in model.capabilities or "*" in model.capabilities)
+    )
     if len(models) < 3:
-        raise CapabilityRoutingError("At least three models must have configured provider API keys.")
+        raise CapabilityRoutingError(
+            "At least three models with configured keys must declare the requested capability."
+        )
     candidates = [
         {
             "model_id": model.model_id,
