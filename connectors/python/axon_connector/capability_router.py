@@ -269,9 +269,21 @@ async def run_majority_route(
         else:
             failures.append(f"{model.model_id}: unexpected response type")
 
+    successful_model_ids = {item["voter_model_id"] for item in nominations}
+    candidates = [
+        candidate
+        for candidate in candidates
+        if candidate["model_id"] in successful_model_ids
+    ]
+    candidate_ids = {item["model_id"] for item in candidates}
+    nominations = [
+        nomination
+        for nomination in nominations
+        if nomination["nominated_model_id"] in candidate_ids
+    ]
     if len(nominations) < 3:
         raise CapabilityRoutingError(
-            f"Only {len(nominations)} valid model nominations were received; "
+            f"Only {len(nominations)} nominations remain among responsive candidates; "
             "at least 3 are required. "
             f"Unavailable or invalid voters: {', '.join(failures) or 'none'}."
         )
