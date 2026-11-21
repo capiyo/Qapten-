@@ -229,7 +229,14 @@ impl MemoryRepository {
         let canonical = input
             .messages
             .iter()
-            .map(|message| format!("{}\n{}", message.role, message.content))
+            .map(|message| {
+                format!(
+                    "{}\n{}\n{}",
+                    message.role,
+                    message.id.as_deref().unwrap_or_default(),
+                    message.content
+                )
+            })
             .collect::<Vec<_>>()
             .join("\n\n");
         let content_sha256 = sha256(&canonical);
