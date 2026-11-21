@@ -69,6 +69,7 @@ Workspace, agent, task, artifact, robotics, and audit state still uses the in-pr
 - [x] Typed memory kinds: semantic, episodic, project, decision, preference, and procedural.
 - [x] Proposed-by-default memory lifecycle with approve/reject/supersede transitions and optimistic version checks.
 - [x] Memory import, create, list/search, active-only context retrieval, and review API routes.
+- [x] Web workspace panel for manual memory capture, proposed-memory review, and MongoDB persistence status.
 - [x] Strict-majority capability nomination engine with fixed electorate/candidate set, explicit external-sharing approval, one ballot per voter, self-vote rejection, and no-winner outcome for ties or plurality.
 - [x] MongoDB persistence for capability polls and nominations with optimistic version checks, including verified references to active workspace memories.
 - [x] Capability poll API: create, retrieve, nominate, and finalize.
