@@ -155,7 +155,7 @@ impl MemoryRepository {
                     .keys(doc! { "workspace_id": 1, "status": 1, "updated_at": -1 })
                     .options(
                         IndexOptions::builder()
-                            .name("memory_workspace_status_updated".into())
+                            .name(Some("memory_workspace_status_updated".to_owned()))
                             .build(),
                     )
                     .build(),
@@ -173,7 +173,7 @@ impl MemoryRepository {
                     })
                     .options(
                         IndexOptions::builder()
-                            .name("memory_text_search".into())
+                            .name(Some("memory_text_search".to_owned()))
                             .build(),
                     )
                     .build(),
@@ -191,7 +191,7 @@ impl MemoryRepository {
                     })
                     .options(
                         IndexOptions::builder()
-                            .name("conversation_import_identity".into())
+                            .name(Some("conversation_import_identity".to_owned()))
                             .unique(true)
                             .build(),
                     )
@@ -206,7 +206,7 @@ impl MemoryRepository {
                     .keys(doc! { "workspace_id": 1, "created_at": -1 })
                     .options(
                         IndexOptions::builder()
-                            .name("capability_poll_workspace_time".into())
+                            .name(Some("capability_poll_workspace_time".to_owned()))
                             .build(),
                     )
                     .build(),
