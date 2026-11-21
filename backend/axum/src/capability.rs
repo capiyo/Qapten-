@@ -283,7 +283,7 @@ mod tests {
         let mut poll = fixture();
         assert_eq!(
             poll.nominate("voter-a", "voter-a", "Self vote."),
-            Err(NominationError::UnknownCandidate)
+            Err(NominationError::SelfNomination)
         );
         poll.nominate("voter-a", "model-alpha", "First ballot.").unwrap();
         assert_eq!(
