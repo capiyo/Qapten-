@@ -315,13 +315,9 @@ mod tests {
         assert_eq!(value["authentication"], "not_implemented_local_only");
     }
 
-
     #[tokio::test]
     async fn workspace_and_audit_survive_runtime_reconstruction() {
-        let storage = SqliteStorage::connect_in_memory()
-            .await
-            .unwrap()
-            .shared();
+        let storage = SqliteStorage::connect_in_memory().await.unwrap().shared();
         let state = AppState::with_storage(storage.clone()).await.unwrap();
         let created = create_workspace(
             State(state),
