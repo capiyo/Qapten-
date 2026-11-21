@@ -123,6 +123,7 @@ async def _run(args: argparse.Namespace) -> int:
             conversation,
             candidates,
             workspace_id=args.workspace_id,
+            approved=args.approve_persist,
             api_url=args.api_url,
         )
         print(
