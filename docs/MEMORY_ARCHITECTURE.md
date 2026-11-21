@@ -19,7 +19,7 @@ Configure `MONGODB_URI` and optionally `MONGODB_DATABASE` (default: `axon`). Whe
 ## Data lifecycle
 
 1. Import a provider-authorized export into a workspace. Axon preserves the ordered messages and computes a content digest.
-2. A future provider-neutral Memory AI extractor reads the import and proposes typed memory candidates. Extraction is not the same as verification.
+2. The Python `axon-memory` worker can read a user-authorized ChatGPT or Claude export, ask DeepSeek for structured memory candidates, validate the response and source message IDs, and submit candidates to Axon. Extraction is not the same as verification.
 3. Candidates are created with `status=proposed`; every candidate references the source import and can include message IDs.
 4. A reviewer approves, rejects, or supersedes a proposed memory using an expected version.
 5. Only active memories should be included in normal context assembly. Rejected and superseded records remain available for audit/history.
@@ -59,4 +59,5 @@ The import endpoint accepts at most 5,000 messages and 900 KB of message content
 - Automatic deduplication and contradiction resolution.
 - Memory decay/expiry policies and scheduled consolidation.
 - Provider-specific live chat synchronization. Consumer chat exports remain user-initiated unless a provider offers a supported authorized API.
+- The first extraction worker uses DeepSeek; a provider-neutral extractor interface and additional extraction providers remain future work.
 - Context bundle assembly and automatic delivery to provider adapters.
