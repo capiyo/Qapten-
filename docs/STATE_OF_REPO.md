@@ -1,6 +1,6 @@
 # State of Repository
 
-**Last updated:** 2026-11-08
+**Last updated:** 2026-11-21
 
 **Product identity:** Axon (working name; public trademark/domain clearance not yet completed).
 
@@ -9,8 +9,8 @@
 - Repository: `capiyo/Qapten-`
 - Default branch: `main`
 - Visibility: public
-- Active implementation branch: `foundation/axum-web-skeleton`
-- Review: [Draft PR #1](https://github.com/capiyo/Qapten-/pull/1)
+- Foundation branch: `foundation/axum-web-skeleton` ([Draft PR #1](https://github.com/capiyo/Qapten-/pull/1))
+- Current feature branch: `feature/axon-memory-consensus-routing` ([Draft PR #3](https://github.com/capiyo/Qapten-/pull/3))
 - License: MIT (see [LICENSE](../LICENSE))
 
 ## Implemented on the draft branch
@@ -40,14 +40,14 @@
 
 ## Not implemented
 
-- Persistent MongoDB adapter, schema migrations, and durable event/audit storage.
+- Persistent MongoDB adapter for workspaces, agents, tasks, artifacts, and durable event/audit storage. The memory and capability-poll collections are implemented on the feature branch.
 - Cryptographic device enrollment, persistent replay/idempotency enforcement, and device gateway.
 - Authentication adapters, verified caller identity, workspace membership persistence, grant issuance/revocation APIs, and route-level authorization enforcement.
 - Artifact content hashing, classification enforcement, context bundle read API, and retention controls.
 - Durable tamper-evident audit storage, verified actor attribution, full decision records, permission management, and revocation UI.
 - Firebase ID-token verification and server-side route authorization.
-- AXON backend API integration for Python transfer persistence and response artifact creation.
-- Direct Claude chat-history API access; current import uses user-authorized exports, not browser scraping.
+- Persistence of the original Claude-to-DeepSeek AXP transfer as a task response artifact. The separate `axon-memory` workflow persists proposed memories; the `axon-route` worker currently returns winner output to the CLI.
+- Direct live ChatGPT/Claude consumer chat-history API access; imports use user-authorized exports, not browser scraping.
 - Attachment/image/tool-use transfer and resumable large-context transfer.
 - Additional agent provider APIs, webhooks, and autonomous agent execution.
 - C++/Drogon service and Zig utilities (intentionally deferred until justified).
@@ -56,11 +56,11 @@
 
 ## Python connector limitations
 
-The Python connector imports one user-authorized Claude conversation export and calls DeepSeek's API after explicit approval. Preview can display the exact AXP context; the payload carries a SHA-256 digest for change detection, not a signature or proof of origin. Its standalone actor ID is provenance metadata, not authentication. The transfer is not yet persisted in the AXON backend, and DeepSeek output is returned locally rather than stored as a task response artifact. Do not commit provider API keys. Production integration must verify Firebase ID tokens and enforce workspace/capability authorization on the backend.
+The original Claude-export to DeepSeek AXP transfer connector remains a preview/analysis flow and does not persist its response as a task artifact. The new `axon-memory` CLI accepts user-authorized ChatGPT and Claude exports, sends the selected conversation to DeepSeek only after explicit approval, validates structured candidate memories and source message IDs, and can persist the source plus proposed memories in MongoDB. The `axon-route` CLI uses configured OpenAI-compatible providers to collect nominations, persists the majority poll, and sends the task only to a strict-majority winner. Provider keys are read from environment variables, never the model catalog. Both workflows use a local Axon API because authentication is not yet implemented. Direct consumer chat synchronization, attachment/image transfer, non-OpenAI-compatible adapters, provider price discovery, and durable task-result artifacts remain incomplete.
 
 ## Runtime limitations
 
-The current API uses an in-process memory store. All records, including the audit stream, disappear when the process exits. The development audit stream is append-only within one process but is neither durable nor tamper-evident. Simulator telemetry is bounded to 500 retained events per device; event-ID deduplication is limited to that retained window. This is not durable replay protection. It has no authentication or route-level authorization enforcement. The identity module evaluates grants only for principals supplied by a future trusted authentication adapter; it does not establish identity. It refuses non-loopback binding by default; the explicit override is for isolated development only. Do not expose it to a network or use it for sensitive information.
+Workspace, agent, task, artifact, robotics, and audit state still uses the in-process store and disappears when the API process exits. MongoDB currently persists only conversation imports, memory records, and capability polls. The development audit stream is append-only within one process but is neither durable nor tamper-evident. Simulator telemetry is bounded to 500 retained events per device; event-ID deduplication is limited to that retained window. This is not durable replay protection. The API has no authentication or route-level workspace authorization. The identity module evaluates grants only for principals supplied by a future trusted authentication adapter; it does not establish identity. It refuses non-loopback binding by default; the explicit override is for isolated development only. Do not expose it to a network or use it for sensitive information.
 
 ## Memory and capability-routing work on `feature/axon-memory-consensus-routing`
 
@@ -97,5 +97,5 @@ GitHub Actions run [42500672881](https://github.com/capiyo/Qapten-/actions/runs/
 - `frontend/` is the client layer: web, mobile, and frontend-only shared TypeScript contracts.
 - `backend/` is the server layer: Axum currently owns API behavior and authoritative domain state.
 - `contracts/` is the language-neutral, versioned protocol boundary.
-- Axum remains the initial orchestration authority. MongoDB is the planned persistence layer, subject to schema and transaction design.
+- Axum remains the initial orchestration authority. MongoDB now persists memory imports, memories, and capability polls; the remaining core workspace/task persistence is still planned.
 - Drogon and Zig remain evidence-driven extension points, not duplicated orchestration services.
