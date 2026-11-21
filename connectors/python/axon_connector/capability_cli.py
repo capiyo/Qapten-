@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import json
+import math
 import os
 import sys
 
@@ -56,6 +57,11 @@ async def _run(args: argparse.Namespace) -> int:
             raise ValueError("Task must contain 1–10000 characters.")
         if not args.capability.strip() or len(args.capability) > 120:
             raise ValueError("Capability must contain 1–120 characters.")
+        if args.max_cost_per_1k_tokens is not None and (
+            not math.isfinite(args.max_cost_per_1k_tokens)
+            or args.max_cost_per_1k_tokens < 0
+        ):
+            raise ValueError("--max-cost-per-1k-tokens must be finite and non-negative.")
 
         models = load_model_catalog(args.models)
         available_models = tuple(
@@ -83,7 +89,15 @@ async def _run(args: argparse.Namespace) -> int:
         print(f"Approved Axon memory context: {memory_label}")
         print("Eligible models:")
         for model in available_models:
-            print(f"- {model.display_name} ({model.provider}) [{model.model_id}]")
+            cost = (
+                "unknown price"
+                if model.estimated_cost_per_1k_tokens is None
+                else f"${model.estimated_cost_per_1k_tokens:.6f}/1k tokens"
+            )
+            print(
+                f"- {model.display_name} ({model.provider}) "
+                f"[{model.model_id}] — {cost}"
+            )
 
         if not args.approve_provider_sharing:
             print(
