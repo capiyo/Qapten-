@@ -29,11 +29,25 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     let listener = TcpListener::bind(address).await?;
+    let mut state = AppState::default();
+    match env::var("MONGODB_URI") {
+        Ok(uri) if !uri.trim().is_empty() => {
+            let database = env::var("MONGODB_DATABASE").unwrap_or_else(|_| "axon".to_owned());
+            let repository = MemoryRepository::connect(&uri, &database).await?;
+            state.memory = Some(Arc::new(repository));
+            tracing::info!(database = %database, "MongoDB-backed durable memory enabled");
+        }
+        _ if env::var("AXON_ENV").as_deref() == Ok("production") => {
+            return Err("MONGODB_URI is required when AXON_ENV=production".into());
+        }
+        _ => tracing::warn!("MONGODB_URI not configured; durable memory endpoints are disabled"),
+    }
+
     tracing::info!(
         %address,
-        "Axon API listening (development in-memory store; no authentication)"
+        "Axon API listening (loopback-only development mode; authentication is not implemented)"
     );
-    axum::serve(listener, app(AppState::default()))
+    axum::serve(listener, app(state))
         .with_graceful_shutdown(shutdown_signal())
         .await?;
     Ok(())
