@@ -1,5 +1,8 @@
 pub mod audit;
+pub mod capability;
 pub mod identity;
+pub mod memory;
+mod memory_routes;
 mod model;
 pub mod robotics;
 mod robotics_routes;
@@ -18,6 +21,18 @@ use tower_http::{limit::RequestBodyLimitLayer, trace::TraceLayer};
 pub fn app(state: AppState) -> Router {
     Router::new()
         .route("/health", get(routes::health))
+        .route(
+            "/api/v1/workspaces/:workspace_id/memory/imports",
+            post(memory_routes::import_conversation),
+        )
+        .route(
+            "/api/v1/workspaces/:workspace_id/memories",
+            get(memory_routes::list_memories).post(memory_routes::create_memory),
+        )
+        .route(
+            "/api/v1/workspaces/:workspace_id/memories/:memory_id/review",
+            post(memory_routes::review_memory),
+        )
         .route(
             "/api/v1/workspaces/:workspace_id/audit",
             get(routes::list_audit_events),
