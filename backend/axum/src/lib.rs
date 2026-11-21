@@ -47,6 +47,10 @@ pub fn app(state: AppState) -> Router {
             get(memory_routes::get_import),
         )
         .route(
+            "/api/v1/workspaces/:workspace_id/memory/context",
+            get(memory_routes::context_memories),
+        )
+        .route(
             "/api/v1/workspaces/:workspace_id/memories",
             get(memory_routes::list_memories).post(memory_routes::create_memory),
         )
