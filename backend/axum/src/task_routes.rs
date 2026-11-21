@@ -230,7 +230,11 @@ pub async fn submit_task(
         .await
         .map_err(|_| storage_failure())?;
 
-    state.artifacts.write().await.insert(artifact.id, artifact.clone());
+    state
+        .artifacts
+        .write()
+        .await
+        .insert(artifact.id, artifact.clone());
     tasks.insert(task.id, task.clone());
 
     Ok(Json(TaskSubmission { task, artifact }))
