@@ -63,5 +63,7 @@ jobs:
         with:
           python-version: "3.11"
       - run: python -m pip install -e ".[dev]"
+      - name: Show Ruff import normalization
+        run: ruff check --diff axon_connector/memory.py || true
       - run: ruff check .
       - run: pytest
