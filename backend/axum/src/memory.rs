@@ -48,6 +48,7 @@ pub struct MemorySource {
     #[serde(default)]
     pub message_ids: Vec<String>,
     pub captured_at: DateTime<Utc>,
+    pub source_content_sha256: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -64,7 +65,7 @@ pub struct MemoryRecord {
     pub status: MemoryStatus,
     pub version: u64,
     pub content_sha256: String,
-    pub supersedes_id: Option<Uuid>,
+    pub superseded_by_id: Option<Uuid>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
@@ -124,7 +125,7 @@ pub enum MemoryReviewDecision {
 pub struct ReviewMemoryRequest {
     pub expected_version: u64,
     pub decision: MemoryReviewDecision,
-    pub supersedes_id: Option<Uuid>,
+    pub superseded_by_id: Option<Uuid>,
 }
 
 #[derive(Debug, Clone)]
@@ -166,8 +167,8 @@ impl MemoryRepository {
         imports
             .create_index(
                 IndexModel::builder()
-                    .keys(doc! { "workspace_id": 1, "imported_at": -1 })
-                    .options(IndexOptions::builder().name("conversation_import_workspace_time".into()).build())
+                    .keys(doc! { "workspace_id": 1, "provider": 1, "conversation_id": 1, "content_sha256": 1 })
+                    .options(IndexOptions::builder().name("conversation_import_identity".into()).unique(true).build())
                     .build(),
                 None,
             )
@@ -187,15 +188,15 @@ impl MemoryRepository {
             .map(|message| format!("{}\n{}", message.role, message.content))
             .collect::<Vec<_>>()
             .join("\n\n");
-        let record = ConversationImport {
-            id: Uuid::new_v4(),
+        let content_sha256 = sha256(&canonical);
+        if let Some(existing) = self.imports.find_one(doc! {\n            "workspace_id": workspace_id.to_string(),\n            "provider": input.provider.trim(),\n            "conversation_id": input.conversation_id.trim(),\n            "content_sha256": &content_sha256,\n        }, None).await? {\n            return Ok(existing);\n        }\n        let record = ConversationImport {\n            id: Uuid::new_v4(),
             workspace_id,
             provider: input.provider,
             conversation_id: input.conversation_id,
             title: input.title,
             message_count: input.messages.len(),
             messages: input.messages,
-            content_sha256: sha256(&canonical),
+            content_sha256,
             imported_at: Utc::now(),
         };
         self.imports.insert_one(record.clone(), None).await?;
@@ -216,6 +217,11 @@ impl MemoryRepository {
             .await?
             .ok_or_else(|| mongodb::error::Error::custom("Source conversation import was not found in this workspace."))?;
 
+        let imported_message_ids: std::collections::HashSet<String> = source.messages.iter().filter_map(|message| message.id.clone()).collect();
+        if input.message_ids.iter().any(|message_id| !imported_message_ids.contains(message_id)) {
+            return Err(mongodb::error::Error::custom("A memory source message ID does not exist in the referenced conversation import."));
+        }
+
         let now = Utc::now();
         let record = MemoryRecord {
             id: Uuid::new_v4(),
@@ -231,12 +237,13 @@ impl MemoryRepository {
                 import_id: source.id,
                 message_ids: input.message_ids,
                 captured_at: source.imported_at,
+                source_content_sha256: source.content_sha256,
             },
             confidence: input.confidence,
             status: MemoryStatus::Proposed,
             version: 1,
             content_sha256: sha256(input.content.trim()),
-            supersedes_id: None,
+            superseded_by_id: None,
             created_at: now,
             updated_at: now,
         };
@@ -272,20 +279,28 @@ impl MemoryRepository {
         memory_id: Uuid,
         input: ReviewMemoryRequest,
     ) -> mongodb::error::Result<Option<MemoryRecord>> {
+        if matches!(&input.decision, MemoryReviewDecision::Supersede) {
+            let replacement_id = input.superseded_by_id.ok_or_else(|| {
+                mongodb::error::Error::custom("superseded_by_id is required when superseding a memory.")
+            })?;
+            let replacement = self.memories.find_one(doc! {
+                "id": replacement_id.to_string(),
+                "workspace_id": workspace_id.to_string(),
+                "status": "active",
+            }, None).await?;
+            if replacement.is_none() {
+                return Err(mongodb::error::Error::custom("Replacement memory must exist and be active in this workspace."));
+            }
+        }
         let next_status = match input.decision {
             MemoryReviewDecision::Approve => MemoryStatus::Active,
             MemoryReviewDecision::Reject => MemoryStatus::Rejected,
             MemoryReviewDecision::Supersede => MemoryStatus::Superseded,
         };
-        if matches!(&next_status, MemoryStatus::Superseded) && input.supersedes_id.is_none() {
-            return Err(mongodb::error::Error::custom(
-                "supersedes_id is required when superseding a memory.",
-            ));
-        }
         let update = doc! {
             "$set": {
                 "status": next_status.as_str(),
-                "supersedes_id": input.supersedes_id.map(|id| id.to_string()),
+                "superseded_by_id": input.superseded_by_id.map(|id| id.to_string()),
                 "updated_at": mongodb::bson::DateTime::from_chrono(Utc::now()),
             },
             "$inc": { "version": 1_i64 },
@@ -352,6 +367,9 @@ pub fn validate_import(input: &ImportConversationRequest) -> Result<(), &'static
         }
         if message.content.is_empty() {
             return Err("Messages cannot have empty content.");
+        }
+        if message.id.as_ref().is_some_and(|id| id.is_empty() || id.len() > 256) {
+            return Err("Message IDs must contain 1–256 characters when provided.");
         }
         total_bytes = total_bytes.saturating_add(message.content.len());
     }
