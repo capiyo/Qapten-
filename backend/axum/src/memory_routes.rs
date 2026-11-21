@@ -109,7 +109,8 @@ pub async fn review_memory(
     record.map(Json).ok_or_else(|| {
         api_error(
             StatusCode::CONFLICT,
-            "Memory was not found, is no longer proposed, or its version changed. Reload before retrying.",
+            "Memory was not found, is no longer proposed, or its version changed. \
+             Reload before retrying.",
         )
     })
 }
