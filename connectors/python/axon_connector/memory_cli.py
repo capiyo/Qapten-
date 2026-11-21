@@ -134,7 +134,6 @@ async def _run(args: argparse.Namespace) -> int:
     except (
         OSError,
         ValueError,
-        PermissionError,
         DeepSeekError,
         httpx.HTTPError,
         json.JSONDecodeError,
