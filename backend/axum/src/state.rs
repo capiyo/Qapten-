@@ -1,6 +1,6 @@
 use crate::{
-    memory::MemoryRepository,
     audit::AuditStore,
+    memory::MemoryRepository,
     model::{Agent, Artifact, Task, Workspace},
     robotics::TelemetryEvent,
 };
