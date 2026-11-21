@@ -20,7 +20,7 @@ pub struct TelemetryStore {
     pub event_ids: HashSet<String>,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct AppState {
     pub workspaces: Arc<RwLock<HashMap<Uuid, Workspace>>>,
     pub agents: Arc<RwLock<HashMap<Uuid, Agent>>>,
@@ -31,20 +31,6 @@ pub struct AppState {
     /// Runtime cache backed by the append-only audit table when SQLite is configured.
     pub audit: Arc<RwLock<AuditStore>>,
     storage: Option<Arc<dyn Storage>>,
-}
-
-impl Default for AppState {
-    fn default() -> Self {
-        Self {
-            workspaces: Arc::default(),
-            agents: Arc::default(),
-            artifacts: Arc::default(),
-            tasks: Arc::default(),
-            telemetry: Arc::default(),
-            audit: Arc::default(),
-            storage: None,
-        }
-    }
 }
 
 impl AppState {
@@ -101,24 +87,8 @@ impl AppState {
         &self,
         entity: StoredEntity,
         related_entities: Vec<StoredEntity>,
-        workspace_id: Option<Uuid>,
-        event_type: &str,
-        entity_type: &str,
-        entity_id: &str,
-        metadata: Value,
+        event: AuditEvent,
     ) -> Result<(), StorageError> {
-        let event = AuditEvent {
-            sequence: 0,
-            event_id: Uuid::new_v4(),
-            workspace_id,
-            actor: "system:local-development-unattributed".into(),
-            event_type: event_type.into(),
-            entity_type: entity_type.into(),
-            entity_id: entity_id.into(),
-            occurred_at: Utc::now(),
-            metadata,
-        };
-
         if let Some(storage) = &self.storage {
             storage
                 .apply(StorageMutation {
