@@ -442,6 +442,24 @@ impl MemoryRepository {
         &self,
         poll: CapabilityPoll,
     ) -> mongodb::error::Result<CapabilityPoll> {
+        for memory_id in &poll.context_memory_ids {
+            let active_memory = self
+                .memories
+                .find_one(
+                    doc! {
+                        "id": memory_id.to_string(),
+                        "workspace_id": poll.workspace_id.to_string(),
+                        "status": "active",
+                    },
+                    None,
+                )
+                .await?;
+            if active_memory.is_none() {
+                return Err(mongodb::error::Error::custom(
+                    "Capability poll context must reference active memories in the same workspace.",
+                ));
+            }
+        }
         self.capability_polls.insert_one(poll.clone(), None).await?;
         Ok(poll)
     }
