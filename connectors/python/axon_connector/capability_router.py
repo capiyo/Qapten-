@@ -264,6 +264,7 @@ async def run_majority_route(
                 "capability": capability,
                 "task_brief": routed_task,
                 "external_sharing_approved": True,
+                "context_memory_ids": memory_ids,
                 "electorate": [item["voter_model_id"] for item in nominations],
                 "candidates": candidates,
             },
