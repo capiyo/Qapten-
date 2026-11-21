@@ -102,7 +102,11 @@ impl CapabilityPoll {
             candidates.iter().map(|candidate| &candidate.model_id).collect();
         if unique_electorate.len() != electorate.len()
             || unique_candidates.len() != candidates.len()
-            || electorate.iter().any(|voter| !unique_candidates.contains(voter))
+            || electorate.iter().any(|voter| {
+                !candidates
+                    .iter()
+                    .any(|candidate| candidate.model_id == *voter)
+            })
         {
             return Err(NominationError::InvalidPoll);
         }
