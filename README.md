@@ -54,7 +54,7 @@ The initial Python bridge imports user-authorized Claude conversation exports, n
 
 Axon includes a MongoDB-backed memory subsystem for preserving provider-authorized conversation imports and proposed, provenance-linked memories. Memory records remain proposed until reviewed; active memories can be searched within a workspace. See [Memory Architecture](docs/MEMORY_ARCHITECTURE.md).
 
-The Rust capability engine models cross-provider nominations and strict-majority voting to select a model for a task-specific capability. It rejects self-votes, duplicate ballots, plurality-only outcomes, and ties. Provider polling and dispatch adapters are separate integration milestones. See [AI Capability Routing](docs/AI_CAPABILITY_ROUTING.md).
+The Rust capability engine and Python `axon-route` worker support cross-provider nominations, strict-majority voting, and winner-only task execution through configured OpenAI-compatible providers. The router rejects self-votes, duplicate ballots, plurality-only outcomes, and ties. See [AI Capability Routing](docs/AI_CAPABILITY_ROUTING.md).
 
 ## Getting started
 
