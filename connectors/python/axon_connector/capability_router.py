@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import json
 import math
+import os
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
@@ -13,7 +14,6 @@ import httpx
 
 from .providers.openai_compatible import (
     ModelConfig,
-    ModelProviderError,
     OpenAICompatibleClient,
 )
 
@@ -165,6 +165,9 @@ async def run_majority_route(
 ) -> dict[str, Any]:
     """Ask configured models to nominate, persist the vote, and execute only the winner."""
     base_url = _require_local_api(api_url)
+    models = tuple(model for model in models if os.getenv(model.api_key_env))
+    if len(models) < 3:
+        raise CapabilityRoutingError("At least three models must have configured provider API keys.")
     candidates = [
         {
             "model_id": model.model_id,
@@ -187,7 +190,7 @@ async def run_majority_route(
     nominations: list[dict[str, str]] = []
     failures: list[str] = []
     for model, vote in zip(models, votes, strict=True):
-        if isinstance(vote, BaseException):
+        if isinstance(vote, Exception):
             failures.append(f"{model.model_id}: {type(vote).__name__}")
         else:
             nominations.append(vote)
