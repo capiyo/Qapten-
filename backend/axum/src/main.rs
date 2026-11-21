@@ -1,5 +1,5 @@
-use axon_api::{app, AppState};
-use std::{env, net::SocketAddr};
+use axon_api::{app, memory::MemoryRepository, AppState};
+use std::{env, net::SocketAddr, sync::Arc};
 use tokio::net::TcpListener;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
