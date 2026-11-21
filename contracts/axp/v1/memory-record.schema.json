@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://axon.local/contracts/axp/v1/memory-record.schema.json",
+  "title": "AXP Memory Record",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id", "workspace_id", "kind", "title", "content", "summary", "tags",
+    "source", "confidence", "status", "version", "content_sha256",
+    "created_at", "updated_at"
+  ],
+  "properties": {
+    "id": { "type": "string", "format": "uuid" },
+    "workspace_id": { "type": "string", "format": "uuid" },
+    "kind": {
+      "type": "string",
+      "enum": ["semantic", "episodic", "project", "decision", "preference", "procedural"]
+    },
+    "title": { "type": "string", "minLength": 1, "maxLength": 240 },
+    "content": { "type": "string", "minLength": 1, "maxLength": 20000 },
+    "summary": { "type": "string", "minLength": 1, "maxLength": 2000 },
+    "tags": { "type": "array", "maxItems": 30, "items": { "type": "string", "minLength": 1, "maxLength": 60 } },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["provider", "conversation_id", "import_id", "message_ids", "captured_at"],
+      "properties": {
+        "provider": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "conversation_id": { "type": "string", "minLength": 1, "maxLength": 256 },
+        "import_id": { "type": "string", "format": "uuid" },
+        "message_ids": { "type": "array", "maxItems": 200, "items": { "type": "string" } },
+        "captured_at": { "type": "string", "format": "date-time" }
+      }
+    },
+    "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+    "status": { "type": "string", "enum": ["proposed", "active", "rejected", "superseded"] },
+    "version": { "type": "integer", "minimum": 1 },
+    "content_sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "supersedes_id": { "type": ["string", "null"], "format": "uuid" },
+    "created_at": { "type": "string", "format": "date-time" },
+    "updated_at": { "type": "string", "format": "date-time" }
+  }
+}
