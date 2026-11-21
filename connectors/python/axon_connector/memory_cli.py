@@ -21,7 +21,10 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="axon-memory")
     parser.add_argument("conversation_export", help="Path to one exported conversation JSON file.")
     parser.add_argument("--provider", choices=("chatgpt", "claude"), required=True)
-    parser.add_argument("--conversation-id", help="Select one conversation from ChatGPT conversations.json.")
+    parser.add_argument(
+        "--conversation-id",
+        help="Select one conversation from ChatGPT conversations.json.",
+    )
     parser.add_argument("--workspace-id", required=True)
     parser.add_argument(
         "--actor-id",
