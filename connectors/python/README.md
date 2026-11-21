@@ -126,6 +126,6 @@ axon-route --task "Design a responsive dashboard" \
   --approve-provider-sharing
 ```
 
-The worker asks eligible models to nominate a candidate in parallel, persists the valid nominations in Axon, and requires a strict majority. A tie or plurality does not select a winner. When a winner exists, only that model receives the execution request. The result is returned to the terminal; task-response artifact persistence and provider-specific adapters for non-OpenAI-compatible APIs remain future work.
+Use `--max-cost-per-1k-tokens` to impose an optional USD cost-estimate ceiling; models without a configured estimate are excluded when this option is set. The worker asks eligible models to nominate a candidate in parallel, persists the valid nominations in Axon, and requires a strict majority. A tie or plurality does not select a winner. When a winner exists, only that model receives the execution request. The result is returned to the terminal; task-response artifact persistence and provider-specific adapters for non-OpenAI-compatible APIs remain future work.
 
 This is an explicit data-sharing workflow: the task brief is sent to every eligible voter after `--approve-provider-sharing`. Use capability tags to prevent irrelevant models from participating. API keys are read from environment variables, and Axon's API must remain local until authentication and workspace authorization are implemented.
