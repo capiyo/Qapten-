@@ -218,4 +218,66 @@ mod tests {
 
         assert_eq!(response.status(), StatusCode::FORBIDDEN);
     }
+
+
+    use crate::robotics::{TelemetryKind, TelemetryQuality};
+    use chrono::Duration;
+
+    fn input(event_id: &str, sequence: u64) -> TelemetryIngest {
+        TelemetryIngest {
+            event_id: event_id.into(),
+            sequence,
+            observed_at: Utc::now() - Duration::seconds(1),
+            kind: TelemetryKind::Heartbeat,
+            frame_id: None,
+            payload: serde_json::Map::new(),
+            quality: TelemetryQuality::Simulated,
+        }
+    }
+
+    #[tokio::test]
+    async fn simulator_ingress_rejects_replayed_sequence_without_mutating_store() {
+        let state = AppState::default();
+        ingest_simulated_telemetry(
+            State(state.clone()),
+            Path("sim-test".into()),
+            Json(input("event-1", 5)),
+        )
+        .await
+        .expect("first event should be accepted");
+
+        let replay = ingest_simulated_telemetry(
+            State(state.clone()),
+            Path("sim-test".into()),
+            Json(input("event-2", 5)),
+        )
+        .await
+        .expect_err("sequence replay must be rejected");
+        assert_eq!(replay.0, StatusCode::CONFLICT);
+        let store = state.telemetry.read().await;
+        assert_eq!(store.events_by_device["sim-test"].len(), 1);
+        assert_eq!(store.last_sequence_by_device["sim-test"], 5);
+    }
+
+    #[tokio::test]
+    async fn simulator_ingress_retains_only_latest_five_hundred_events() {
+        let state = AppState::default();
+        for sequence in 1..=501 {
+            ingest_simulated_telemetry(
+                State(state.clone()),
+                Path("sim-test".into()),
+                Json(input(&format!("event-{sequence}"), sequence)),
+            )
+            .await
+            .expect("monotonic simulator event should be accepted");
+        }
+
+        let store = state.telemetry.read().await;
+        let events = &store.events_by_device["sim-test"];
+        assert_eq!(events.len(), 500);
+        assert_eq!(events.first().map(|event| event.sequence), Some(2));
+        assert_eq!(events.last().map(|event| event.sequence), Some(501));
+        assert!(!store.event_ids.contains("event-1"));
+    }
+
 }
