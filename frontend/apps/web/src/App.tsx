@@ -425,7 +425,7 @@ export default function App() {
                         <input id="memory-tags" value={memoryTags} onChange={event => setMemoryTags(event.target.value)} placeholder="axon, architecture, persistence" />
                       </div>
                     </div>
-                    <button disabled={!memoryTitle.trim() || !memorySummary.trim() || !memoryContent.trim() || busy || memoryAvailable === false}>
+                    <button disabled={!memoryTitle.trim() || !memorySummary.trim() || !memoryContent.trim() || busy}>
                       {busy ? "Saving…" : "Save proposed memory"}
                     </button>
                     <span className="memory-note">New memories start as proposed. They do not enter AI context until approved.</span>
