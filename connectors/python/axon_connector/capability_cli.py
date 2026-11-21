@@ -29,6 +29,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--workspace-id", required=True)
     parser.add_argument("--models", required=True, help="Path to the JSON model catalog.")
     parser.add_argument(
+        "--max-cost-per-1k-tokens",
+        type=float,
+        help="Optional estimated USD cost ceiling per 1000 tokens; models without a price are excluded.",
+    )
+    parser.add_argument(
         "--api-url",
         default=os.getenv("AXON_API_URL", "http://127.0.0.1:8080"),
     )
@@ -58,6 +63,13 @@ async def _run(args: argparse.Namespace) -> int:
             for model in models
             if os.getenv(model.api_key_env)
             and (args.capability in model.capabilities or "*" in model.capabilities)
+            and (
+                args.max_cost_per_1k_tokens is None
+                or (
+                    model.estimated_cost_per_1k_tokens is not None
+                    and model.estimated_cost_per_1k_tokens <= args.max_cost_per_1k_tokens
+                )
+            )
         )
         if len(available_models) < 3:
             raise ValueError(
@@ -88,6 +100,7 @@ async def _run(args: argparse.Namespace) -> int:
             api_url=args.api_url,
             include_memory=args.include_memory,
             provider_sharing_approved=args.approve_provider_sharing,
+            max_cost_per_1k_tokens=args.max_cost_per_1k_tokens,
         )
         print("\n--- Majority poll ---")
         print(json.dumps(outcome["result"], ensure_ascii=False, indent=2))
