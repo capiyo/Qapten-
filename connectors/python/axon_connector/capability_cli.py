@@ -91,6 +91,8 @@ async def _run(args: argparse.Namespace) -> int:
         print("\n--- Majority poll ---")
         print(json.dumps(outcome["result"], ensure_ascii=False, indent=2))
         print(f"Poll ID: {outcome['poll_id']}")
+        if outcome["memory_ids"]:
+            print("Memory IDs included: " + ", ".join(outcome["memory_ids"]))
         if outcome["provider_failures"]:
             print("Provider failures:")
             for failure in outcome["provider_failures"]:
