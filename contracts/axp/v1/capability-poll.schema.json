@@ -4,7 +4,7 @@
   "title": "AXP AI Capability Poll",
   "type": "object",
   "additionalProperties": false,
-  "required": ["id", "workspace_id", "version", "capability", "task_brief", "external_sharing_approved", "electorate", "candidates", "nominations", "status", "created_at"],
+  "required": ["id", "workspace_id", "version", "capability", "task_brief", "external_sharing_approved", "context_memory_ids", "electorate", "candidates", "nominations", "status", "created_at"],
   "properties": {
     "id": { "type": "string", "format": "uuid" },
     "workspace_id": { "type": "string", "format": "uuid" },
@@ -12,6 +12,7 @@
     "capability": { "type": "string", "minLength": 1, "maxLength": 120 },
     "task_brief": { "type": "string", "minLength": 1, "maxLength": 10000 },
     "external_sharing_approved": { "type": "boolean", "const": true },
+    "context_memory_ids": { "type": "array", "maxItems": 50, "uniqueItems": true, "items": { "type": "string", "format": "uuid" } },
     "electorate": { "type": "array", "minItems": 3, "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
     "candidates": {
       "type": "array",
