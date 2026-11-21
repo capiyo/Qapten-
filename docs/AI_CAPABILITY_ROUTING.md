@@ -31,7 +31,7 @@ The Rust capability module implements the poll domain and strict-majority tally 
 Nomination and finalization writes use version-checked atomic document replacement. Concurrent submissions based on a stale version are rejected and must be retried after reloading.
 ## Running the router
 
-Configure up to 30 models in `connectors/python/models.example.json` (copy it to a private local catalog and replace endpoint, model ID, and environment-variable names). Provider API keys stay in environment variables; they are never stored in the catalog. Models must declare the requested capability, and only models with configured keys participate. Optional catalog prices are estimates in USD per 1,000 tokens; `--max-cost-per-1k-tokens` excludes models without a known estimate or above the ceiling. Price discovery and verification are not automated yet.
+Configure up to 30 models using the [AXP model catalog schema](../contracts/axp/v1/model-catalog.schema.json) and the `connectors/python/models.example.json` template (copy it to a private local catalog and replace endpoint, model ID, and environment-variable names). Provider API keys stay in environment variables; they are never stored in the catalog. Models must declare the requested capability, and only models with configured keys participate. Optional catalog prices are estimates in USD per 1,000 tokens; `--max-cost-per-1k-tokens` excludes models without a known estimate or above the ceiling. Price discovery and verification are not automated yet.
 
 Preview without sending the task:
 
