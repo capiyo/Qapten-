@@ -69,7 +69,9 @@ The current API uses an in-process memory store. All records, including the audi
 - [x] Typed memory kinds: semantic, episodic, project, decision, preference, and procedural.
 - [x] Proposed-by-default memory lifecycle with approve/reject/supersede transitions and optimistic version checks.
 - [x] Memory import, create, list/search, and review API routes.
-- [x] Strict-majority capability nomination engine with fixed electorate/candidate set, one ballot per voter, self-vote rejection, and no-winner outcome for ties or plurality.
+- [x] Strict-majority capability nomination engine with fixed electorate/candidate set, explicit external-sharing approval, one ballot per voter, self-vote rejection, and no-winner outcome for ties or plurality.
+- [x] MongoDB persistence for capability polls and nominations with optimistic version checks.
+- [x] Capability poll API: create, retrieve, nominate, and finalize.
 - [x] AXP JSON Schemas for memory records and capability polls.
 - [x] CI triggers include feature branches and pull requests targeting foundation branches.
 
@@ -77,7 +79,7 @@ The current API uses an in-process memory store. All records, including the audi
 
 - The memory API stores imported conversations and proposed memories, but it does not yet call an LLM to extract candidates automatically. A provider-neutral extraction worker and approval UI remain to be implemented.
 - MongoDB persistence is currently scoped to the memory subsystem. Existing workspaces, agents, tasks, robotics telemetry, and audit records still use process-local storage.
-- Capability polls are currently a tested Rust domain engine; persistent poll storage, provider adapters that ask the electorate, polling timeouts/retries, API endpoints, and automatic task dispatch are not yet implemented.
+- Provider adapters that ask the electorate, polling timeouts/retries, automatic task dispatch, and task execution against the winning provider are not yet implemented.
 - Vector embeddings, vector-index provisioning, semantic retrieval, context assembly, deduplication, and contradiction resolution remain future work.
 - The API still has no verified authentication or route-level workspace authorization. MongoDB-backed memory must remain loopback-only and is not safe for multi-user production deployment yet.
 
