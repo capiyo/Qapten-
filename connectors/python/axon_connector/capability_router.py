@@ -12,6 +12,7 @@ from urllib.parse import urlparse
 
 import httpx
 
+from .memory import fetch_active_memory_context
 from .providers.openai_compatible import (
     ModelConfig,
     OpenAICompatibleClient,
@@ -179,9 +180,39 @@ async def run_majority_route(
     task_brief: str,
     models: tuple[ModelConfig, ...],
     api_url: str = "http://127.0.0.1:8080",
+    include_memory: bool = False,
 ) -> dict[str, Any]:
     """Ask configured models to nominate, persist the vote, and execute only the winner."""
     base_url = _require_local_api(api_url)
+    routed_task = task_brief
+    memory_ids: list[str] = []
+    if include_memory:
+        memories = await fetch_active_memory_context(
+            workspace_id,
+            task_brief,
+            api_url=api_url,
+            limit=10,
+        )
+        remaining_chars = max(0, 9_000 - len(task_brief))
+        memory_sections: list[str] = []
+        for memory in memories:
+            if remaining_chars <= 0:
+                break
+            title = str(memory.get("title") or "Untitled memory")
+            summary = str(memory.get("summary") or "")
+            content = str(memory.get("content") or "")
+            section = f"- {title}: {summary} {content[:1_500]}".strip()
+            section = section[:remaining_chars]
+            if section:
+                memory_sections.append(section)
+                remaining_chars -= len(section)
+                if isinstance(memory.get("id"), str):
+                    memory_ids.append(memory["id"])
+        if memory_sections:
+            routed_task = (
+                f"{task_brief}\n\nApproved Axon memories relevant to this task:\n"
+                + "\n".join(memory_sections)
+            )
     models = tuple(
         model
         for model in models
@@ -206,7 +237,7 @@ async def run_majority_route(
 
     votes = await asyncio.gather(
         *(
-            _ask_model_to_nominate(model, task_brief, capability, candidates)
+            _ask_model_to_nominate(model, routed_task, capability, candidates)
             for model in models
         ),
         return_exceptions=True,
@@ -231,7 +262,7 @@ async def run_majority_route(
             f"{base_url}/api/v1/workspaces/{workspace_id}/capability-polls",
             json={
                 "capability": capability,
-                "task_brief": task_brief,
+                "task_brief": routed_task,
                 "external_sharing_approved": True,
                 "electorate": [item["voter_model_id"] for item in nominations],
                 "candidates": candidates,
@@ -266,6 +297,7 @@ async def run_majority_route(
         "provider_failures": failures,
         "winner": None,
         "task_result": None,
+        "memory_ids": memory_ids,
     }
     if winner_id is None:
         return outcome
@@ -278,5 +310,5 @@ async def run_majority_route(
         "provider": winner.provider,
         "display_name": winner.display_name,
     }
-    outcome["task_result"] = await _execute_task(winner, task_brief, capability)
+    outcome["task_result"] = await _execute_task(winner, routed_task, capability)
     return outcome
