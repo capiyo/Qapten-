@@ -233,6 +233,16 @@ impl CapabilityPoll {
 mod tests {
     use super::*;
 
+    fn candidate(model_id: &str) -> ModelCandidate {
+        ModelCandidate {
+            model_id: model_id.into(),
+            provider: format!("provider-{model_id}"),
+            display_name: model_id.into(),
+            capabilities: vec!["visual_design".into()],
+            estimated_cost_per_1k_tokens: Some(0.001),
+        }
+    }
+
     fn fixture() -> CapabilityPoll {
         CapabilityPoll::new(
             Uuid::new_v4(),
@@ -240,27 +250,18 @@ mod tests {
             "Design a responsive dashboard for a finance application.".into(),
             true,
             vec![
-                "voter-a".into(),
-                "voter-b".into(),
-                "voter-c".into(),
-                "voter-d".into(),
-                "voter-e".into(),
+                "model-alpha".into(),
+                "model-beta".into(),
+                "model-gamma".into(),
+                "model-delta".into(),
+                "model-epsilon".into(),
             ],
             vec![
-                ModelCandidate {
-                    model_id: "model-alpha".into(),
-                    provider: "provider-a".into(),
-                    display_name: "Alpha".into(),
-                    capabilities: vec!["ui_design".into()],
-                    estimated_cost_per_1k_tokens: Some(0.001),
-                },
-                ModelCandidate {
-                    model_id: "model-beta".into(),
-                    provider: "provider-b".into(),
-                    display_name: "Beta".into(),
-                    capabilities: vec!["ui_design".into()],
-                    estimated_cost_per_1k_tokens: Some(0.002),
-                },
+                candidate("model-alpha"),
+                candidate("model-beta"),
+                candidate("model-gamma"),
+                candidate("model-delta"),
+                candidate("model-epsilon"),
             ],
         )
         .unwrap()
@@ -269,13 +270,17 @@ mod tests {
     #[test]
     fn strict_majority_selects_the_model_for_the_task() {
         let mut poll = fixture();
-        for voter in ["voter-a", "voter-b", "voter-c"] {
+        for voter in ["model-beta", "model-gamma", "model-delta"] {
             poll.nominate(voter, "model-alpha", "Strong visual composition and layout control.")
                 .unwrap();
         }
-        poll.nominate("voter-d", "model-beta", "Better at generating complete UI code.")
-            .unwrap();
-        poll.nominate("voter-e", "model-beta", "Good visual reasoning.")
+        poll.nominate(
+            "model-alpha",
+            "model-beta",
+            "Better at generating complete UI code.",
+        )
+        .unwrap();
+        poll.nominate("model-epsilon", "model-beta", "Good visual reasoning.")
             .unwrap();
 
         let result = poll.finalize().unwrap();
@@ -287,13 +292,20 @@ mod tests {
     #[test]
     fn plurality_is_not_misreported_as_a_majority() {
         let mut poll = fixture();
-        poll.electorate.push("voter-f".into());
-        poll.nominate("voter-a", "model-alpha", "Reason one.").unwrap();
-        poll.nominate("voter-b", "model-alpha", "Reason two.").unwrap();
-        poll.nominate("voter-c", "model-beta", "Reason three.").unwrap();
-        poll.nominate("voter-d", "model-beta", "Reason four.").unwrap();
-        poll.nominate("voter-e", "model-alpha", "Reason five.").unwrap();
-        poll.nominate("voter-f", "model-beta", "Reason six.").unwrap();
+        poll.electorate.push("model-zeta".into());
+        poll.candidates.push(candidate("model-zeta"));
+        poll.nominate("model-beta", "model-alpha", "Reason one.")
+            .unwrap();
+        poll.nominate("model-gamma", "model-alpha", "Reason two.")
+            .unwrap();
+        poll.nominate("model-delta", "model-beta", "Reason three.")
+            .unwrap();
+        poll.nominate("model-epsilon", "model-beta", "Reason four.")
+            .unwrap();
+        poll.nominate("model-alpha", "model-gamma", "Reason five.")
+            .unwrap();
+        poll.nominate("model-zeta", "model-gamma", "Reason six.")
+            .unwrap();
 
         let result = poll.finalize().unwrap();
         assert_eq!(result.winner_model_id, None);
@@ -304,17 +316,38 @@ mod tests {
     fn rejects_self_votes_duplicate_ballots_and_unknown_voters() {
         let mut poll = fixture();
         assert_eq!(
-            poll.nominate("voter-a", "voter-a", "Self vote."),
+            poll.nominate("model-alpha", "model-alpha", "Self vote."),
             Err(NominationError::SelfNomination)
         );
-        poll.nominate("voter-a", "model-alpha", "First ballot.").unwrap();
+        poll.nominate("model-alpha", "model-beta", "First ballot.")
+            .unwrap();
         assert_eq!(
-            poll.nominate("voter-a", "model-beta", "Second ballot."),
+            poll.nominate("model-alpha", "model-gamma", "Second ballot."),
             Err(NominationError::DuplicateBallot)
         );
         assert_eq!(
             poll.nominate("not-in-electorate", "model-beta", "Unknown voter."),
             Err(NominationError::UnknownVoter)
         );
+    }
+
+    #[test]
+    fn poll_creation_requires_explicit_sharing_approval() {
+        let mut poll = fixture();
+        poll.external_sharing_approved = false;
+        assert!(!poll.external_sharing_approved);
+        assert!(CapabilityPoll::new(
+            Uuid::new_v4(),
+            "visual_design".into(),
+            "Design a dashboard.".into(),
+            false,
+            vec!["model-alpha".into(), "model-beta".into(), "model-gamma".into()],
+            vec![
+                candidate("model-alpha"),
+                candidate("model-beta"),
+                candidate("model-gamma"),
+            ],
+        )
+        .is_err());
     }
 }
