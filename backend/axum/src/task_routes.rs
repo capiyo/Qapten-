@@ -1,5 +1,6 @@
 use crate::{
     model::{Artifact, CreateTask, SubmitTask, Task, TaskStatus, TaskTransition, TransitionTask},
+    storage::StoredEntity,
     AppState,
 };
 use axum::{
@@ -17,6 +18,13 @@ type TaskResult<T> = Result<T, (StatusCode, Json<TaskApiError>)>;
 pub struct TaskApiError {
     error: String,
     current_version: Option<u64>,
+}
+
+fn storage_failure() -> (StatusCode, Json<TaskApiError>) {
+    error(
+        StatusCode::INTERNAL_SERVER_ERROR,
+        "The change could not be committed. Please retry.",
+    )
 }
 
 fn error(status: StatusCode, message: impl Into<String>) -> (StatusCode, Json<TaskApiError>) {
@@ -95,8 +103,19 @@ pub async fn create_task(
         }],
     };
 
+    state
+        .persist_entity(
+            StoredEntity::Task(task.clone()),
+            Vec::new(),
+            Some(workspace_id),
+            "task.created",
+            "task",
+            &task.id.to_string(),
+            serde_json::json!({"assignee_agent_id": task.assignee_agent_id, "context_artifact_count": task.context_artifact_ids.len()}),
+        )
+        .await
+        .map_err(|_| storage_failure())?;
     state.tasks.write().await.insert(task.id, task.clone());
-    state.audit.write().await.append(Some(workspace_id), "task.created", "task", task.id.to_string(), serde_json::json!({"assignee_agent_id": task.assignee_agent_id, "context_artifact_count": task.context_artifact_ids.len()}));
     Ok((StatusCode::CREATED, Json(task)))
 }
 
@@ -155,8 +174,7 @@ pub async fn submit_task(
         ));
     }
 
-    let mut tasks = state.tasks.write().await;
-    let Some(task) = tasks.get_mut(&task_id) else {
+    let Some(mut task) = state.tasks.read().await.get(&task_id).cloned() else {
         return Err(error(StatusCode::NOT_FOUND, "Task not found."));
     };
     if task.version != input.expected_version {
@@ -184,12 +202,6 @@ pub async fn submit_task(
         source_agent_id: Some(task.assignee_agent_id),
         captured_at: now,
     };
-    state
-        .artifacts
-        .write()
-        .await
-        .insert(artifact.id, artifact.clone());
-
     task.response_artifact_id = Some(artifact.id);
     task.status = TaskStatus::Submitted;
     task.version += 1;
@@ -204,18 +216,23 @@ pub async fn submit_task(
         occurred_at: now,
     });
 
-    state.audit.write().await.append(
-        Some(task.workspace_id),
-        "task.response_submitted",
-        "task",
-        task.id.to_string(),
-        serde_json::json!({"response_artifact_id": artifact.id, "version": task.version}),
-    );
+    state
+        .persist_entity(
+            StoredEntity::Task(task.clone()),
+            vec![StoredEntity::Artifact(artifact.clone())],
+            Some(task.workspace_id),
+            "task.response_submitted",
+            "task",
+            &task.id.to_string(),
+            serde_json::json!({"response_artifact_id": artifact.id, "version": task.version}),
+        )
+        .await
+        .map_err(|_| storage_failure())?;
 
-    Ok(Json(TaskSubmission {
-        task: task.clone(),
-        artifact,
-    }))
+    state.artifacts.write().await.insert(artifact.id, artifact.clone());
+    state.tasks.write().await.insert(task.id, task.clone());
+
+    Ok(Json(TaskSubmission { task, artifact }))
 }
 
 pub async fn transition_task(
@@ -231,8 +248,7 @@ pub async fn transition_task(
         ));
     }
 
-    let mut tasks = state.tasks.write().await;
-    let Some(task) = tasks.get_mut(&task_id) else {
+    let Some(mut task) = state.tasks.read().await.get(&task_id).cloned() else {
         return Err(error(StatusCode::NOT_FOUND, "Task not found."));
     };
 
@@ -269,14 +285,20 @@ pub async fn transition_task(
         occurred_at: now,
     });
 
-    state.audit.write().await.append(
-        Some(task.workspace_id),
-        "task.transitioned",
-        "task",
-        task.id.to_string(),
-        serde_json::json!({"to": task.status, "version": task.version}),
-    );
-    Ok(Json(task.clone()))
+    state
+        .persist_entity(
+            StoredEntity::Task(task.clone()),
+            Vec::new(),
+            Some(task.workspace_id),
+            "task.transitioned",
+            "task",
+            &task.id.to_string(),
+            serde_json::json!({"to": task.status, "version": task.version}),
+        )
+        .await
+        .map_err(|_| storage_failure())?;
+    state.tasks.write().await.insert(task.id, task.clone());
+    Ok(Json(task))
 }
 
 #[cfg(test)]
