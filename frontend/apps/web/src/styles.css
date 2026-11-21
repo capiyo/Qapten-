@@ -163,3 +163,14 @@ footer { display: flex; justify-content: space-between; gap: 16px; color: #a5afb
   .memory-wide { grid-column: auto; }
   .memory-card-head { flex-direction: column; }
 }
+
+
+.memory-search { display: flex; gap: 8px; margin-top: 14px; }
+.memory-search input { min-width: 0; flex: 1; border: 1px solid #e3e9ee; border-radius: 9px; padding: 10px 12px; background: #fff; color: #17212b; font: inherit; font-size: 12px; }
+.memory-search button { border: 0; border-radius: 9px; padding: 9px 13px; background: #1d6be5; color: #fff; font-size: 11px; font-weight: 700; cursor: pointer; }
+.memory-search .memory-clear { background: #f1f3f5; color: #65717c; }
+.memory-search button:disabled { opacity: .45; cursor: not-allowed; }
+@media (max-width: 520px) {
+  .memory-search { flex-wrap: wrap; }
+  .memory-search input { flex-basis: 100%; }
+}
