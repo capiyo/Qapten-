@@ -1,7 +1,7 @@
 use chrono::{DateTime, Utc};
 use futures_util::TryStreamExt;
 use mongodb::{
-    bson::{doc, to_document},
+    bson::doc,
     options::{FindOptions, IndexOptions},
     Client, Collection, IndexModel,
 };
@@ -277,7 +277,7 @@ impl MemoryRepository {
             MemoryReviewDecision::Reject => MemoryStatus::Rejected,
             MemoryReviewDecision::Supersede => MemoryStatus::Superseded,
         };
-        if matches!(next_status, MemoryStatus::Superseded) && input.supersedes_id.is_none() {
+        if matches!(&next_status, MemoryStatus::Superseded) && input.supersedes_id.is_none() {
             return Err(mongodb::error::Error::custom(
                 "supersedes_id is required when superseding a memory.",
             ));
@@ -286,7 +286,7 @@ impl MemoryRepository {
             "$set": {
                 "status": next_status.as_str(),
                 "supersedes_id": input.supersedes_id.map(|id| id.to_string()),
-                "updated_at": bson::DateTime::from_chrono(Utc::now()),
+                "updated_at": mongodb::bson::DateTime::from_chrono(Utc::now()),
             },
             "$inc": { "version": 1_i64 },
         };
