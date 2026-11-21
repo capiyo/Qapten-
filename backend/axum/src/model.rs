@@ -2,7 +2,7 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Workspace {
     pub id: Uuid,
     pub name: String,
@@ -14,7 +14,7 @@ pub struct CreateWorkspace {
     pub name: String,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Agent {
     pub id: Uuid,
     pub workspace_id: Uuid,
@@ -36,7 +36,7 @@ pub struct RegisterAgent {
     pub provider: String,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Artifact {
     pub id: Uuid,
     pub workspace_id: Uuid,
@@ -53,7 +53,7 @@ pub struct CreateArtifact {
     pub source_agent_id: Option<Uuid>,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Task {
     pub id: Uuid,
     pub workspace_id: Uuid,
@@ -107,7 +107,7 @@ pub struct TransitionTask {
     pub note: String,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TaskTransition {
     pub from: Option<TaskStatus>,
     pub to: TaskStatus,
