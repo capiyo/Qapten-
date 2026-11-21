@@ -10,7 +10,17 @@ From the repository root:
 cargo run -p axon-api
 ```
 
-The API listens on `http://127.0.0.1:8080`. It uses process-local memory and has no authentication. Keep it on loopback.
+The API listens on `http://127.0.0.1:8080`. Without `MONGODB_URI`, core workspace data uses process-local memory and the durable memory/capability-poll endpoints are disabled. The API has no authentication; keep it on loopback.
+
+To enable MongoDB-backed memory and capability polls, configure a MongoDB deployment and set:
+
+```sh
+export MONGODB_URI='mongodb://127.0.0.1:27017'
+export MONGODB_DATABASE='axon'
+cargo run -p axon-api
+```
+
+On PowerShell, use `$env:MONGODB_URI='mongodb://127.0.0.1:27017'` and `$env:MONGODB_DATABASE='axon'`. Axon verifies the connection and creates the required indexes at startup. This currently persists memory imports, memory records, and capability polls; workspaces, agents, tasks, robotics telemetry, and audit events are still process-local. Do not expose the API publicly: authentication and route-level workspace authorization are not implemented.
 
 ## 2. Start the web client
 
