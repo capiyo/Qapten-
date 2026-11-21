@@ -74,3 +74,58 @@ The `--actor-id` is provenance metadata only. It is not authentication and must 
 - The connector currently returns DeepSeek output locally. It does not yet write artifacts/tasks into the AXON backend or create an authenticated provider connection.
 - Attachments, images, tool-use blocks and very large conversations are not yet transferred.
 - Add server-side Firebase identity verification, workspace authorization, encrypted secret management, durable transfer audit and retention policy before multi-user/production use.
+
+
+## Persistent memory extraction (ChatGPT or Claude)
+
+The `axon-memory` command imports one selected conversation from a user-authorized ChatGPT `conversations.json` export (using `--conversation-id`) or one Claude conversation JSON file, asks DeepSeek to extract durable memory candidates, validates the returned JSON and source message references, and can store the source plus proposed memories in Axon's local MongoDB-backed API.
+
+Preview the source without sending it to a provider:
+
+```bash
+axon-memory ./conversations.json --provider chatgpt --conversation-id CHAT_ID --workspace-id WORKSPACE_UUID
+```
+
+Approve sending the selected conversation to DeepSeek and inspect proposed candidates:
+
+```bash
+axon-memory ./conversation.json --provider chatgpt --workspace-id WORKSPACE_UUID --approve-provider-transfer
+```
+
+Approve both provider transfer and local persistence:
+
+```bash
+axon-memory ./conversation.json --provider chatgpt --workspace-id WORKSPACE_UUID --approve-provider-transfer --approve-persist
+```
+
+Set `MONGODB_URI` and `MONGODB_DATABASE` for the Axon API, and set `DEEPSEEK_API_KEY` for extraction. The persistence client only accepts a local HTTP Axon API address. Extracted records are saved with `proposed` status; they are not active context until reviewed through Axon's memory review endpoint.
+
+The extractor does not obey instructions embedded in imported conversations, validates model output, rejects invented source message IDs, and excludes credentials and sensitive personal data in its extraction instructions. This is a conservative first pass, not a guarantee that a model will never produce a false or sensitive candidate. Review every candidate before activation. The API currently has no authentication, so keep it bound to loopback and do not expose it to a network.
+
+
+## Multi-model capability majority routing
+
+The `axon-route` command implements the capability poll workflow. Configure up to 30 OpenAI-compatible model endpoints in a private copy of `models.example.json`. Each entry identifies a model, provider, endpoint, model-specific capability tags, and the environment variable containing its API key. Do not put provider keys in the JSON file.
+
+Set the configured key environment variables, start Axon with MongoDB enabled, and preview the task:
+
+```bash
+axon-route --task "Design a responsive dashboard" \
+  --capability visual_design \
+  --workspace-id WORKSPACE_UUID \
+  --models ./models.json
+```
+
+After checking the eligible model list and task brief, approve provider sharing:
+
+```bash
+axon-route --task "Design a responsive dashboard" \
+  --capability visual_design \
+  --workspace-id WORKSPACE_UUID \
+  --models ./models.json \
+  --approve-provider-sharing
+```
+
+Use `--max-cost-per-1k-tokens` to impose an optional USD cost-estimate ceiling; models without a configured estimate are excluded when this option is set. The worker asks eligible models to nominate a candidate in parallel, persists the valid nominations in Axon, and requires a strict majority. A tie or plurality does not select a winner. When a winner exists, only that model receives the execution request. The result is returned to the terminal; task-response artifact persistence and provider-specific adapters for non-OpenAI-compatible APIs remain future work.
+
+This is an explicit data-sharing workflow: the task brief is sent to every eligible voter after `--approve-provider-sharing`. Use capability tags to prevent irrelevant models from participating. API keys are read from environment variables, and Axon's API must remain local until authentication and workspace authorization are implemented.

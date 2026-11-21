@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://axon.local/contracts/axp/v1/capability-poll.schema.json",
+  "title": "AXP AI Capability Poll",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "workspace_id", "version", "capability", "task_brief", "external_sharing_approved", "context_memory_ids", "electorate", "candidates", "nominations", "status", "created_at"],
+  "properties": {
+    "id": { "type": "string", "format": "uuid" },
+    "workspace_id": { "type": "string", "format": "uuid" },
+    "version": { "type": "integer", "minimum": 1 },
+    "capability": { "type": "string", "minLength": 1, "maxLength": 120 },
+    "task_brief": { "type": "string", "minLength": 1, "maxLength": 10000 },
+    "external_sharing_approved": { "type": "boolean", "const": true },
+    "context_memory_ids": { "type": "array", "maxItems": 50, "uniqueItems": true, "items": { "type": "string", "format": "uuid" } },
+    "electorate": { "type": "array", "minItems": 3, "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
+    "candidates": {
+      "type": "array",
+      "minItems": 2,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["model_id", "provider", "display_name", "capabilities"],
+        "properties": {
+          "model_id": { "type": "string" },
+          "provider": { "type": "string" },
+          "display_name": { "type": "string" },
+          "capabilities": { "type": "array", "items": { "type": "string" } },
+          "estimated_cost_per_1k_tokens": { "type": ["number", "null"], "minimum": 0 }
+        }
+      }
+    },
+    "nominations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["voter_model_id", "nominated_model_id", "rationale", "submitted_at"],
+        "properties": {
+          "voter_model_id": { "type": "string" },
+          "nominated_model_id": { "type": "string" },
+          "rationale": { "type": "string", "minLength": 1, "maxLength": 2000 },
+          "submitted_at": { "type": "string", "format": "date-time" }
+        }
+      }
+    },
+    "status": { "type": "string", "enum": ["collecting", "decided", "no_majority"] },
+    "result": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "required": ["winner_model_id", "votes_cast", "majority_required", "tallies"],
+      "properties": {
+        "winner_model_id": { "type": ["string", "null"] },
+        "votes_cast": { "type": "integer", "minimum": 0 },
+        "majority_required": { "type": "integer", "minimum": 0 },
+        "tallies": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["model_id", "votes"],
+            "properties": {
+              "model_id": { "type": "string" },
+              "votes": { "type": "integer", "minimum": 0 }
+            }
+          }
+        }
+      }
+    },
+    "created_at": { "type": "string", "format": "date-time" },
+    "finalized_at": { "type": ["string", "null"], "format": "date-time" }
+  }
+}

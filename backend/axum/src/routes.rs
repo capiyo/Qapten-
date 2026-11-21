@@ -39,11 +39,15 @@ pub async fn list_audit_events(
     Ok(Json(state.audit.read().await.list_workspace(workspace_id)))
 }
 
-pub async fn health() -> Json<Health> {
+pub async fn health(State(state): State<AppState>) -> Json<Health> {
     Json(Health {
         status: "ok",
         service: "axon-api",
-        storage: "development_memory_only",
+        storage: if state.memory.is_some() {
+            "mongodb_memory_and_polls"
+        } else {
+            "development_memory_only"
+        },
         authentication: "not_implemented_local_only",
     })
 }

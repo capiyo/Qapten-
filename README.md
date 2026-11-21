@@ -50,6 +50,12 @@ The first milestone is a reliable, inspectable collaboration loop—not a large 
 
 The initial Python bridge imports user-authorized Claude conversation exports, normalizes selected messages into an AXP context envelope, and sends the context to DeepSeek through its API only after explicit approval. It does not scrape logged-in browser sessions or use private endpoints. See [connectors/python/README.md](connectors/python/README.md).
 
+## Persistent memory and capability routing
+
+Axon includes a MongoDB-backed memory subsystem for preserving provider-authorized conversation imports and proposed, provenance-linked memories. Memory records remain proposed until reviewed; active memories can be searched within a workspace. See [Memory Architecture](docs/MEMORY_ARCHITECTURE.md).
+
+The Rust capability engine and Python `axon-route` worker support cross-provider nominations, strict-majority voting, and winner-only task execution through configured OpenAI-compatible providers. The router rejects self-votes, duplicate ballots, plurality-only outcomes, and ties. See [AI Capability Routing](docs/AI_CAPABILITY_ROUTING.md).
+
 ## Getting started
 
 See [docs/QUICKSTART.md](docs/QUICKSTART.md) for local setup and a manual two-agent handoff walkthrough. Current implementation limitations are recorded in [docs/STATE_OF_REPO.md](docs/STATE_OF_REPO.md).

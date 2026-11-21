@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 
-import type { Agent, Artifact, Health, Task, Workspace } from "../../../packages/contracts/src";
+import type { Agent, Artifact, Health, MemoryKind, MemoryRecord, Task, Workspace } from "../../../packages/contracts/src";
 
 
 const api = async <T,>(path: string, init?: RequestInit): Promise<T> => {
@@ -22,6 +22,14 @@ export default function App() {
   const [agents, setAgents] = useState<Agent[]>([]);
   const [artifacts, setArtifacts] = useState<Artifact[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [memories, setMemories] = useState<MemoryRecord[]>([]);
+  const [memoryAvailable, setMemoryAvailable] = useState<boolean | null>(null);
+  const [memoryTitle, setMemoryTitle] = useState("");
+  const [memoryKind, setMemoryKind] = useState<MemoryKind>("project");
+  const [memorySummary, setMemorySummary] = useState("");
+  const [memoryContent, setMemoryContent] = useState("");
+  const [memoryTags, setMemoryTags] = useState("");
+  const [memorySearch, setMemorySearch] = useState("");
   const [name, setName] = useState("");
   const [agentName, setAgentName] = useState("");
   const [provider, setProvider] = useState("claude");
@@ -56,6 +64,16 @@ export default function App() {
     setArtifacts(artifactItems);
     setTasks(taskItems);
     setAssignee(current => agentItems.some(agent => agent.id === current) ? current : agentItems[0]?.id ?? "");
+    try {
+      const memoryItems = await api<MemoryRecord[]>(
+        `/api/v1/workspaces/${workspace.id}/memories${memorySearch.trim() ? `?q=${encodeURIComponent(memorySearch.trim())}` : ""}`
+      );
+      setMemories(memoryItems);
+      setMemoryAvailable(true);
+    } catch {
+      setMemories([]);
+      setMemoryAvailable(false);
+    }
   }
 
   useEffect(() => {
@@ -71,6 +89,8 @@ export default function App() {
       setAgents([]);
       setArtifacts([]);
       setTasks([]);
+      setMemories([]);
+      setMemoryAvailable(false);
     }
   }, [selected?.id]);
 
@@ -123,6 +143,65 @@ export default function App() {
       setArtifactContent("");
       await refreshWorkspace(selected);
     });
+  }
+
+  async function createMemory(event: FormEvent<HTMLFormElement>) {
+    if (!selected) return;
+    await runForm(event, async () => {
+      const messageId = "manual-entry";
+      const imported = await api<{ id: string }>(`/api/v1/workspaces/${selected.id}/memory/imports`, {
+        method: "POST",
+        body: JSON.stringify({
+          provider: "manual",
+          conversation_id: `manual-${crypto.randomUUID()}`,
+          title: memoryTitle.trim(),
+          messages: [{
+            id: messageId,
+            role: "user",
+            content: memoryContent.trim(),
+            created_at: new Date().toISOString()
+          }]
+        })
+      });
+      await api<MemoryRecord>(`/api/v1/workspaces/${selected.id}/memories`, {
+        method: "POST",
+        body: JSON.stringify({
+          kind: memoryKind,
+          title: memoryTitle.trim(),
+          content: memoryContent.trim(),
+          summary: memorySummary.trim(),
+          tags: memoryTags.split(",").map(tag => tag.trim()).filter(Boolean).slice(0, 30),
+          import_id: imported.id,
+          message_ids: [messageId],
+          confidence: 0.9
+        })
+      });
+      setMemoryTitle("");
+      setMemorySummary("");
+      setMemoryContent("");
+      setMemoryTags("");
+      await refreshWorkspace(selected);
+    });
+  }
+
+  async function reviewMemory(memory: MemoryRecord, decision: "approve" | "reject") {
+    if (!selected || busy) return;
+    setBusy(true);
+    setError("");
+    try {
+      await api<MemoryRecord>(
+        `/api/v1/workspaces/${selected.id}/memories/${memory.id}/review`,
+        {
+          method: "POST",
+          body: JSON.stringify({ expected_version: memory.version, decision })
+        }
+      );
+      await refreshWorkspace(selected);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Memory review failed.");
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function createTask(event: FormEvent<HTMLFormElement>) {
@@ -307,8 +386,113 @@ export default function App() {
               </section>
             </div>
 
+            <section className="panel memory-panel">
+              <div className="panel-heading">
+                <div><span className="kicker">03 · PERSISTENT KNOWLEDGE</span><h3>Axon memory</h3></div>
+                <span className="count">{memories.length} MEMORIES</span>
+              </div>
+              {memoryAvailable === false ? (
+                <div className="memory-unavailable">
+                  <strong>MongoDB memory is not available.</strong>
+                  <span>Configure MONGODB_URI and MONGODB_DATABASE on the Axon API to enable persistent memory.</span>
+                </div>
+              ) : (
+                <>
+                  <form className="memory-form" onSubmit={createMemory}>
+                    <div className="memory-form-grid">
+                      <div>
+                        <label htmlFor="memory-title">Memory title</label>
+                        <input id="memory-title" value={memoryTitle} onChange={event => setMemoryTitle(event.target.value)} maxLength={240} placeholder="e.g. Axon owns canonical memory" required />
+                      </div>
+                      <div>
+                        <label htmlFor="memory-kind">Memory category</label>
+                        <select id="memory-kind" value={memoryKind} onChange={event => setMemoryKind(event.target.value as MemoryKind)}>
+                          <option value="project">Project</option>
+                          <option value="decision">Decision</option>
+                          <option value="preference">Preference</option>
+                          <option value="semantic">Semantic knowledge</option>
+                          <option value="episodic">Event / episode</option>
+                          <option value="procedural">Procedure</option>
+                        </select>
+                      </div>
+                      <div className="memory-wide">
+                        <label htmlFor="memory-summary">Retrieval summary</label>
+                        <input id="memory-summary" value={memorySummary} onChange={event => setMemorySummary(event.target.value)} maxLength={2000} placeholder="A concise sentence explaining when this memory matters." required />
+                      </div>
+                      <div className="memory-wide">
+                        <label htmlFor="memory-content">Memory content</label>
+                        <textarea id="memory-content" value={memoryContent} onChange={event => setMemoryContent(event.target.value)} maxLength={20000} rows={3} placeholder="Write a durable fact, decision, project constraint, or reusable procedure…" required />
+                      </div>
+                      <div className="memory-wide">
+                        <label htmlFor="memory-tags">Tags <span className="muted-inline">comma separated</span></label>
+                        <input id="memory-tags" value={memoryTags} onChange={event => setMemoryTags(event.target.value)} placeholder="axon, architecture, persistence" />
+                      </div>
+                    </div>
+                    <button disabled={!memoryTitle.trim() || !memorySummary.trim() || !memoryContent.trim() || busy}>
+                      {busy ? "Saving…" : "Save proposed memory"}
+                    </button>
+                    <span className="memory-note">New memories start as proposed. They do not enter AI context until approved.</span>
+                  </form>
+                  <form
+                    className="memory-search"
+                    onSubmit={event => {
+                      event.preventDefault();
+                      if (selected) {
+                        void refreshWorkspace(selected).catch(cause =>
+                          setError(cause instanceof Error ? cause.message : "Memory search failed.")
+                        );
+                      }
+                    }}
+                  >
+                    <input
+                      aria-label="Search memories"
+                      value={memorySearch}
+                      onChange={event => setMemorySearch(event.target.value)}
+                      maxLength={120}
+                      placeholder="Search approved and proposed memories…"
+                    />
+                    <button type="submit" disabled={busy}>Search</button>
+                    <button
+                      type="button"
+                      className="memory-clear"
+                      disabled={!memorySearch}
+                      onClick={() => {
+                        setMemorySearch("");
+                        if (selected) {
+                          void api<MemoryRecord[]>(`/api/v1/workspaces/${selected.id}/memories`)
+                            .then(setMemories)
+                            .catch(cause => setError(cause instanceof Error ? cause.message : "Could not clear memory search."));
+                        }
+                      }}
+                    >
+                      Clear
+                    </button>
+                  </form>
+                  <div className="memory-list">
+                    {memories.map(memory => (
+                      <article className="memory-card" key={memory.id}>
+                        <div className="memory-card-head">
+                          <div><span className="kicker">{memory.kind.replaceAll("_", " ")} · V{memory.version}</span><h4>{memory.title}</h4></div>
+                          <span className={`memory-status memory-${memory.status}`}>{memory.status}</span>
+                        </div>
+                        <p className="memory-summary">{memory.summary}</p>
+                        <details><summary>View memory content and provenance</summary><p className="memory-content">{memory.content}</p><small>Source: {memory.source.provider} · confidence {(memory.confidence * 100).toFixed(0)}% · {memory.source.message_ids.length} source messages</small></details>
+                        {memory.status === "proposed" && (
+                          <div className="memory-actions">
+                            <button disabled={busy} onClick={() => void reviewMemory(memory, "approve")}>Approve memory</button>
+                            <button className="request-changes-button" disabled={busy} onClick={() => void reviewMemory(memory, "reject")}>Reject</button>
+                          </div>
+                        )}
+                      </article>
+                    ))}
+                    {memories.length === 0 && <p className="muted">No memories yet. Add durable project knowledge or import conversations with the axon-memory CLI.</p>}
+                  </div>
+                </>
+              )}
+            </section>
+
             <section className="panel task-panel">
-              <div className="panel-heading"><div><span className="kicker">03 · COORDINATION</span><h3>Task handoffs</h3></div><span className="count">{tasks.length} TASKS</span></div>
+              <div className="panel-heading"><div><span className="kicker">04 · COORDINATION</span><h3>Task handoffs</h3></div><span className="count">{tasks.length} TASKS</span></div>
               <form className="task-form" onSubmit={createTask}>
                 <div><label htmlFor="task-title">Task title</label><input id="task-title" value={taskTitle} onChange={event => setTaskTitle(event.target.value)} placeholder="e.g. Review the API design" maxLength={160} required /></div>
                 <div><label htmlFor="assignee">Assign to agent</label><select id="assignee" value={assignee} onChange={event => setAssignee(event.target.value)} required><option value="">Choose an agent</option>{agents.map(agent => <option value={agent.id} key={agent.id}>{agent.display_name} ({agent.provider})</option>)}</select></div>
@@ -339,8 +523,12 @@ export default function App() {
 
         {error && <div className="error" role="alert">{error} <button className="retry" onClick={() => selected ? void refreshWorkspace(selected) : void refreshWorkspaces()}>Retry</button></div>}
         <footer><span>AXON</span><span>Context should travel with the work.</span><span>FOUNDATION BUILD · 0.1</span></footer>
-        {health && health.storage !== "persistent" && (
-          <p className="dev-warning">Development mode: data is temporary and this API has no authentication. Do not use sensitive or production data.</p>
+        {health && (
+          <p className="dev-warning">
+            {health.storage === "mongodb_memory_and_polls"
+              ? "MongoDB persists memories and capability polls only; workspace, agent, task, artifact, and audit data is still temporary. The API has no authentication."
+              : "Development mode: data is temporary and this API has no authentication. Do not use sensitive or production data."}
+          </p>
         )}
       </section>
     </main>

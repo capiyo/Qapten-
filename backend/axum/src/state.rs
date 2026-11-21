@@ -1,5 +1,6 @@
 use crate::{
     audit::AuditStore,
+    memory::MemoryRepository,
     model::{Agent, Artifact, Task, Workspace},
     robotics::TelemetryEvent,
 };
@@ -19,6 +20,8 @@ pub struct TelemetryStore {
 
 #[derive(Clone, Default)]
 pub struct AppState {
+    /// Optional durable MongoDB-backed memory store. Disabled unless MONGODB_URI is configured.
+    pub memory: Option<Arc<MemoryRepository>>,
     pub workspaces: Arc<RwLock<HashMap<Uuid, Workspace>>>,
     pub agents: Arc<RwLock<HashMap<Uuid, Agent>>>,
     pub artifacts: Arc<RwLock<HashMap<Uuid, Artifact>>>,

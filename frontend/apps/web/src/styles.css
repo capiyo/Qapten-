@@ -126,3 +126,51 @@ footer { display: flex; justify-content: space-between; gap: 16px; color: #a5afb
 .response-capture textarea:focus { border-color: #83aef0; box-shadow: 0 0 0 3px #edf4ff; }
 .request-changes-button { margin: 10px 0 0 7px; border: 0; border-radius: 9px; padding: 9px 11px; color: #986b29; background: #fff5e6; font-size: 10px; font-weight: 700; cursor: pointer; }
 .response-linked { color: #23855d !important; font-size: 10px !important; margin: 10px 0 0 !important; }
+
+
+.memory-panel { margin: 20px 0; }
+.memory-form { padding: 18px; border: 1px solid #e9edf0; border-radius: 14px; background: #fbfcfd; display: grid; gap: 14px; }
+.memory-form-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(180px, .55fr); gap: 12px; }
+.memory-form-grid > div { display: grid; gap: 7px; }
+.memory-form label { color: #667583; font-size: 11px; font-weight: 700; }
+.memory-form input, .memory-form select, .memory-form textarea { width: 100%; border: 1px solid #e3e9ee; border-radius: 9px; padding: 10px 12px; background: #fff; color: #17212b; font: inherit; font-size: 12px; outline: none; }
+.memory-form textarea { resize: vertical; min-height: 88px; }
+.memory-form input:focus, .memory-form select:focus, .memory-form textarea:focus { border-color: #83aef0; box-shadow: 0 0 0 3px #edf4ff; }
+.memory-wide { grid-column: 1 / -1; }
+.memory-form > button, .memory-actions button { border: 0; border-radius: 9px; padding: 10px 14px; background: #1d6be5; color: #fff; font-size: 11px; font-weight: 700; cursor: pointer; }
+.memory-form > button { justify-self: start; }
+.memory-form button:disabled, .memory-actions button:disabled { opacity: .45; cursor: not-allowed; }
+.memory-note, .muted-inline { color: #8a96a2; font-size: 10px; }
+.memory-list { display: grid; gap: 10px; margin-top: 16px; }
+.memory-card { border: 1px solid #e9edf0; border-radius: 13px; padding: 16px; background: #fff; }
+.memory-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+.memory-card h4 { margin: 5px 0 0; font: 700 14px Manrope; color: #17212b; }
+.memory-summary { margin: 10px 0; color: #536575; font-size: 12px; line-height: 1.6; }
+.memory-status { flex: 0 0 auto; border-radius: 999px; padding: 5px 9px; background: #f1f3f5; color: #65717c; font: 500 10px "DM Mono", monospace; text-transform: uppercase; }
+.memory-proposed { background: #fff5df; color: #93600b; }
+.memory-active { background: #e5f6ed; color: #20784e; }
+.memory-rejected, .memory-superseded { background: #f1f3f5; color: #7d8791; }
+.memory-card details { border-top: 1px solid #eef1f3; padding-top: 10px; color: #667583; font-size: 11px; }
+.memory-card details summary { cursor: pointer; font-weight: 700; }
+.memory-content { margin: 10px 0; white-space: pre-wrap; overflow-wrap: anywhere; color: #334452; line-height: 1.6; }
+.memory-card details small { color: #8a96a2; }
+.memory-actions { display: flex; gap: 8px; margin-top: 12px; }
+.memory-actions .request-changes-button { background: #f1f3f5; color: #65717c; }
+.memory-unavailable { display: grid; gap: 6px; padding: 16px; border: 1px dashed #d8e0e6; border-radius: 12px; color: #65717c; font-size: 12px; }
+.memory-unavailable strong { color: #334452; }
+@media (max-width: 700px) {
+  .memory-form-grid { grid-template-columns: 1fr; }
+  .memory-wide { grid-column: auto; }
+  .memory-card-head { flex-direction: column; }
+}
+
+
+.memory-search { display: flex; gap: 8px; margin-top: 14px; }
+.memory-search input { min-width: 0; flex: 1; border: 1px solid #e3e9ee; border-radius: 9px; padding: 10px 12px; background: #fff; color: #17212b; font: inherit; font-size: 12px; }
+.memory-search button { border: 0; border-radius: 9px; padding: 9px 13px; background: #1d6be5; color: #fff; font-size: 11px; font-weight: 700; cursor: pointer; }
+.memory-search .memory-clear { background: #f1f3f5; color: #65717c; }
+.memory-search button:disabled { opacity: .45; cursor: not-allowed; }
+@media (max-width: 520px) {
+  .memory-search { flex-wrap: wrap; }
+  .memory-search input { flex-basis: 100%; }
+}

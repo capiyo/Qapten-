@@ -1,0 +1,164 @@
+{
+  "models": [
+    {
+      "id": "provider-01:model-01",
+      "provider": "provider-01",
+      "display_name": "Model 01",
+      "model": "REPLACE_WITH_PROVIDER_MODEL_ID",
+      "base_url": "https://provider-01.example/v1",
+      "api_key_env": "MODEL_01_API_KEY",
+      "capabilities": [
+        "visual_design",
+        "ui_implementation",
+        "code_review",
+        "research",
+        "translation"
+      ],
+      "estimated_cost_per_1k_tokens": null
+    },
+    {
+      "id": "provider-02:model-02",
+      "provider": "provider-02",
+      "display_name": "Model 02",
+      "model": "REPLACE_WITH_PROVIDER_MODEL_ID",
+      "base_url": "https://provider-01.example/v1",
+      "api_key_env": "MODEL_02_API_KEY",
+      "capabilities": [
+        "visual_design",
+        "ui_implementation",
+        "code_review",
+        "research",
+        "translation"
+      ],
+      "estimated_cost_per_1k_tokens": null
+    },
+    {
+      "id": "provider-03:model-03",
+      "provider": "provider-03",
+      "display_name": "Model 03",
+      "model": "REPLACE_WITH_PROVIDER_MODEL_ID",
+      "base_url": "https://provider-01.example/v1",
+      "api_key_env": "MODEL_03_API_KEY",
+      "capabilities": [
+        "visual_design",
+        "ui_implementation",
+        "code_review",
+        "research",
+        "translation"
+      ],
+      "estimated_cost_per_1k_tokens": null
+    },
+    {
+      "id": "provider-04:model-04",
+      "provider": "provider-04",
+      "display_name": "Model 04",
+      "model": "REPLACE_WITH_PROVIDER_MODEL_ID",
+      "base_url": "https://provider-01.example/v1",
+      "api_key_env": "MODEL_04_API_KEY",
+      "capabilities": [
+        "visual_design",
+        "ui_implementation",
+        "code_review",
+        "research",
+        "translation"
+      ],
+      "estimated_cost_per_1k_tokens": null
+    },
+    {
+      "id": "provider-05:model-05",
+      "provider": "provider-05",
+      "display_name": "Model 05",
+      "model": "REPLACE_WITH_PROVIDER_MODEL_ID",
+      "base_url": "https://provider-01.example/v1",
+      "api_key_env": "MODEL_05_API_KEY",
+      "capabilities": [
+        "visual_design",
+        "ui_implementation",
+        "code_review",
+        "research",
+        "translation"
+      ],
+      "estimated_cost_per_1k_tokens": null
+    },
+    {
+      "id": "provider-06:model-06",
+      "provider": "provider-06",
+      "display_name": "Model 06",
+      "model": "REPLACE_WITH_PROVIDER_MODEL_ID",
+      "base_url": "https://provider-01.example/v1",
+      "api_key_env": "MODEL_06_API_KEY",
+      "capabilities": [
+        "visual_design",
+        "ui_implementation",
+        "code_review",
+        "research",
+        "translation"
+      ],
+      "estimated_cost_per_1k_tokens": null
+    },
+    {
+      "id": "provider-07:model-07",
+      "provider": "provider-07",
+      "display_name": "Model 07",
+      "model": "REPLACE_WITH_PROVIDER_MODEL_ID",
+      "base_url": "https://provider-01.example/v1",
+      "api_key_env": "MODEL_07_API_KEY",
+      "capabilities": [
+        "visual_design",
+        "ui_implementation",
+        "code_review",
+        "research",
+        "translation"
+      ],
+      "estimated_cost_per_1k_tokens": null
+    },
+    {
+      "id": "provider-08:model-08",
+      "provider": "provider-08",
+      "display_name": "Model 08",
+      "model": "REPLACE_WITH_PROVIDER_MODEL_ID",
+      "base_url": "https://provider-01.example/v1",
+      "api_key_env": "MODEL_08_API_KEY",
+      "capabilities": [
+        "visual_design",
+        "ui_implementation",
+        "code_review",
+        "research",
+        "translation"
+      ],
+      "estimated_cost_per_1k_tokens": null
+    },
+    {
+      "id": "provider-09:model-09",
+      "provider": "provider-09",
+      "display_name": "Model 09",
+      "model": "REPLACE_WITH_PROVIDER_MODEL_ID",
+      "base_url": "https://provider-01.example/v1",
+      "api_key_env": "MODEL_09_API_KEY",
+      "capabilities": [
+        "visual_design",
+        "ui_implementation",
+        "code_review",
+        "research",
+        "translation"
+      ],
+      "estimated_cost_per_1k_tokens": null
+    },
+    {
+      "id": "provider-10:model-10",
+      "provider": "provider-10",
+      "display_name": "Model 10",
+      "model": "REPLACE_WITH_PROVIDER_MODEL_ID",
+      "base_url": "https://provider-01.example/v1",
+      "api_key_env": "MODEL_10_API_KEY",
+      "capabilities": [
+        "visual_design",
+        "ui_implementation",
+        "code_review",
+        "research",
+        "translation"
+      ],
+      "estimated_cost_per_1k_tokens": null
+    }
+  ]
+}

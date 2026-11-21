@@ -63,8 +63,45 @@ export type Task = {
 export type Health = {
   status: string;
   service: string;
-  storage: "development_memory_only" | "persistent" | string;
+  storage: "development_memory_only" | "mongodb_memory_and_polls" | "persistent" | string;
   authentication: string;
+};
+
+export type MemoryKind =
+  | "semantic"
+  | "episodic"
+  | "project"
+  | "decision"
+  | "preference"
+  | "procedural";
+
+export type MemoryStatus = "proposed" | "active" | "rejected" | "superseded";
+
+export type MemorySource = {
+  provider: string;
+  conversation_id: string;
+  import_id: string;
+  message_ids: string[];
+  captured_at: string;
+  source_content_sha256: string;
+};
+
+export type MemoryRecord = {
+  id: string;
+  workspace_id: string;
+  kind: MemoryKind;
+  title: string;
+  content: string;
+  summary: string;
+  tags: string[];
+  source: MemorySource;
+  confidence: number;
+  content_sha256: string;
+  status: MemoryStatus;
+  version: number;
+  created_at: string;
+  updated_at: string;
+  superseded_by_id: string | null;
 };
 
 
