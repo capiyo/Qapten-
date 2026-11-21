@@ -41,7 +41,9 @@ def _timestamp(value: Any) -> str | None:
 def parse_chatgpt_export(data: dict[str, Any]) -> ImportedConversation:
     """Normalize one conversation from conversations.json into provider-neutral messages."""
     conversation_id = data.get("id") or data.get("conversation_id")
-    if not isinstance(conversation_id, str) or not conversation_id.strip():
+    if not isinstance(conversation_id, str):
+        raise TypeError("ChatGPT export conversation ID must be a string.")
+    if not conversation_id.strip():
         raise ValueError("ChatGPT export is missing a conversation ID.")
 
     mapping = data.get("mapping")
