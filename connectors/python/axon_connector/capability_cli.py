@@ -40,7 +40,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--approve-provider-sharing",
         action="store_true",
-        help="Explicitly approve sending the task brief to every configured voter.",
+        help="Explicitly approve sending the task and any selected memories to every voter.",
     )
     return parser
 
@@ -67,7 +67,7 @@ async def _run(args: argparse.Namespace) -> int:
 
         print(f"Capability: {args.capability}")
         print(f"Task: {args.task}")
-        memory_label = "included" if args.include_memory else "not included"
+        memory_label = "requested" if args.include_memory else "not included"
         print(f"Approved Axon memory context: {memory_label}")
         print("Eligible models:")
         for model in available_models:
