@@ -21,7 +21,7 @@ The actual task is sent only after the poll closes and a strict majority exists.
 
 The current Rust capability module implements the poll domain and strict-majority tally with unit tests. Persistence, provider polling adapters, timeouts, retry policy, API routes, and task-dispatch integration remain follow-up work.
 
-## Why this is not an output-quality benchmark
+## API\n\n- `POST /api/v1/workspaces/{workspace_id}/capability-polls`: create a poll with a fixed electorate and candidate catalog. The request must set `external_sharing_approved=true`; every voter must be in the eligible candidate catalog.\n- `GET /api/v1/workspaces/{workspace_id}/capability-polls/{poll_id}`: retrieve the poll and current tally inputs.\n- `POST /api/v1/workspaces/{workspace_id}/capability-polls/{poll_id}/nominations`: submit one voter nomination.\n- `POST /api/v1/workspaces/{workspace_id}/capability-polls/{poll_id}/finalize`: close the poll and compute the strict-majority result.\n\nNomination and finalization writes use version-checked atomic document replacement. Concurrent submissions based on a stale version are rejected and must be retried after reloading.\n\n## Why this is not an output-quality benchmark
 
 This first-stage vote asks models to recommend a capable candidate. It is a discovery signal, not proof that the nominated model will produce the best output. Model self-promotion, correlated biases, stale knowledge, and incomplete provider knowledge can affect nominations.
 
