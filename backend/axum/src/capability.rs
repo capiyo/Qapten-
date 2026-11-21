@@ -120,15 +120,15 @@ impl CapabilityPoll {
         if !self.electorate.iter().any(|id| id == voter_model_id) {
             return Err(NominationError::UnknownVoter);
         }
+        if voter_model_id == nominated_model_id {
+            return Err(NominationError::SelfNomination);
+        }
         if !self
             .candidates
             .iter()
             .any(|candidate| candidate.model_id == nominated_model_id)
         {
             return Err(NominationError::UnknownCandidate);
-        }
-        if voter_model_id == nominated_model_id {
-            return Err(NominationError::SelfNomination);
         }
         if self
             .nominations
@@ -265,11 +265,13 @@ mod tests {
     #[test]
     fn plurality_is_not_misreported_as_a_majority() {
         let mut poll = fixture();
+        poll.electorate.push("voter-f".into());
         poll.nominate("voter-a", "model-alpha", "Reason one.").unwrap();
         poll.nominate("voter-b", "model-alpha", "Reason two.").unwrap();
         poll.nominate("voter-c", "model-beta", "Reason three.").unwrap();
         poll.nominate("voter-d", "model-beta", "Reason four.").unwrap();
         poll.nominate("voter-e", "model-alpha", "Reason five.").unwrap();
+        poll.nominate("voter-f", "model-beta", "Reason six.").unwrap();
 
         let result = poll.finalize().unwrap();
         assert_eq!(result.winner_model_id, None);
