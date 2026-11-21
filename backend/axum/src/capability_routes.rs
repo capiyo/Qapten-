@@ -44,6 +44,8 @@ pub struct CreateCapabilityPollRequest {
     pub capability: String,
     pub task_brief: String,
     pub external_sharing_approved: bool,
+    #[serde(default)]
+    pub context_memory_ids: Vec<Uuid>,
     pub electorate: Vec<String>,
     pub candidates: Vec<ModelCandidate>,
 }
@@ -59,6 +61,7 @@ pub async fn create_poll(
         || input.task_brief.len() > 10_000
         || input.electorate.len() > 30
         || input.candidates.len() > 50
+        || input.context_memory_ids.len() > 50
     {
         return Err(api_error(
             StatusCode::BAD_REQUEST,
@@ -72,6 +75,7 @@ pub async fn create_poll(
         input.external_sharing_approved,
         input.electorate,
         input.candidates,
+        input.context_memory_ids,
     )
     .map_err(|error| api_error(StatusCode::BAD_REQUEST, format!("{error:?}")))?;
     let poll = repository(&state)?
