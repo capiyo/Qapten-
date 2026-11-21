@@ -78,12 +78,12 @@ The `--actor-id` is provenance metadata only. It is not authentication and must 
 
 ## Persistent memory extraction (ChatGPT or Claude)
 
-The `axon-memory` command imports one conversation JSON object from a user-authorized ChatGPT or Claude export, asks DeepSeek to extract durable memory candidates, validates the returned JSON and source message references, and can store the source plus proposed memories in Axon's local MongoDB-backed API.
+The `axon-memory` command imports one selected conversation from a user-authorized ChatGPT `conversations.json` export (using `--conversation-id`) or one Claude conversation JSON file, asks DeepSeek to extract durable memory candidates, validates the returned JSON and source message references, and can store the source plus proposed memories in Axon's local MongoDB-backed API.
 
 Preview the source without sending it to a provider:
 
 ```bash
-axon-memory ./conversation.json --provider chatgpt --workspace-id WORKSPACE_UUID
+axon-memory ./conversations.json --provider chatgpt --conversation-id CHAT_ID --workspace-id WORKSPACE_UUID
 ```
 
 Approve sending the selected conversation to DeepSeek and inspect proposed candidates:
