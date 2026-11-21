@@ -380,6 +380,11 @@ impl MemoryRepository {
                     "superseded_by_id is required when superseding a memory.",
                 )
             })?;
+            if replacement_id == memory_id {
+                return Err(mongodb::error::Error::custom(
+                    "A memory cannot supersede itself.",
+                ));
+            }
             let replacement = self
                 .memories
                 .find_one(
