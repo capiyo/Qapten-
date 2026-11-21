@@ -38,6 +38,7 @@ fn repository(state: &AppState) -> ApiResult<&MemoryRepository> {
 pub struct CreateCapabilityPollRequest {
     pub capability: String,
     pub task_brief: String,
+    pub external_sharing_approved: bool,
     pub electorate: Vec<String>,
     pub candidates: Vec<ModelCandidate>,
 }
@@ -63,6 +64,7 @@ pub async fn create_poll(
         workspace_id,
         input.capability,
         input.task_brief,
+        input.external_sharing_approved,
         input.electorate,
         input.candidates,
     )
