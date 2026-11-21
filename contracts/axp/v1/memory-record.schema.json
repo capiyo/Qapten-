@@ -23,7 +23,7 @@
     "source": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["provider", "conversation_id", "import_id", "message_ids", "captured_at"],
+      "required": ["provider", "conversation_id", "import_id", "message_ids", "captured_at", "source_content_sha256"],
       "properties": {
         "provider": { "type": "string", "minLength": 1, "maxLength": 80 },
         "conversation_id": { "type": "string", "minLength": 1, "maxLength": 256 },
