@@ -45,7 +45,7 @@ After reviewing the provider list and task brief, explicitly approve sharing:
 axon-route --task "Design a responsive dashboard" --capability visual_design --workspace-id WORKSPACE_UUID --models ./models.json --approve-provider-sharing
 ```
 
-The worker asks the configured electorate in parallel. If fewer than three valid ballots return, it stops. If the poll has no strict majority, it does not dispatch the task. If a winner exists, only that model receives the execution request. Add `--include-memory` to retrieve relevant active Axon memories and include them in the provider poll and winner execution; this is off by default and is covered by the same provider-sharing approval. The current worker returns the task result locally; it does not yet persist the result as a task response artifact.
+The worker asks the configured electorate in parallel. If fewer than three valid ballots return, it stops. If the poll has no strict majority, it does not dispatch the task. If a winner exists, only that model receives the execution request. Add `--include-memory` to retrieve relevant active Axon memories and include them in the provider poll and winner execution; this is off by default and is covered by the same provider-sharing approval. The poll stores the exact memory IDs used, and the API verifies that each reference is active and belongs to the same workspace. The current worker returns the task result locally; it does not yet persist the result as a task response artifact.
 
 ## Why this is not an output-quality benchmark
 
