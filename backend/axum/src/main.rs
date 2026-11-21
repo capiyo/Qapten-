@@ -1,4 +1,4 @@
-use axon_api::{app, AppState};
+use axon_api::{app, storage::SqliteStorage, AppState};
 use std::{env, net::SocketAddr};
 use tokio::net::TcpListener;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
@@ -28,12 +28,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         );
     }
 
+    let database_url =
+        env::var("AXON_DATABASE_URL").unwrap_or_else(|_| "sqlite://axon.db".to_owned());
+    let storage = SqliteStorage::connect(&database_url).await?;
+    let state = AppState::with_storage(storage.shared()).await?;
+
     let listener = TcpListener::bind(address).await?;
     tracing::info!(
         %address,
-        "Axon API listening (development in-memory store; no authentication)"
+        storage = "sqlite",
+        "Axon API listening with durable SQLite storage; authentication is not implemented"
     );
-    axum::serve(listener, app(AppState::default()))
+    axum::serve(listener, app(state))
         .with_graceful_shutdown(shutdown_signal())
         .await?;
     Ok(())
