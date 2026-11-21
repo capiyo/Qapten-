@@ -1,8 +1,6 @@
 # Rust
 /target
-/axon.db
-/axon.db-shm
-/axon.db-wal
+**/axon.db*
 **/*.rs.bk
 
 # Node
