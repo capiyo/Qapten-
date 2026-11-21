@@ -19,7 +19,7 @@ The actual task is sent only after the poll closes and a strict majority exists.
 - The winning candidate is selected for the task; the nominations and rationales remain evidence in the routing record.
 - The task itself is not broadcast to all ten models by default.
 
-The Rust capability module implements the poll domain and strict-majority tally with unit tests. Polls and nominations are persisted in MongoDB with optimistic version checks, and the API exposes create, retrieve, nominate, and finalize operations. Provider polling adapters, timeouts, retries, and task-dispatch integration remain follow-up work.
+The Rust capability module implements the poll domain and strict-majority tally with unit tests. Polls and nominations are persisted in MongoDB with optimistic version checks, and the API exposes create, retrieve, nominate, and finalize operations. The Python `axon-route` worker supports configured OpenAI-compatible endpoints, asks eligible models to nominate in parallel, records valid ballots through the Axon API, and executes the task only on a strict-majority winner.
 
 ## API
 
@@ -29,7 +29,25 @@ The Rust capability module implements the poll domain and strict-majority tally 
 - `POST /api/v1/workspaces/{workspace_id}/capability-polls/{poll_id}/finalize`: close the poll and compute the strict-majority result.
 
 Nomination and finalization writes use version-checked atomic document replacement. Concurrent submissions based on a stale version are rejected and must be retried after reloading.
-\n## Why this is not an output-quality benchmark
+\n## Running the router
+
+Configure up to 30 models in `connectors/python/models.example.json` (copy it to a private local catalog and replace endpoint, model ID, and environment-variable names). Provider API keys stay in environment variables; they are never stored in the catalog. Models must declare the requested capability, and only models with configured keys participate.
+
+Preview without sending the task:
+
+```sh
+axon-route --task "Design a responsive dashboard" --capability visual_design --workspace-id WORKSPACE_UUID --models ./models.json
+```
+
+After reviewing the provider list and task brief, explicitly approve sharing:
+
+```sh
+axon-route --task "Design a responsive dashboard" --capability visual_design --workspace-id WORKSPACE_UUID --models ./models.json --approve-provider-sharing
+```
+
+The worker asks the configured electorate in parallel. If fewer than three valid ballots return, it stops. If the poll has no strict majority, it does not dispatch the task. If a winner exists, only that model receives the execution request. The current worker returns the task result locally; it does not yet persist the result as a task response artifact.
+
+## Why this is not an output-quality benchmark
 
 This first-stage vote asks models to recommend a capable candidate. It is a discovery signal, not proof that the nominated model will produce the best output. Model self-promotion, correlated biases, stale knowledge, and incomplete provider knowledge can affect nominations.
 
