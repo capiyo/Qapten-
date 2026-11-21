@@ -6,7 +6,7 @@ A user describes the work without needing to know which provider or model is bes
 
 For a poll, Axon sends the same bounded task brief to a configured electorate of model adapters and asks each one to nominate the best eligible candidate for that specific capability. Each voter must provide a short rationale. Axon excludes self-nominations, accepts one ballot per voter, and counts votes deterministically.
 
-The actual task is sent only after the poll closes and a strict majority exists. This separates cheap model discovery from expensive task execution.
+A minimized task brief is sent to the configured voters so they can assess which candidate fits. The full execution request is sent only to the selected model after a strict majority exists. This separates capability discovery from the actual task execution.
 
 ## Voting rules
 
@@ -17,7 +17,7 @@ The actual task is sent only after the poll closes and a strict majority exists.
 - A strict majority is required: `floor(valid_ballots / 2) + 1`.
 - A plurality, tie, or missing majority is not a winner. Axon must not silently route on a tie.
 - The winning candidate is selected for the task; the nominations and rationales remain evidence in the routing record.
-- The task itself is not broadcast to all ten models by default.
+- The task brief is shared with configured voters only after explicit provider-sharing approval; the final execution request goes only to the winner.
 
 The Rust capability module implements the poll domain and strict-majority tally with unit tests. Polls and nominations are persisted in MongoDB with optimistic version checks, and the API exposes create, retrieve, nominate, and finalize operations. The Python `axon-route` worker supports configured OpenAI-compatible endpoints, asks eligible models to nominate in parallel, records valid ballots through the Axon API, and executes the task only on a strict-majority winner.
 
