@@ -89,17 +89,19 @@ impl CapabilityPoll {
                     || candidate.provider.trim().is_empty()
                     || candidate.display_name.trim().is_empty()
                     || candidate.capabilities.is_empty()
-                    || candidate.estimated_cost_per_1k_tokens.is_some_and(|cost| {
-                        !cost.is_finite() || cost < 0.0
-                    })
+                    || candidate
+                        .estimated_cost_per_1k_tokens
+                        .is_some_and(|cost| !cost.is_finite() || cost < 0.0)
             })
         {
             return Err(NominationError::InvalidPoll);
         }
 
         let unique_electorate: std::collections::HashSet<_> = electorate.iter().collect();
-        let unique_candidates: std::collections::HashSet<_> =
-            candidates.iter().map(|candidate| &candidate.model_id).collect();
+        let unique_candidates: std::collections::HashSet<_> = candidates
+            .iter()
+            .map(|candidate| &candidate.model_id)
+            .collect();
         if unique_electorate.len() != electorate.len()
             || unique_candidates.len() != candidates.len()
             || electorate.iter().any(|voter| {
@@ -275,8 +277,12 @@ mod tests {
     fn strict_majority_selects_the_model_for_the_task() {
         let mut poll = fixture();
         for voter in ["model-beta", "model-gamma", "model-delta"] {
-            poll.nominate(voter, "model-alpha", "Strong visual composition and layout control.")
-                .unwrap();
+            poll.nominate(
+                voter,
+                "model-alpha",
+                "Strong visual composition and layout control.",
+            )
+            .unwrap();
         }
         poll.nominate(
             "model-alpha",
@@ -345,7 +351,11 @@ mod tests {
             "visual_design".into(),
             "Design a dashboard.".into(),
             false,
-            vec!["model-alpha".into(), "model-beta".into(), "model-gamma".into()],
+            vec![
+                "model-alpha".into(),
+                "model-beta".into(),
+                "model-gamma".into()
+            ],
             vec![
                 candidate("model-alpha"),
                 candidate("model-beta"),
