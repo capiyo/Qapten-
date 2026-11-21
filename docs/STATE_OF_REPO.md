@@ -77,7 +77,7 @@ The current API uses an in-process memory store. All records, including the audi
 
 ## Remaining gaps in this slice
 
-- The memory API stores imported conversations and proposed memories, but it does not yet call an LLM to extract candidates automatically. A provider-neutral extraction worker and approval UI remain to be implemented.
+- The Python `axon-memory` CLI imports ChatGPT/Claude exports, asks DeepSeek for structured memory candidates after explicit provider-transfer approval, validates candidate structure and source message IDs, and can persist the source plus proposed records to local Axon. A provider-neutral extraction interface, additional extractors, and a review UI remain to be implemented.
 - MongoDB persistence is currently scoped to the memory subsystem. Existing workspaces, agents, tasks, robotics telemetry, and audit records still use process-local storage.
 - Provider adapters that ask the electorate, polling timeouts/retries, automatic task dispatch, and task execution against the winning provider are not yet implemented.
 - Vector embeddings, vector-index provisioning, semantic retrieval, context assembly, deduplication, and contradiction resolution remain future work.
