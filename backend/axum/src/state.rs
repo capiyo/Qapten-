@@ -88,11 +88,11 @@ impl AppState {
         }
 
         let workspace_ids: Vec<_> = state.workspaces.read().await.keys().copied().collect();
-        let mut audit = state.audit.write().await;
+        let mut audit_events = Vec::new();
         for workspace_id in workspace_ids {
-            audit.restore(storage.list_audit_events(workspace_id).await?);
+            audit_events.extend(storage.list_audit_events(workspace_id).await?);
         }
-        drop(audit);
+        state.audit.write().await.restore(audit_events);
 
         Ok(state)
     }
