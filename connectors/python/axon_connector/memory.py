@@ -109,7 +109,7 @@ def parse_memory_candidates(
         confidence = item.get("confidence")
         message_ids = item.get("message_ids", [])
 
-        if kind not in ALLOWED_MEMORY_KINDS:
+        if not isinstance(kind, str) or kind not in ALLOWED_MEMORY_KINDS:
             raise ValueError(f"Unsupported memory kind: {kind!r}.")
         if not isinstance(title, str) or not title.strip() or len(title) > 240:
             raise ValueError("Memory title must contain 1–240 characters.")
@@ -120,7 +120,9 @@ def parse_memory_candidates(
         if not isinstance(tags, list) or len(tags) > 30 or any(
             not isinstance(tag, str) or not tag.strip() or len(tag) > 60 for tag in tags
         ):
-            raise ValueError("Memory tags must be up to 30 non-empty strings of at most 60 characters.")
+            raise ValueError(
+                "Memory tags must be up to 30 non-empty strings of at most 60 characters."
+            )
         if (
             isinstance(confidence, bool)
             or not isinstance(confidence, (int, float))
@@ -130,8 +132,13 @@ def parse_memory_candidates(
             raise ValueError("Memory confidence must be a finite number between 0 and 1.")
         if not isinstance(message_ids, list) or len(message_ids) > 200:
             raise ValueError("Memory message_ids must be an array of at most 200 IDs.")
-        if any(not isinstance(message_id, str) or message_id not in valid_message_ids for message_id in message_ids):
-            raise ValueError("Memory candidate references a message ID outside the imported conversation.")
+        if any(
+            not isinstance(message_id, str) or message_id not in valid_message_ids
+            for message_id in message_ids
+        ):
+            raise ValueError(
+                "Memory candidate references a message ID outside the imported conversation."
+            )
 
         candidates.append(
             MemoryCandidate(
