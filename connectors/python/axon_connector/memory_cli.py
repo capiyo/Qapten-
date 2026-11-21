@@ -43,7 +43,8 @@ def build_parser() -> argparse.ArgumentParser:
         "--approve-persist",
         action="store_true",
         help=(
-            "Explicitly approve storing the source conversation and proposed memories in local Axon."
+            "Explicitly approve storing the source conversation and "
+            "proposed memories in local Axon."
         ),
     )
     return parser
