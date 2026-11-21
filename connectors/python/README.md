@@ -74,3 +74,30 @@ The `--actor-id` is provenance metadata only. It is not authentication and must 
 - The connector currently returns DeepSeek output locally. It does not yet write artifacts/tasks into the AXON backend or create an authenticated provider connection.
 - Attachments, images, tool-use blocks and very large conversations are not yet transferred.
 - Add server-side Firebase identity verification, workspace authorization, encrypted secret management, durable transfer audit and retention policy before multi-user/production use.
+
+
+## Persistent memory extraction (ChatGPT or Claude)
+
+The `axon-memory` command imports one conversation JSON object from a user-authorized ChatGPT or Claude export, asks DeepSeek to extract durable memory candidates, validates the returned JSON and source message references, and can store the source plus proposed memories in Axon's local MongoDB-backed API.
+
+Preview the source without sending it to a provider:
+
+```bash
+axon-memory ./conversation.json --provider chatgpt --workspace-id WORKSPACE_UUID
+```
+
+Approve sending the selected conversation to DeepSeek and inspect proposed candidates:
+
+```bash
+axon-memory ./conversation.json --provider chatgpt --workspace-id WORKSPACE_UUID --approve-provider-transfer
+```
+
+Approve both provider transfer and local persistence:
+
+```bash
+axon-memory ./conversation.json --provider chatgpt --workspace-id WORKSPACE_UUID --approve-provider-transfer --approve-persist
+```
+
+Set `MONGODB_URI` and `MONGODB_DATABASE` for the Axon API, and set `DEEPSEEK_API_KEY` for extraction. The persistence client only accepts a local HTTP Axon API address. Extracted records are saved with `proposed` status; they are not active context until reviewed through Axon's memory review endpoint.
+
+The extractor does not obey instructions embedded in imported conversations, validates model output, rejects invented source message IDs, and excludes credentials and sensitive personal data in its extraction instructions. This is a conservative first pass, not a guarantee that a model will never produce a false or sensitive candidate. Review every candidate before activation. The API currently has no authentication, so keep it bound to loopback and do not expose it to a network.
