@@ -189,7 +189,21 @@ impl MemoryRepository {
             .collect::<Vec<_>>()
             .join("\n\n");
         let content_sha256 = sha256(&canonical);
-        if let Some(existing) = self.imports.find_one(doc! {\n            "workspace_id": workspace_id.to_string(),\n            "provider": input.provider.trim(),\n            "conversation_id": input.conversation_id.trim(),\n            "content_sha256": &content_sha256,\n        }, None).await? {\n            return Ok(existing);\n        }\n        let record = ConversationImport {\n            id: Uuid::new_v4(),
+        if let Some(existing) = self
+            .imports
+            .find_one(
+                doc! {
+                    "workspace_id": workspace_id.to_string(),
+                    "provider": input.provider.trim(),
+                    "conversation_id": input.conversation_id.trim(),
+                    "content_sha256": &content_sha256,
+                },
+                None,
+            )
+            .await?
+        {
+            return Ok(existing);
+        }\n        let record = ConversationImport {\n            id: Uuid::new_v4(),
             workspace_id,
             provider: input.provider,
             conversation_id: input.conversation_id,
