@@ -21,7 +21,12 @@ struct MemoryApiError {
 type ApiResult<T> = Result<T, (StatusCode, Json<MemoryApiError>)>;
 
 fn api_error(status: StatusCode, message: impl Into<String>) -> (StatusCode, Json<MemoryApiError>) {
-    (status, Json(MemoryApiError { error: message.into() }))
+    (
+        status,
+        Json(MemoryApiError {
+            error: message.into(),
+        }),
+    )
 }
 
 fn repository(state: &AppState) -> ApiResult<&MemoryRepository> {
@@ -124,7 +129,10 @@ pub async fn get_import(
         .await
         .map_err(|error| api_error(StatusCode::INTERNAL_SERVER_ERROR, error.to_string()))?;
     record.map(Json).ok_or_else(|| {
-        api_error(StatusCode::NOT_FOUND, "Conversation import was not found in this workspace.")
+        api_error(
+            StatusCode::NOT_FOUND,
+            "Conversation import was not found in this workspace.",
+        )
     })
 }
 
