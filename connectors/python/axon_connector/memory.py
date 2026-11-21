@@ -177,9 +177,13 @@ async def persist_memory_candidates(
     candidates: tuple[MemoryCandidate, ...],
     *,
     workspace_id: str,
+    *,
+    approved: bool,
     api_url: str = "http://127.0.0.1:8080",
 ) -> tuple[str, tuple[dict[str, Any], ...]]:
-    """Persist the source import and proposed candidates to a local Axon API."""
+    """Persist the source import and proposed candidates after explicit approval."""
+    if not approved:
+        raise PermissionError("Memory persistence requires explicit user approval.")
     parsed = urlparse(api_url)
     if parsed.scheme != "http" or parsed.hostname not in {"127.0.0.1", "localhost", "::1"}:
         raise ValueError("Memory persistence is restricted to a local HTTP Axon API.")
