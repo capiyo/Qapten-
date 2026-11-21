@@ -171,7 +171,11 @@ impl MemoryRepository {
                         "summary": "text",
                         "tags": "text"
                     })
-                    .options(IndexOptions::builder().name("memory_text_search".into()).build())
+                    .options(
+                        IndexOptions::builder()
+                            .name("memory_text_search".into())
+                            .build(),
+                    )
                     .build(),
                 None,
             )
@@ -285,7 +289,11 @@ impl MemoryRepository {
             .iter()
             .filter_map(|message| message.id.clone())
             .collect();
-        if input.message_ids.iter().any(|message_id| !imported_message_ids.contains(message_id)) {
+        if input
+            .message_ids
+            .iter()
+            .any(|message_id| !imported_message_ids.contains(message_id))
+        {
             return Err(mongodb::error::Error::custom(
                 "A memory source message ID does not exist in the referenced conversation import.",
             ));
@@ -299,7 +307,11 @@ impl MemoryRepository {
             title: input.title.trim().to_owned(),
             content: input.content.trim().to_owned(),
             summary: input.summary.trim().to_owned(),
-            tags: input.tags.into_iter().map(|tag| tag.trim().to_owned()).collect(),
+            tags: input
+                .tags
+                .into_iter()
+                .map(|tag| tag.trim().to_owned())
+                .collect(),
             source: MemorySource {
                 provider: source.provider,
                 conversation_id: source.conversation_id,
@@ -361,11 +373,17 @@ impl MemoryRepository {
                     "superseded_by_id is required when superseding a memory.",
                 )
             })?;
-            let replacement = self.memories.find_one(doc! {
-                "id": replacement_id.to_string(),
-                "workspace_id": workspace_id.to_string(),
-                "status": "active",
-            }, None).await?;
+            let replacement = self
+                .memories
+                .find_one(
+                    doc! {
+                        "id": replacement_id.to_string(),
+                        "workspace_id": workspace_id.to_string(),
+                        "status": "active",
+                    },
+                    None,
+                )
+                .await?;
             if replacement.is_none() {
                 return Err(mongodb::error::Error::custom(
                     "Replacement memory must exist and be active in this workspace.",
@@ -546,7 +564,11 @@ pub fn validate_import(input: &ImportConversationRequest) -> Result<(), &'static
         if message.content.is_empty() {
             return Err("Messages cannot have empty content.");
         }
-        if message.id.as_ref().is_some_and(|id| id.is_empty() || id.len() > 256) {
+        if message
+            .id
+            .as_ref()
+            .is_some_and(|id| id.is_empty() || id.len() > 256)
+        {
             return Err("Message IDs must contain 1–256 characters when provided.");
         }
         total_bytes = total_bytes.saturating_add(message.content.len());
