@@ -39,7 +39,7 @@ pub async fn list_audit_events(
     Ok(Json(state.audit.read().await.list_workspace(workspace_id)))
 }
 
-pub async fn health() -> Json<Health> {
+pub async fn health(State(state): State<AppState>) -> Json<Health> {
     Json(Health {
         status: "ok",
         service: "axon-api",
