@@ -35,6 +35,7 @@ pub struct CapabilityPoll {
     pub capability: String,
     pub task_brief: String,
     pub external_sharing_approved: bool,
+    pub context_memory_ids: Vec<Uuid>,
     pub electorate: Vec<String>,
     pub candidates: Vec<ModelCandidate>,
     pub nominations: Vec<ModelNomination>,
@@ -77,11 +78,13 @@ impl CapabilityPoll {
         external_sharing_approved: bool,
         electorate: Vec<String>,
         candidates: Vec<ModelCandidate>,
+        context_memory_ids: Vec<Uuid>,
     ) -> Result<Self, NominationError> {
         if capability.trim().is_empty()
             || task_brief.trim().is_empty()
             || electorate.len() < 3
             || candidates.len() < 2
+            || context_memory_ids.len() > 50
             || !external_sharing_approved
             || electorate.iter().any(|id| id.trim().is_empty())
             || candidates.iter().any(|candidate| {
@@ -97,12 +100,14 @@ impl CapabilityPoll {
             return Err(NominationError::InvalidPoll);
         }
 
+        let unique_memory_ids: std::collections::HashSet<_> = context_memory_ids.iter().collect();
         let unique_electorate: std::collections::HashSet<_> = electorate.iter().collect();
         let unique_candidates: std::collections::HashSet<_> = candidates
             .iter()
             .map(|candidate| &candidate.model_id)
             .collect();
-        if unique_electorate.len() != electorate.len()
+        if unique_memory_ids.len() != context_memory_ids.len()
+            || unique_electorate.len() != electorate.len()
             || unique_candidates.len() != candidates.len()
             || electorate.iter().any(|voter| {
                 !candidates
@@ -120,6 +125,7 @@ impl CapabilityPoll {
             capability: capability.trim().to_owned(),
             task_brief: task_brief.trim().to_owned(),
             external_sharing_approved,
+            context_memory_ids,
             electorate,
             candidates,
             nominations: Vec::new(),
@@ -269,6 +275,7 @@ mod tests {
                 candidate("model-delta"),
                 candidate("model-epsilon"),
             ],
+            vec![],
         )
         .unwrap()
     }
@@ -361,6 +368,7 @@ mod tests {
                 candidate("model-beta"),
                 candidate("model-gamma"),
             ],
+            vec![],
         )
         .is_err());
     }
