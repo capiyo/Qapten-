@@ -207,9 +207,9 @@ impl MemoryRepository {
         let record = ConversationImport {
             id: Uuid::new_v4(),
             workspace_id,
-            provider: input.provider,
-            conversation_id: input.conversation_id,
-            title: input.title,
+            provider: input.provider.trim().to_owned(),
+            conversation_id: input.conversation_id.trim().to_owned(),
+            title: input.title.trim().to_owned(),
             message_count: input.messages.len(),
             messages: input.messages,
             content_sha256,
@@ -246,7 +246,7 @@ impl MemoryRepository {
             title: input.title.trim().to_owned(),
             content: input.content.trim().to_owned(),
             summary: input.summary.trim().to_owned(),
-            tags: input.tags,
+            tags: input.tags.into_iter().map(|tag| tag.trim().to_owned()).collect(),
             source: MemorySource {
                 provider: source.provider,
                 conversation_id: source.conversation_id,
@@ -295,6 +295,13 @@ impl MemoryRepository {
         memory_id: Uuid,
         input: ReviewMemoryRequest,
     ) -> mongodb::error::Result<Option<MemoryRecord>> {
+        if !matches!(&input.decision, MemoryReviewDecision::Supersede)
+            && input.superseded_by_id.is_some()
+        {
+            return Err(mongodb::error::Error::custom(
+                "superseded_by_id is only valid for a supersede decision.",
+            ));
+        }
         if matches!(&input.decision, MemoryReviewDecision::Supersede) {
             let replacement_id = input.superseded_by_id.ok_or_else(|| {
                 mongodb::error::Error::custom("superseded_by_id is required when superseding a memory.")
