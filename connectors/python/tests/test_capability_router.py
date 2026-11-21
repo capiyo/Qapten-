@@ -24,7 +24,10 @@ def _model(index: int) -> dict[str, object]:
 
 def test_loads_a_ten_model_catalog(tmp_path) -> None:
     catalog = tmp_path / "models.json"
-    catalog.write_text(json.dumps({"models": [_model(index) for index in range(10)]}), encoding="utf-8")
+    catalog.write_text(
+        json.dumps({"models": [_model(index) for index in range(10)]}),
+        encoding="utf-8",
+    )
 
     models = load_model_catalog(catalog)
 
