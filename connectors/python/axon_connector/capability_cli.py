@@ -32,7 +32,9 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--max-cost-per-1k-tokens",
         type=float,
-        help="Optional estimated USD cost ceiling per 1000 tokens; models without a price are excluded.",
+        help=(
+            "Optional estimated USD cost ceiling per 1000 tokens; models without a price are excluded."
+        ),
     )
     parser.add_argument(
         "--api-url",
