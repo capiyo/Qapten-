@@ -82,8 +82,8 @@ export type MemorySource = {
   conversation_id: string;
   import_id: string;
   message_ids: string[];
-  imported_at: string;
-  content_sha256: string;
+  captured_at: string;
+  source_content_sha256: string;
 };
 
 export type MemoryRecord = {
@@ -96,6 +96,7 @@ export type MemoryRecord = {
   tags: string[];
   source: MemorySource;
   confidence: number;
+  content_sha256: string;
   status: MemoryStatus;
   version: number;
   created_at: string;
