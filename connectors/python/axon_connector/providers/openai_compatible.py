@@ -43,12 +43,13 @@ class OpenAICompatibleClient:
         *,
         max_tokens: int = 1200,
     ) -> str:
+        api_key = self.config.api_key
         try:
             async with httpx.AsyncClient(timeout=self.timeout_seconds) as client:
                 response = await client.post(
                     f"{self.config.base_url.rstrip('/')}/chat/completions",
                     headers={
-                        "Authorization": f"Bearer {self.config.api_key}",
+                        "Authorization": f"Bearer {api_key}",
                         "Content-Type": "application/json",
                     },
                     json={
