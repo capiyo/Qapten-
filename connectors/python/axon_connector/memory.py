@@ -79,7 +79,7 @@ def _decode_json(response: str) -> dict[str, Any]:
     except json.JSONDecodeError as exc:
         raise ValueError("Memory extractor returned invalid JSON.") from exc
     if not isinstance(payload, dict) or not isinstance(payload.get("memories"), list):
-        raise ValueError("Memory extractor response must contain a memories array.")
+        raise TypeError("Memory extractor response must contain a memories array.")
     return payload
 
 
@@ -100,7 +100,7 @@ def parse_memory_candidates(
 
     for item in payload["memories"]:
         if not isinstance(item, dict):
-            raise ValueError("Every memory candidate must be a JSON object.")
+            raise TypeError("Every memory candidate must be a JSON object.")
         kind = item.get("kind")
         title = item.get("title")
         content = item.get("content")
