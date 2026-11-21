@@ -27,6 +27,8 @@ pub enum StorageError {
     InvalidStoredTimestamp,
     #[error("stored audit sequence is negative")]
     InvalidStoredSequence,
+    #[error("stored entity kind does not match its table")]
+    InvalidStoredEntityKind,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
