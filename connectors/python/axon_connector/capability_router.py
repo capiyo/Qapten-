@@ -245,10 +245,14 @@ async def run_majority_route(
     nominations: list[dict[str, str]] = []
     failures: list[str] = []
     for model, vote in zip(models, votes, strict=True):
+        if isinstance(vote, asyncio.CancelledError):
+            raise vote
         if isinstance(vote, Exception):
             failures.append(f"{model.model_id}: {type(vote).__name__}")
-        else:
+        elif isinstance(vote, dict):
             nominations.append(vote)
+        else:
+            failures.append(f"{model.model_id}: unexpected response type")
 
     if len(nominations) < 3:
         raise CapabilityRoutingError(
