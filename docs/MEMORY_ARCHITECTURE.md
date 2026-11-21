@@ -21,9 +21,9 @@ Configure `MONGODB_URI` and optionally `MONGODB_DATABASE` (default: `axon`). Whe
 1. Import a provider-authorized export into a workspace. Axon preserves the ordered messages and computes a content digest.
 2. The Python `axon-memory` worker can read a user-authorized ChatGPT or Claude export, ask DeepSeek for structured memory candidates, validate the response and source message IDs, and submit candidates to Axon. Extraction is not the same as verification.
 3. Candidates are created with `status=proposed`; every candidate references the source import and can include message IDs.
-4. A reviewer approves, rejects, or supersedes a proposed memory using an expected version.
+4. A reviewer approves or rejects a proposed memory using an expected version. An active memory can be superseded by another active memory using an expected version and an explicit replacement reference.
 5. Only active memories should be included in normal context assembly. Rejected and superseded records remain available for audit/history.
-6. Retrieval returns a bounded set of workspace-scoped records. A future context assembler will rank them by relevance, recency, confidence, and status before sharing with a provider.
+6. The active-only context endpoint returns a bounded set of workspace-scoped records using MongoDB text search. The `axon-route --include-memory` option can add selected active memories to a capability poll; the poll stores their IDs and verifies workspace/status before accepting them. Semantic vector ranking and general-purpose context assembly remain future work.
 
 ## Memory types
 
