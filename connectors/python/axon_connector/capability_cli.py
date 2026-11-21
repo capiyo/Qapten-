@@ -87,6 +87,7 @@ async def _run(args: argparse.Namespace) -> int:
             models=available_models,
             api_url=args.api_url,
             include_memory=args.include_memory,
+            provider_sharing_approved=args.approve_provider_sharing,
         )
         print("\n--- Majority poll ---")
         print(json.dumps(outcome["result"], ensure_ascii=False, indent=2))
@@ -112,6 +113,7 @@ async def _run(args: argparse.Namespace) -> int:
         ValueError,
         CapabilityRoutingError,
         ModelProviderError,
+        PermissionError,
         httpx.HTTPError,
     ) as exc:
         print(f"axon-route: {exc}", file=sys.stderr)
