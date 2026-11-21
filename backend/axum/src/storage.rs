@@ -100,6 +100,7 @@ impl StoredEntity {
 #[derive(Debug, Clone)]
 pub struct StorageMutation {
     pub entity: StoredEntity,
+    pub related_entities: Vec<StoredEntity>,
     pub audit: AuditEvent,
 }
 
@@ -150,29 +151,29 @@ impl SqliteStorage {
 #[async_trait]
 impl Storage for SqliteStorage {
     async fn apply(&self, mutation: StorageMutation) -> Result<(), StorageError> {
-        let entity = mutation.entity;
-        let audit = mutation.audit;
-        let payload = serde_json::to_string(&entity)?;
-        let workspace_id = entity.workspace_id().map(|id| id.to_string());
-        let created_at = entity.created_at().to_rfc3339();
-
         let mut transaction = self.pool.begin().await?;
-        sqlx::query(
-            "INSERT INTO entities (kind, id, workspace_id, created_at, payload_json) \
-             VALUES (?, ?, ?, ?, ?) \
-             ON CONFLICT(kind, id) DO UPDATE SET \
-             workspace_id = excluded.workspace_id, \
-             created_at = excluded.created_at, \
-             payload_json = excluded.payload_json",
-        )
-        .bind(entity.kind().as_str())
-        .bind(entity.id().to_string())
-        .bind(workspace_id)
-        .bind(created_at)
-        .bind(payload)
-        .execute(&mut *transaction)
-        .await?;
+        for entity in std::iter::once(mutation.entity).chain(mutation.related_entities) {
+            let payload = serde_json::to_string(&entity)?;
+            let workspace_id = entity.workspace_id().map(|id| id.to_string());
+            let created_at = entity.created_at().to_rfc3339();
+            sqlx::query(
+                "INSERT INTO entities (kind, id, workspace_id, created_at, payload_json) \
+                 VALUES (?, ?, ?, ?, ?) \
+                 ON CONFLICT(kind, id) DO UPDATE SET \
+                 workspace_id = excluded.workspace_id, \
+                 created_at = excluded.created_at, \
+                 payload_json = excluded.payload_json",
+            )
+            .bind(entity.kind().as_str())
+            .bind(entity.id().to_string())
+            .bind(workspace_id)
+            .bind(created_at)
+            .bind(payload)
+            .execute(&mut *transaction)
+            .await?;
+        }
 
+        let audit = mutation.audit;
         sqlx::query(
             "INSERT INTO audit_events \
              (event_id, workspace_id, actor, event_type, entity_type, entity_id, occurred_at, metadata_json) \
@@ -272,6 +273,7 @@ mod tests {
                 name: "Axon".into(),
                 created_at: now,
             }),
+            related_entities: Vec::new(),
             audit: AuditEvent {
                 sequence: 0,
                 event_id,
