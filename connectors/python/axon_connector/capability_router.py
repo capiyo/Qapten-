@@ -181,8 +181,11 @@ async def run_majority_route(
     models: tuple[ModelConfig, ...],
     api_url: str = "http://127.0.0.1:8080",
     include_memory: bool = False,
+    provider_sharing_approved: bool = False,
 ) -> dict[str, Any]:
     """Ask configured models to nominate, persist the vote, and execute only the winner."""
+    if not provider_sharing_approved:
+        raise PermissionError("Capability routing requires explicit provider-sharing approval.")
     base_url = _require_local_api(api_url)
     routed_task = task_brief
     memory_ids: list[str] = []
@@ -267,7 +270,7 @@ async def run_majority_route(
             json={
                 "capability": capability,
                 "task_brief": routed_task,
-                "external_sharing_approved": True,
+                "external_sharing_approved": provider_sharing_approved,
                 "context_memory_ids": memory_ids,
                 "electorate": [item["voter_model_id"] for item in nominations],
                 "candidates": candidates,
