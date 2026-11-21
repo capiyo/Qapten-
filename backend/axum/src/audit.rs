@@ -33,9 +33,8 @@ impl AuditStore {
         entity_id: impl Into<String>,
         metadata: Value,
     ) -> AuditEvent {
-        self.next_sequence += 1;
-        let event = AuditEvent {
-            sequence: self.next_sequence,
+        self.append_event(AuditEvent {
+            sequence: 0,
             event_id: Uuid::new_v4(),
             workspace_id,
             actor: "system:local-development-unattributed".into(),
@@ -44,9 +43,22 @@ impl AuditStore {
             entity_id: entity_id.into(),
             occurred_at: Utc::now(),
             metadata,
-        };
+        })
+    }
+
+    pub fn append_event(&mut self, mut event: AuditEvent) -> AuditEvent {
+        self.next_sequence += 1;
+        event.sequence = self.next_sequence;
         self.events.push(event.clone());
         event
+    }
+
+    pub fn restore(&mut self, events: Vec<AuditEvent>) {
+        for event in events {
+            self.next_sequence = self.next_sequence.max(event.sequence);
+            self.events.push(event);
+        }
+        self.events.sort_by_key(|event| event.sequence);
     }
 
     pub fn list_workspace(&self, workspace_id: Uuid) -> Vec<AuditEvent> {
