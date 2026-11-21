@@ -203,7 +203,9 @@ impl MemoryRepository {
             .await?
         {
             return Ok(existing);
-        }\n        let record = ConversationImport {\n            id: Uuid::new_v4(),
+        }
+        let record = ConversationImport {
+            id: Uuid::new_v4(),
             workspace_id,
             provider: input.provider,
             conversation_id: input.conversation_id,
