@@ -62,6 +62,25 @@ The Python connector imports one user-authorized Claude conversation export and 
 
 The current API uses an in-process memory store. All records, including the audit stream, disappear when the process exits. The development audit stream is append-only within one process but is neither durable nor tamper-evident. Simulator telemetry is bounded to 500 retained events per device; event-ID deduplication is limited to that retained window. This is not durable replay protection. It has no authentication or route-level authorization enforcement. The identity module evaluates grants only for principals supplied by a future trusted authentication adapter; it does not establish identity. It refuses non-loopback binding by default; the explicit override is for isolated development only. Do not expose it to a network or use it for sensitive information.
 
+## Memory and capability-routing work on `feature/axon-memory-consensus-routing`
+
+- [x] MongoDB-backed conversation import collection with message preservation, source metadata, and SHA-256 content digest.
+- [x] MongoDB-backed memory collection with workspace/status indexes and text search over title, content, summary, and tags.
+- [x] Typed memory kinds: semantic, episodic, project, decision, preference, and procedural.
+- [x] Proposed-by-default memory lifecycle with approve/reject/supersede transitions and optimistic version checks.
+- [x] Memory import, create, list/search, and review API routes.
+- [x] Strict-majority capability nomination engine with fixed electorate/candidate set, one ballot per voter, self-vote rejection, and no-winner outcome for ties or plurality.
+- [x] AXP JSON Schemas for memory records and capability polls.
+- [x] CI triggers include feature branches and pull requests targeting foundation branches.
+
+## Remaining gaps in this slice
+
+- The memory API stores imported conversations and proposed memories, but it does not yet call an LLM to extract candidates automatically. A provider-neutral extraction worker and approval UI remain to be implemented.
+- MongoDB persistence is currently scoped to the memory subsystem. Existing workspaces, agents, tasks, robotics telemetry, and audit records still use process-local storage.
+- Capability polls are currently a tested Rust domain engine; persistent poll storage, provider adapters that ask the electorate, polling timeouts/retries, API endpoints, and automatic task dispatch are not yet implemented.
+- Vector embeddings, vector-index provisioning, semantic retrieval, context assembly, deduplication, and contradiction resolution remain future work.
+- The API still has no verified authentication or route-level workspace authorization. MongoDB-backed memory must remain loopback-only and is not safe for multi-user production deployment yet.
+
 ## Verification
 
 GitHub Actions run [42500672881](https://github.com/capiyo/Qapten-/actions/runs/42500672881) passed all four jobs on commit `5c199a8f364d5272f9525703f4e591a820652ef4`: Rust formatting, Clippy and tests; React web production build; React Native TypeScript validation; and Python connector Ruff/pytest. The Python suite verifies Claude export normalization, AXP provenance and payload hashing, preview-only behavior, explicit transfer approval, and context-size validation. This verifies the current branch head at the time of the run. No physical Android/iOS build, hardware integration, or production deployment has been performed.
