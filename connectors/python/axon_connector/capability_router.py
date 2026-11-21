@@ -182,10 +182,15 @@ async def run_majority_route(
     api_url: str = "http://127.0.0.1:8080",
     include_memory: bool = False,
     provider_sharing_approved: bool = False,
+    max_cost_per_1k_tokens: float | None = None,
 ) -> dict[str, Any]:
     """Ask configured models to nominate, persist the vote, and execute only the winner."""
     if not provider_sharing_approved:
         raise PermissionError("Capability routing requires explicit provider-sharing approval.")
+    if max_cost_per_1k_tokens is not None and (
+        not math.isfinite(max_cost_per_1k_tokens) or max_cost_per_1k_tokens < 0
+    ):
+        raise ValueError("Maximum model cost must be a finite non-negative number.")
     base_url = _require_local_api(api_url)
     routed_task = task_brief
     memory_ids: list[str] = []
@@ -221,6 +226,13 @@ async def run_majority_route(
         for model in models
         if os.getenv(model.api_key_env)
         and (capability in model.capabilities or "*" in model.capabilities)
+        and (
+            max_cost_per_1k_tokens is None
+            or (
+                model.estimated_cost_per_1k_tokens is not None
+                and model.estimated_cost_per_1k_tokens <= max_cost_per_1k_tokens
+            )
+        )
     )
     if len(models) < 3:
         raise CapabilityRoutingError(
