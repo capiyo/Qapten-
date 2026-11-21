@@ -54,7 +54,7 @@ def test_loads_one_conversation_from_full_export_with_explicit_selection(tmp_pat
         json.dumps(
             [
                 {"id": "chat-1", "title": "First", "mapping": {}},
-                {"id": "chat-2", "title": "Second", "mapping": {}},
+                {"id": "chat-2", "title": "Second", "mapping": {"node": {"message": {"id": "m2", "author": {"role": "user"}, "content": {"parts": ["Hello"]}}}}},
             ]
         ),
         encoding="utf-8",
