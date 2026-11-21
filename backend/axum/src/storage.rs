@@ -112,10 +112,7 @@ pub trait Storage: Send + Sync {
         workspace_id: Option<Uuid>,
     ) -> Result<Vec<StoredEntity>, StorageError>;
 
-    async fn list_audit_events(
-        &self,
-        workspace_id: Uuid,
-    ) -> Result<Vec<AuditEvent>, StorageError>;
+    async fn list_audit_events(&self, workspace_id: Uuid) -> Result<Vec<AuditEvent>, StorageError>;
 }
 
 #[derive(Clone)]
@@ -220,10 +217,7 @@ impl Storage for SqliteStorage {
             .collect()
     }
 
-    async fn list_audit_events(
-        &self,
-        workspace_id: Uuid,
-    ) -> Result<Vec<AuditEvent>, StorageError> {
+    async fn list_audit_events(&self, workspace_id: Uuid) -> Result<Vec<AuditEvent>, StorageError> {
         let rows = sqlx::query(
             "SELECT sequence, event_id, workspace_id, actor, event_type, entity_type, \
              entity_id, occurred_at, metadata_json FROM audit_events \
@@ -334,7 +328,9 @@ mod tests {
             .await
             .unwrap();
         assert_eq!(entities.len(), 1);
-        assert!(matches!(&entities[0], StoredEntity::Workspace(item) if item.id == first_workspace));
+        assert!(
+            matches!(&entities[0], StoredEntity::Workspace(item) if item.id == first_workspace)
+        );
         assert!(storage
             .list_audit_events(second_workspace)
             .await
@@ -351,10 +347,11 @@ mod tests {
             .await
             .unwrap();
 
-        let update = sqlx::query("UPDATE audit_events SET actor = 'changed' WHERE workspace_id = ?")
-            .bind(workspace_id.to_string())
-            .execute(&storage.pool)
-            .await;
+        let update =
+            sqlx::query("UPDATE audit_events SET actor = 'changed' WHERE workspace_id = ?")
+                .bind(workspace_id.to_string())
+                .execute(&storage.pool)
+                .await;
         assert!(update.is_err());
 
         let delete = sqlx::query("DELETE FROM audit_events WHERE workspace_id = ?")
