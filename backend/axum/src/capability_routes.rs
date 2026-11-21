@@ -81,7 +81,15 @@ pub async fn create_poll(
     let poll = repository(&state)?
         .create_capability_poll(poll)
         .await
-        .map_err(|error| api_error(StatusCode::INTERNAL_SERVER_ERROR, error.to_string()))?;
+        .map_err(|error| {
+            let message = error.to_string();
+            let status = if message.contains("context must reference") {
+                StatusCode::BAD_REQUEST
+            } else {
+                StatusCode::INTERNAL_SERVER_ERROR
+            };
+            api_error(status, message)
+        })?;
     Ok((StatusCode::CREATED, Json(poll)))
 }
 
