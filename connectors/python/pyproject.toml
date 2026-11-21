@@ -16,6 +16,7 @@ dev = ["pytest>=8,<9", "pytest-asyncio>=0.23,<1", "ruff>=0.5,<1"]
 [project.scripts]
 axon-bridge = "axon_connector.cli:main"
 axon-memory = "axon_connector.memory_cli:main"
+axon-route = "axon_connector.capability_cli:main"
 
 [tool.setuptools.packages.find]
 where = ["."]
