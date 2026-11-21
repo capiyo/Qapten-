@@ -27,9 +27,9 @@ class ModelConfig:
     @property
     def api_key(self) -> str:
         value = os.getenv(self.api_key_env)
-        if not value:
+        if not value or not value.strip():
             raise ValueError(f"Environment variable {self.api_key_env} is not configured.")
-        return value
+        return value.strip()
 
 
 class OpenAICompatibleClient:
