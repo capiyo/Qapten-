@@ -75,7 +75,7 @@ Workspace, agent, task, artifact, robotics, and audit state still uses the in-pr
 - [x] Generic OpenAI-compatible provider adapter driven by a local model catalog and environment-held API keys.
 - [x] Python `axon-route` worker: parallel model nominations, persisted strict-majority result, winner-only task execution, and opt-in active-memory context after explicit provider-sharing approval.
 - [x] Python `axon-memory` worker: ChatGPT/Claude export import, DeepSeek candidate extraction, provenance validation, and proposed-memory persistence after separate approvals.
-- [x] AXP JSON Schemas for memory records and capability polls.
+- [x] AXP JSON Schemas for memory records, capability polls, and model catalogs.
 - [x] CI triggers include feature branches and pull requests targeting foundation branches.
 
 ## Remaining gaps in this slice
