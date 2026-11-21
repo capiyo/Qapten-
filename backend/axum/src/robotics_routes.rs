@@ -221,7 +221,6 @@ mod tests {
         assert_eq!(response.status(), StatusCode::FORBIDDEN);
     }
 
-
     fn input(event_id: &str, sequence: u64) -> TelemetryIngest {
         TelemetryIngest {
             event_id: event_id.into(),
