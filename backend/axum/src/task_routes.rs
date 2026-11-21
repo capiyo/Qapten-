@@ -253,7 +253,8 @@ pub async fn transition_task(
         ));
     }
 
-    let Some(mut task) = state.tasks.read().await.get(&task_id).cloned() else {
+    let mut tasks = state.tasks.write().await;
+    let Some(mut task) = tasks.get(&task_id).cloned() else {
         return Err(error(StatusCode::NOT_FOUND, "Task not found."));
     };
 
