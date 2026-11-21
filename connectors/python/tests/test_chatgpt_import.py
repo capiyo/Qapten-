@@ -37,7 +37,7 @@ def test_parses_chatgpt_mapping_into_ordered_messages() -> None:
 def test_rejects_chatgpt_export_without_conversation_id() -> None:
     import pytest
 
-    with pytest.raises(ValueError, match="conversation ID"):
+    with pytest.raises(TypeError, match="conversation ID"):
         parse_chatgpt_export({"mapping": {}})
 
 
