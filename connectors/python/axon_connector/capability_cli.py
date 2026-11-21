@@ -69,7 +69,7 @@ async def _run(args: argparse.Namespace) -> int:
         available_models = tuple(
             model
             for model in models
-            if os.getenv(model.api_key_env)
+            if os.getenv(model.api_key_env, "").strip()
             and (args.capability in model.capabilities or "*" in model.capabilities)
             and (
                 args.max_cost_per_1k_tokens is None
