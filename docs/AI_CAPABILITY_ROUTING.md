@@ -29,7 +29,7 @@ The Rust capability module implements the poll domain and strict-majority tally 
 - `POST /api/v1/workspaces/{workspace_id}/capability-polls/{poll_id}/finalize`: close the poll and compute the strict-majority result.
 
 Nomination and finalization writes use version-checked atomic document replacement. Concurrent submissions based on a stale version are rejected and must be retried after reloading.
-\n## Running the router
+## Running the router
 
 Configure up to 30 models in `connectors/python/models.example.json` (copy it to a private local catalog and replace endpoint, model ID, and environment-variable names). Provider API keys stay in environment variables; they are never stored in the catalog. Models must declare the requested capability, and only models with configured keys participate.
 
