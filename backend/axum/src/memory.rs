@@ -1,3 +1,4 @@
+use crate::capability::{CapabilityPoll, CapabilityVoteResult};
 use chrono::{DateTime, Utc};
 use futures_util::TryStreamExt;
 use mongodb::{
@@ -132,6 +133,7 @@ pub struct ReviewMemoryRequest {
 pub struct MemoryRepository {
     memories: Collection<MemoryRecord>,
     imports: Collection<ConversationImport>,
+    capability_polls: Collection<CapabilityPoll>,
 }
 
 impl MemoryRepository {
@@ -145,6 +147,7 @@ impl MemoryRepository {
         let database = client.database(database_name);
         let memories = database.collection::<MemoryRecord>("memories");
         let imports = database.collection::<ConversationImport>("conversation_imports");
+        let capability_polls = database.collection::<CapabilityPoll>("capability_polls");
 
         memories
             .create_index(
@@ -193,7 +196,25 @@ impl MemoryRepository {
             )
             .await?;
 
-        Ok(Self { memories, imports })
+        capability_polls
+            .create_index(
+                IndexModel::builder()
+                    .keys(doc! { "workspace_id": 1, "created_at": -1 })
+                    .options(
+                        IndexOptions::builder()
+                            .name("capability_poll_workspace_time".into())
+                            .build(),
+                    )
+                    .build(),
+                None,
+            )
+            .await?;
+
+        Ok(Self {
+            memories,
+            imports,
+            capability_polls,
+        })
     }
 
     pub async fn import_conversation(
@@ -386,6 +407,100 @@ impl MemoryRepository {
                 None,
             )
             .await
+    }
+
+    pub async fn create_capability_poll(
+        &self,
+        poll: CapabilityPoll,
+    ) -> mongodb::error::Result<CapabilityPoll> {
+        self.capability_polls.insert_one(poll.clone(), None).await?;
+        Ok(poll)
+    }
+
+    pub async fn get_capability_poll(
+        &self,
+        workspace_id: Uuid,
+        poll_id: Uuid,
+    ) -> mongodb::error::Result<Option<CapabilityPoll>> {
+        self.capability_polls
+            .find_one(
+                doc! {
+                    "id": poll_id.to_string(),
+                    "workspace_id": workspace_id.to_string()
+                },
+                None,
+            )
+            .await
+    }
+
+    pub async fn submit_capability_nomination(
+        &self,
+        workspace_id: Uuid,
+        poll_id: Uuid,
+        voter_model_id: &str,
+        nominated_model_id: &str,
+        rationale: &str,
+    ) -> mongodb::error::Result<CapabilityPoll> {
+        let mut poll = self
+            .get_capability_poll(workspace_id, poll_id)
+            .await?
+            .ok_or_else(|| mongodb::error::Error::custom("Capability poll was not found."))?;
+        let expected_version = poll.version;
+        poll.nominate(voter_model_id, nominated_model_id, rationale)
+            .map_err(|error| mongodb::error::Error::custom(format!("{error:?}")))?;
+        let result = self
+            .capability_polls
+            .replace_one(
+                doc! {
+                    "id": poll_id.to_string(),
+                    "workspace_id": workspace_id.to_string(),
+                    "version": i64::try_from(expected_version).unwrap_or(i64::MAX),
+                    "status": "collecting",
+                },
+                poll.clone(),
+                None,
+            )
+            .await?;
+        if result.matched_count == 0 {
+            return Err(mongodb::error::Error::custom(
+                "Capability poll version conflict; reload before retrying.",
+            ));
+        }
+        Ok(poll)
+    }
+
+    pub async fn finalize_capability_poll(
+        &self,
+        workspace_id: Uuid,
+        poll_id: Uuid,
+    ) -> mongodb::error::Result<(CapabilityPoll, CapabilityVoteResult)> {
+        let mut poll = self
+            .get_capability_poll(workspace_id, poll_id)
+            .await?
+            .ok_or_else(|| mongodb::error::Error::custom("Capability poll was not found."))?;
+        let expected_version = poll.version;
+        let result = poll
+            .finalize()
+            .map_err(|error| mongodb::error::Error::custom(format!("{error:?}")))?;
+        let updated = self
+            .capability_polls
+            .replace_one(
+                doc! {
+                    "id": poll_id.to_string(),
+                    "workspace_id": workspace_id.to_string(),
+                    "version": i64::try_from(expected_version).unwrap_or(i64::MAX),
+                    "status": "collecting",
+                },
+                poll.clone(),
+                None,
+            )
+            .await?;
+        if updated.matched_count == 0 {
+            return Err(mongodb::error::Error::custom(
+                "Capability poll version conflict; reload before retrying.",
+            ));
+        }
+        Ok((poll, result))
     }
 
     pub async fn get_import(
