@@ -72,6 +72,9 @@ The current API uses an in-process memory store. All records, including the audi
 - [x] Strict-majority capability nomination engine with fixed electorate/candidate set, explicit external-sharing approval, one ballot per voter, self-vote rejection, and no-winner outcome for ties or plurality.
 - [x] MongoDB persistence for capability polls and nominations with optimistic version checks.
 - [x] Capability poll API: create, retrieve, nominate, and finalize.
+- [x] Generic OpenAI-compatible provider adapter driven by a local model catalog and environment-held API keys.
+- [x] Python `axon-route` worker: parallel model nominations, persisted strict-majority result, and winner-only task execution after explicit provider-sharing approval.
+- [x] Python `axon-memory` worker: ChatGPT/Claude export import, DeepSeek candidate extraction, provenance validation, and proposed-memory persistence after separate approvals.
 - [x] AXP JSON Schemas for memory records and capability polls.
 - [x] CI triggers include feature branches and pull requests targeting foundation branches.
 
@@ -79,7 +82,9 @@ The current API uses an in-process memory store. All records, including the audi
 
 - The Python `axon-memory` CLI imports ChatGPT/Claude exports, asks DeepSeek for structured memory candidates after explicit provider-transfer approval, validates candidate structure and source message IDs, and can persist the source plus proposed records to local Axon. A provider-neutral extraction interface, additional extractors, and a review UI remain to be implemented.
 - MongoDB persistence is currently scoped to the memory subsystem. Existing workspaces, agents, tasks, robotics telemetry, and audit records still use process-local storage.
-- Provider adapters that ask the electorate, polling timeouts/retries, automatic task dispatch, and task execution against the winning provider are not yet implemented.
+- Model catalog discovery, provider price/availability refresh, per-voter retries and adaptive timeouts, and provider-specific non-OpenAI-compatible adapters are not implemented.
+- Winner task results are returned to the CLI; they are not yet captured as durable Axon task response artifacts.
+- Memory extraction currently uses DeepSeek only; additional extraction providers, automatic scheduling, and a review UI remain future work.
 - Vector embeddings, vector-index provisioning, semantic retrieval, context assembly, deduplication, and contradiction resolution remain future work.
 - The API still has no verified authentication or route-level workspace authorization. MongoDB-backed memory must remain loopback-only and is not safe for multi-user production deployment yet.
 
