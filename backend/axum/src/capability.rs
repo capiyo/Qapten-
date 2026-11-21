@@ -34,6 +34,7 @@ pub struct CapabilityPoll {
     pub version: u64,
     pub capability: String,
     pub task_brief: String,
+    pub external_sharing_approved: bool,
     pub electorate: Vec<String>,
     pub candidates: Vec<ModelCandidate>,
     pub nominations: Vec<ModelNomination>,
@@ -73,6 +74,7 @@ impl CapabilityPoll {
         workspace_id: Uuid,
         capability: String,
         task_brief: String,
+        external_sharing_approved: bool,
         electorate: Vec<String>,
         candidates: Vec<ModelCandidate>,
     ) -> Result<Self, NominationError> {
@@ -80,8 +82,17 @@ impl CapabilityPoll {
             || task_brief.trim().is_empty()
             || electorate.len() < 3
             || candidates.len() < 2
+            || !external_sharing_approved
             || electorate.iter().any(|id| id.trim().is_empty())
-            || candidates.iter().any(|candidate| candidate.model_id.trim().is_empty())
+            || candidates.iter().any(|candidate| {
+                candidate.model_id.trim().is_empty()
+                    || candidate.provider.trim().is_empty()
+                    || candidate.display_name.trim().is_empty()
+                    || candidate.capabilities.is_empty()
+                    || candidate.estimated_cost_per_1k_tokens.is_some_and(|cost| {
+                        !cost.is_finite() || cost < 0.0
+                    })
+            })
         {
             return Err(NominationError::InvalidPoll);
         }
@@ -91,6 +102,7 @@ impl CapabilityPoll {
             candidates.iter().map(|candidate| &candidate.model_id).collect();
         if unique_electorate.len() != electorate.len()
             || unique_candidates.len() != candidates.len()
+            || electorate.iter().any(|voter| !unique_candidates.contains(voter))
         {
             return Err(NominationError::InvalidPoll);
         }
@@ -101,6 +113,7 @@ impl CapabilityPoll {
             version: 1,
             capability: capability.trim().to_owned(),
             task_brief: task_brief.trim().to_owned(),
+            external_sharing_approved,
             electorate,
             candidates,
             nominations: Vec::new(),
@@ -225,6 +238,7 @@ mod tests {
             Uuid::new_v4(),
             "visual_design".into(),
             "Design a responsive dashboard for a finance application.".into(),
+            true,
             vec![
                 "voter-a".into(),
                 "voter-b".into(),
