@@ -238,7 +238,7 @@ async def fetch_active_memory_context(
     async with httpx.AsyncClient(timeout=20.0) as client:
         response = await client.get(
             f"{base_url}/api/v1/workspaces/{workspace_id}/memory/context",
-            params={"q": task_brief, "limit": limit},
+            params={"q": task_brief[:120], "limit": limit},
         )
         response.raise_for_status()
         records = response.json()
