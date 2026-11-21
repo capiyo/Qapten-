@@ -5,7 +5,7 @@
       "provider": "provider-01",
       "display_name": "Model 01",
       "model": "REPLACE_WITH_PROVIDER_MODEL_ID",
-      "base_url": "https://REPLACE_WITH_PROVIDER_OPENAI_COMPATIBLE_BASE_URL",
+      "base_url": "https://provider-01.example/v1",
       "api_key_env": "MODEL_01_API_KEY",
       "capabilities": [
         "visual_design",
@@ -21,7 +21,7 @@
       "provider": "provider-02",
       "display_name": "Model 02",
       "model": "REPLACE_WITH_PROVIDER_MODEL_ID",
-      "base_url": "https://REPLACE_WITH_PROVIDER_OPENAI_COMPATIBLE_BASE_URL",
+      "base_url": "https://provider-01.example/v1",
       "api_key_env": "MODEL_02_API_KEY",
       "capabilities": [
         "visual_design",
@@ -37,7 +37,7 @@
       "provider": "provider-03",
       "display_name": "Model 03",
       "model": "REPLACE_WITH_PROVIDER_MODEL_ID",
-      "base_url": "https://REPLACE_WITH_PROVIDER_OPENAI_COMPATIBLE_BASE_URL",
+      "base_url": "https://provider-01.example/v1",
       "api_key_env": "MODEL_03_API_KEY",
       "capabilities": [
         "visual_design",
@@ -53,7 +53,7 @@
       "provider": "provider-04",
       "display_name": "Model 04",
       "model": "REPLACE_WITH_PROVIDER_MODEL_ID",
-      "base_url": "https://REPLACE_WITH_PROVIDER_OPENAI_COMPATIBLE_BASE_URL",
+      "base_url": "https://provider-01.example/v1",
       "api_key_env": "MODEL_04_API_KEY",
       "capabilities": [
         "visual_design",
@@ -69,7 +69,7 @@
       "provider": "provider-05",
       "display_name": "Model 05",
       "model": "REPLACE_WITH_PROVIDER_MODEL_ID",
-      "base_url": "https://REPLACE_WITH_PROVIDER_OPENAI_COMPATIBLE_BASE_URL",
+      "base_url": "https://provider-01.example/v1",
       "api_key_env": "MODEL_05_API_KEY",
       "capabilities": [
         "visual_design",
@@ -85,7 +85,7 @@
       "provider": "provider-06",
       "display_name": "Model 06",
       "model": "REPLACE_WITH_PROVIDER_MODEL_ID",
-      "base_url": "https://REPLACE_WITH_PROVIDER_OPENAI_COMPATIBLE_BASE_URL",
+      "base_url": "https://provider-01.example/v1",
       "api_key_env": "MODEL_06_API_KEY",
       "capabilities": [
         "visual_design",
@@ -101,7 +101,7 @@
       "provider": "provider-07",
       "display_name": "Model 07",
       "model": "REPLACE_WITH_PROVIDER_MODEL_ID",
-      "base_url": "https://REPLACE_WITH_PROVIDER_OPENAI_COMPATIBLE_BASE_URL",
+      "base_url": "https://provider-01.example/v1",
       "api_key_env": "MODEL_07_API_KEY",
       "capabilities": [
         "visual_design",
@@ -117,7 +117,7 @@
       "provider": "provider-08",
       "display_name": "Model 08",
       "model": "REPLACE_WITH_PROVIDER_MODEL_ID",
-      "base_url": "https://REPLACE_WITH_PROVIDER_OPENAI_COMPATIBLE_BASE_URL",
+      "base_url": "https://provider-01.example/v1",
       "api_key_env": "MODEL_08_API_KEY",
       "capabilities": [
         "visual_design",
@@ -133,7 +133,7 @@
       "provider": "provider-09",
       "display_name": "Model 09",
       "model": "REPLACE_WITH_PROVIDER_MODEL_ID",
-      "base_url": "https://REPLACE_WITH_PROVIDER_OPENAI_COMPATIBLE_BASE_URL",
+      "base_url": "https://provider-01.example/v1",
       "api_key_env": "MODEL_09_API_KEY",
       "capabilities": [
         "visual_design",
@@ -149,7 +149,7 @@
       "provider": "provider-10",
       "display_name": "Model 10",
       "model": "REPLACE_WITH_PROVIDER_MODEL_ID",
-      "base_url": "https://REPLACE_WITH_PROVIDER_OPENAI_COMPATIBLE_BASE_URL",
+      "base_url": "https://provider-01.example/v1",
       "api_key_env": "MODEL_10_API_KEY",
       "capabilities": [
         "visual_design",
