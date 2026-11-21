@@ -30,6 +30,8 @@ pub struct ModelNomination {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CapabilityPoll {
     pub id: Uuid,
+    pub workspace_id: Uuid,
+    pub version: u64,
     pub capability: String,
     pub task_brief: String,
     pub electorate: Vec<String>,
@@ -68,6 +70,7 @@ pub enum NominationError {
 
 impl CapabilityPoll {
     pub fn new(
+        workspace_id: Uuid,
         capability: String,
         task_brief: String,
         electorate: Vec<String>,
@@ -94,6 +97,8 @@ impl CapabilityPoll {
 
         Ok(Self {
             id: Uuid::new_v4(),
+            workspace_id,
+            version: 1,
             capability: capability.trim().to_owned(),
             task_brief: task_brief.trim().to_owned(),
             electorate,
@@ -148,6 +153,7 @@ impl CapabilityPoll {
             rationale: rationale.to_owned(),
             submitted_at: Utc::now(),
         });
+        self.version += 1;
         Ok(())
     }
 
@@ -205,6 +211,7 @@ impl CapabilityPoll {
         };
         self.finalized_at = Some(Utc::now());
         self.result = Some(result.clone());
+        self.version += 1;
         Ok(result)
     }
 }
@@ -215,6 +222,7 @@ mod tests {
 
     fn fixture() -> CapabilityPoll {
         CapabilityPoll::new(
+            Uuid::new_v4(),
             "visual_design".into(),
             "Design a responsive dashboard for a finance application.".into(),
             vec![
