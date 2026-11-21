@@ -289,6 +289,7 @@ pub async fn list_artifacts(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::storage::SqliteStorage;
     use axum::{
         body::{to_bytes, Body},
         http::Request,
@@ -312,6 +313,31 @@ mod tests {
         let value: serde_json::Value = serde_json::from_slice(&body).unwrap();
         assert_eq!(value["storage"], "development_memory_only");
         assert_eq!(value["authentication"], "not_implemented_local_only");
+    }
+
+
+    #[tokio::test]
+    async fn workspace_and_audit_survive_runtime_reconstruction() {
+        let storage = SqliteStorage::connect_in_memory()
+            .await
+            .unwrap()
+            .shared();
+        let state = AppState::with_storage(storage.clone()).await.unwrap();
+        let created = create_workspace(
+            State(state),
+            Json(CreateWorkspace {
+                name: "Persistent project".into(),
+            }),
+        )
+        .await
+        .unwrap();
+        let workspace_id = created.1.id;
+
+        let restored = AppState::with_storage(storage).await.unwrap();
+        assert!(restored.workspaces.read().await.contains_key(&workspace_id));
+        let events = restored.audit.read().await.list_workspace(workspace_id);
+        assert_eq!(events.len(), 1);
+        assert_eq!(events[0].event_type, "workspace.created");
     }
 
     #[tokio::test]
