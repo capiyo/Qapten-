@@ -19,9 +19,17 @@ The actual task is sent only after the poll closes and a strict majority exists.
 - The winning candidate is selected for the task; the nominations and rationales remain evidence in the routing record.
 - The task itself is not broadcast to all ten models by default.
 
-The current Rust capability module implements the poll domain and strict-majority tally with unit tests. Persistence, provider polling adapters, timeouts, retry policy, API routes, and task-dispatch integration remain follow-up work.
+The Rust capability module implements the poll domain and strict-majority tally with unit tests. Polls and nominations are persisted in MongoDB with optimistic version checks, and the API exposes create, retrieve, nominate, and finalize operations. Provider polling adapters, timeouts, retries, and task-dispatch integration remain follow-up work.
 
-## API\n\n- `POST /api/v1/workspaces/{workspace_id}/capability-polls`: create a poll with a fixed electorate and candidate catalog. The request must set `external_sharing_approved=true`; every voter must be in the eligible candidate catalog.\n- `GET /api/v1/workspaces/{workspace_id}/capability-polls/{poll_id}`: retrieve the poll and current tally inputs.\n- `POST /api/v1/workspaces/{workspace_id}/capability-polls/{poll_id}/nominations`: submit one voter nomination.\n- `POST /api/v1/workspaces/{workspace_id}/capability-polls/{poll_id}/finalize`: close the poll and compute the strict-majority result.\n\nNomination and finalization writes use version-checked atomic document replacement. Concurrent submissions based on a stale version are rejected and must be retried after reloading.\n\n## Why this is not an output-quality benchmark
+## API
+
+- `POST /api/v1/workspaces/{workspace_id}/capability-polls`: create a poll with a fixed electorate and candidate catalog. The request must set `external_sharing_approved=true`; every voter must be in the eligible candidate catalog.
+- `GET /api/v1/workspaces/{workspace_id}/capability-polls/{poll_id}`: retrieve the poll and current tally inputs.
+- `POST /api/v1/workspaces/{workspace_id}/capability-polls/{poll_id}/nominations`: submit one voter nomination.
+- `POST /api/v1/workspaces/{workspace_id}/capability-polls/{poll_id}/finalize`: close the poll and compute the strict-majority result.
+
+Nomination and finalization writes use version-checked atomic document replacement. Concurrent submissions based on a stale version are rejected and must be retried after reloading.
+\n## Why this is not an output-quality benchmark
 
 This first-stage vote asks models to recommend a capable candidate. It is a discovery signal, not proof that the nominated model will produce the best output. Model self-promotion, correlated biases, stale knowledge, and incomplete provider knowledge can affect nominations.
 
