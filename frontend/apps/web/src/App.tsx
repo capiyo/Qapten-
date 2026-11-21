@@ -458,7 +458,11 @@ export default function App() {
                       disabled={!memorySearch}
                       onClick={() => {
                         setMemorySearch("");
-                        if (selected) void refreshWorkspace(selected);
+                        if (selected) {
+                          void api<MemoryRecord[]>(`/api/v1/workspaces/${selected.id}/memories`)
+                            .then(setMemories)
+                            .catch(cause => setError(cause instanceof Error ? cause.message : "Could not clear memory search."));
+                        }
                       }}
                     >
                       Clear
