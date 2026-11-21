@@ -158,7 +158,7 @@ impl MemoryRepository {
         memories
             .create_index(
                 IndexModel::builder()
-                    .keys(doc! { "workspace_id": "text", "title": "text", "content": "text", "summary": "text", "tags": "text" })
+                    .keys(doc! { "title": "text", "content": "text", "summary": "text", "tags": "text" })
                     .options(IndexOptions::builder().name("memory_text_search".into()).build())
                     .build(),
                 None,
@@ -317,7 +317,7 @@ impl MemoryRepository {
             "$set": {
                 "status": next_status.as_str(),
                 "superseded_by_id": input.superseded_by_id.map(|id| id.to_string()),
-                "updated_at": mongodb::bson::DateTime::from_chrono(Utc::now()),
+                "updated_at": Utc::now().to_rfc3339(),
             },
             "$inc": { "version": 1_i64 },
         };
