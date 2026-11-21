@@ -33,6 +33,11 @@ def build_parser() -> argparse.ArgumentParser:
         default=os.getenv("AXON_API_URL", "http://127.0.0.1:8080"),
     )
     parser.add_argument(
+        "--include-memory",
+        action="store_true",
+        help="Include relevant approved Axon memories in the provider poll and winning task.",
+    )
+    parser.add_argument(
         "--approve-provider-sharing",
         action="store_true",
         help="Explicitly approve sending the task brief to every configured voter.",
@@ -62,6 +67,8 @@ async def _run(args: argparse.Namespace) -> int:
 
         print(f"Capability: {args.capability}")
         print(f"Task: {args.task}")
+        memory_label = "included" if args.include_memory else "not included"
+        print(f"Approved Axon memory context: {memory_label}")
         print("Eligible models:")
         for model in available_models:
             print(f"- {model.display_name} ({model.provider}) [{model.model_id}]")
@@ -79,6 +86,7 @@ async def _run(args: argparse.Namespace) -> int:
             task_brief=args.task,
             models=available_models,
             api_url=args.api_url,
+            include_memory=args.include_memory,
         )
         print("\n--- Majority poll ---")
         print(json.dumps(outcome["result"], ensure_ascii=False, indent=2))
