@@ -96,11 +96,13 @@ pub async fn create_workspace(
         .persist_entity(
             StoredEntity::Workspace(workspace.clone()),
             Vec::new(),
-            Some(workspace.id),
-            "workspace.created",
-            "workspace",
-            &workspace.id.to_string(),
-            serde_json::json!({ "name": workspace.name }),
+            AuditEvent::unattributed(
+                Some(workspace.id),
+                "workspace.created",
+                "workspace",
+                workspace.id.to_string(),
+                serde_json::json!({ "name": workspace.name }),
+            ),
         )
         .await
         .map_err(|_| storage_failure())?;
@@ -157,11 +159,13 @@ pub async fn register_agent(
         .persist_entity(
             StoredEntity::Agent(agent.clone()),
             Vec::new(),
-            Some(workspace_id),
-            "agent.registered",
-            "agent",
-            &agent.id.to_string(),
-            serde_json::json!({"provider": agent.provider, "connection_mode": "manual"}),
+            AuditEvent::unattributed(
+                Some(workspace_id),
+                "agent.registered",
+                "agent",
+                agent.id.to_string(),
+                serde_json::json!({"provider": agent.provider, "connection_mode": "manual"}),
+            ),
         )
         .await
         .map_err(|_| storage_failure())?;
@@ -219,11 +223,13 @@ pub async fn create_artifact(
         .persist_entity(
             StoredEntity::Artifact(artifact.clone()),
             Vec::new(),
-            Some(workspace_id),
-            "artifact.created",
-            "artifact",
-            &artifact.id.to_string(),
-            serde_json::json!({ "title": artifact.title, "source_agent_id": artifact.source_agent_id }),
+            AuditEvent::unattributed(
+                Some(workspace_id),
+                "artifact.created",
+                "artifact",
+                artifact.id.to_string(),
+                serde_json::json!({ "title": artifact.title, "source_agent_id": artifact.source_agent_id }),
+            ),
         )
         .await
         .map_err(|_| storage_failure())?;
