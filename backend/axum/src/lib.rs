@@ -2,10 +2,10 @@ pub mod audit;
 pub mod identity;
 mod model;
 pub mod robotics;
-pub mod storage;
 mod robotics_routes;
 mod routes;
 mod state;
+pub mod storage;
 mod task_routes;
 
 pub use state::AppState;
