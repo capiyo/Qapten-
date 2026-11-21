@@ -37,6 +37,7 @@ Configure `MONGODB_URI` and optionally `MONGODB_DATABASE` (default: `axon`). Whe
 ## API
 
 - `POST /api/v1/workspaces/{workspace_id}/memory/imports`: import a conversation.
+- `GET /api/v1/workspaces/{workspace_id}/memory/imports/{import_id}`: retrieve the original imported conversation for an authorized extraction worker.
 - `POST /api/v1/workspaces/{workspace_id}/memories`: create a proposed memory from an imported source.
 - `GET /api/v1/workspaces/{workspace_id}/memories?status=active&q=...`: list or text-search memories.
 - `POST /api/v1/workspaces/{workspace_id}/memories/{memory_id}/review`: approve, reject, or supersede with optimistic version checking.
