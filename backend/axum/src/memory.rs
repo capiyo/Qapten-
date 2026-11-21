@@ -372,6 +372,10 @@ impl MemoryRepository {
                 ));
             }
         }
+        let expected_status = match &input.decision {
+            MemoryReviewDecision::Approve | MemoryReviewDecision::Reject => "proposed",
+            MemoryReviewDecision::Supersede => "active",
+        };
         let next_status = match input.decision {
             MemoryReviewDecision::Approve => MemoryStatus::Active,
             MemoryReviewDecision::Reject => MemoryStatus::Rejected,
@@ -391,7 +395,7 @@ impl MemoryRepository {
                 doc! {
                     "id": memory_id.to_string(),
                     "workspace_id": workspace_id.to_string(),
-                    "status": "proposed",
+                    "status": expected_status,
                     "version": i64::try_from(input.expected_version).unwrap_or(i64::MAX),
                 },
                 update,
