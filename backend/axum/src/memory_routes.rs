@@ -127,3 +127,26 @@ pub async fn get_import(
         api_error(StatusCode::NOT_FOUND, "Conversation import was not found in this workspace.")
     })
 }
+
+pub async fn context_memories(
+    State(state): State<AppState>,
+    Path(workspace_id): Path<Uuid>,
+    Query(query): Query<ListMemoriesQuery>,
+) -> ApiResult<Json<Vec<MemoryRecord>>> {
+    if query.q.as_ref().is_some_and(|value| value.len() > 120) {
+        return Err(api_error(
+            StatusCode::BAD_REQUEST,
+            "Search query cannot exceed 120 characters.",
+        ));
+    }
+    let memories = repository(&state)?
+        .list_memories(
+            workspace_id,
+            Some(MemoryStatus::Active),
+            query.q.as_deref(),
+            query.limit.unwrap_or(20),
+        )
+        .await
+        .map_err(|error| api_error(StatusCode::INTERNAL_SERVER_ERROR, error.to_string()))?;
+    Ok(Json(memories))
+}
