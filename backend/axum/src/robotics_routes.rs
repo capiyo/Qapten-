@@ -136,7 +136,9 @@ pub async fn list_simulated_telemetry(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::robotics::{TelemetryKind, TelemetryQuality};
     use axum::{body::Body, http::Request};
+    use chrono::Duration;
     use tower::ServiceExt;
 
     #[tokio::test]
@@ -220,9 +222,6 @@ mod tests {
     }
 
 
-    use crate::robotics::{TelemetryKind, TelemetryQuality};
-    use chrono::Duration;
-
     fn input(event_id: &str, sequence: u64) -> TelemetryIngest {
         TelemetryIngest {
             event_id: event_id.into(),
@@ -279,5 +278,4 @@ mod tests {
         assert_eq!(events.last().map(|event| event.sequence), Some(501));
         assert!(!store.event_ids.contains("event-1"));
     }
-
 }
