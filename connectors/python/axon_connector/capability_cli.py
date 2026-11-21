@@ -142,7 +142,6 @@ async def _run(args: argparse.Namespace) -> int:
         ValueError,
         CapabilityRoutingError,
         ModelProviderError,
-        PermissionError,
         httpx.HTTPError,
     ) as exc:
         print(f"axon-route: {exc}", file=sys.stderr)
