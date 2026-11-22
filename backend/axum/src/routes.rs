@@ -232,7 +232,8 @@ pub async fn create_artifact(
         .persist_entity(
             StoredEntity::Artifact(artifact.clone()),
             Vec::new(),
-            AuditEvent::unattributed(
+            AuditEvent::attributed(
+                format!("user:{}", user.user_id),
                 Some(workspace_id),
                 "artifact.created",
                 "artifact",
