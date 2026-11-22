@@ -238,7 +238,7 @@ impl SqliteStorage {
     }
 
     pub async fn user_can_access_workspace(&self, user_id: Uuid, workspace_id: Uuid) -> Result<bool, StorageError> {
-        let exists: i64 = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM workspace_memberships WHERE user_id = ? AND workspace_id = ?)")
+        let exists: i64 = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM workspace_memberships WHERE user_id = ? AND workspace_id = ? AND role = 'owner')")
             .bind(user_id.to_string()).bind(workspace_id.to_string()).fetch_one(&self.pool).await?;
         Ok(exists == 1)
     }
