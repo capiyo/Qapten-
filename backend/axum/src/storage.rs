@@ -131,6 +131,8 @@ pub trait Storage: Send + Sync {
     async fn is_workspace_member(&self, user_id: Uuid, workspace_id: Uuid) -> Result<bool, StorageError>;
 
     async fn list_user_workspaces(&self, user_id: Uuid) -> Result<Vec<Workspace>, StorageError>;
+
+    async fn create_workspace_for_user(&self, user_id: Uuid, name: String, actor: String) -> Result<Workspace, StorageError>;
 }
 
 #[derive(Clone)]
@@ -353,6 +355,45 @@ impl Storage for SqliteStorage {
                 _ => Err(StorageError::InvalidStoredEntityKind),
             }
         }).collect()
+    }
+
+    async fn create_workspace_for_user(&self, user_id: Uuid, name: String, actor: String) -> Result<Workspace, StorageError> {
+        let mut tx = self.pool.begin().await?;
+        let workspace = Workspace { id: Uuid::new_v4(), name, created_at: Utc::now() };
+        let entity = StoredEntity::Workspace(workspace.clone());
+        sqlx::query("INSERT INTO entities (kind, id, workspace_id, created_at, payload_json) VALUES ('workspace', ?, NULL, ?, ?)")
+            .bind(workspace.id.to_string())
+            .bind(workspace.created_at.to_rfc3339())
+            .bind(serde_json::to_string(&entity)?)
+            .execute(&mut *tx).await?;
+        sqlx::query("INSERT INTO workspace_memberships (workspace_id, user_id, role, created_at) VALUES (?, ?, 'owner', ?)")
+            .bind(workspace.id.to_string())
+            .bind(user_id.to_string())
+            .bind(workspace.created_at.to_rfc3339())
+            .execute(&mut *tx).await?;
+        let event = AuditEvent {
+            sequence: 0,
+            event_id: Uuid::new_v4(),
+            workspace_id: Some(workspace.id),
+            actor,
+            event_type: "workspace.created".into(),
+            entity_type: "workspace".into(),
+            entity_id: workspace.id.to_string(),
+            occurred_at: workspace.created_at,
+            metadata: serde_json::json!({"name": workspace.name}),
+        };
+        sqlx::query("INSERT INTO audit_events (event_id, workspace_id, actor, event_type, entity_type, entity_id, occurred_at, metadata_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?)")
+            .bind(event.event_id.to_string())
+            .bind(event.workspace_id.map(|id| id.to_string()))
+            .bind(event.actor)
+            .bind(event.event_type)
+            .bind(event.entity_type)
+            .bind(event.entity_id)
+            .bind(event.occurred_at.to_rfc3339())
+            .bind(serde_json::to_string(&event.metadata)?)
+            .execute(&mut *tx).await?;
+        tx.commit().await?;
+        Ok(workspace)
     }
 }
 
