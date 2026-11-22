@@ -1,5 +1,6 @@
 use crate::{
     audit::{AuditEvent, AuditStore},
+    chat_memory::ChatMemoryStore,
     firebase_auth::FirebaseVerifier,
     model::{Agent, Artifact, Task, Workspace},
     robotics::TelemetryEvent,
@@ -30,14 +31,17 @@ pub struct AppState {
     /// Runtime cache backed by the append-only audit table when SQLite is configured.
     pub audit: Arc<RwLock<AuditStore>>,
     storage: Option<Arc<dyn Storage>>,
+    pub chat_memory: Option<ChatMemoryStore>,
     pub firebase_verifier: Option<FirebaseVerifier>,
     pub simulator_enabled: bool,
 }
 
 impl AppState {
     pub async fn with_storage(storage: Arc<dyn Storage>) -> Result<Self, StorageError> {
+        let chat_memory = Some(storage.chat_memory_store());
         let state = Self {
             storage: Some(storage.clone()),
+            chat_memory,
             firebase_verifier: None,
             simulator_enabled: false,
             ..Self::default()
