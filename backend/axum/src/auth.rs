@@ -7,6 +7,7 @@ use jsonwebtoken::{decode, decode_header, Algorithm, DecodingKey, TokenData, Val
 use serde::Deserialize;
 use std::{collections::HashMap, sync::Arc, time::{Duration, Instant}};
 use tokio::sync::RwLock;
+use uuid::Uuid;
 
 const CLOCK_SKEW_SECONDS: u64 = 60;
 const MAX_JWKS_CACHE_SECONDS: u64 = 3600;
@@ -171,4 +172,10 @@ impl FirebaseVerifier {
             }))),
         }
     }
+}
+
+#[derive(Debug, Clone)]
+pub struct AuthenticatedUser {
+    pub user_id: Uuid,
+    pub firebase_uid: String,
 }
