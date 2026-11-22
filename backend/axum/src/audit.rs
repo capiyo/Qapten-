@@ -40,25 +40,6 @@ impl AuditEvent {
         }
     }
 
-    pub fn unattributed(
-        workspace_id: Option<Uuid>,
-        event_type: impl Into<String>,
-        entity_type: impl Into<String>,
-        entity_id: impl Into<String>,
-        metadata: Value,
-    ) -> Self {
-        Self {
-            sequence: 0,
-            event_id: Uuid::new_v4(),
-            workspace_id,
-            actor: "system:local-development-unattributed".into(),
-            event_type: event_type.into(),
-            entity_type: entity_type.into(),
-            entity_id: entity_id.into(),
-            occurred_at: Utc::now(),
-            metadata,
-        }
-    }
 }
 
 #[derive(Debug, Default)]
@@ -68,23 +49,6 @@ pub struct AuditStore {
 }
 
 impl AuditStore {
-    pub fn append(
-        &mut self,
-        workspace_id: Option<Uuid>,
-        event_type: impl Into<String>,
-        entity_type: impl Into<String>,
-        entity_id: impl Into<String>,
-        metadata: Value,
-    ) -> AuditEvent {
-        self.append_event(AuditEvent::unattributed(
-            workspace_id,
-            event_type,
-            entity_type,
-            entity_id,
-            metadata,
-        ))
-    }
-
     pub fn append_event(&mut self, mut event: AuditEvent) -> AuditEvent {
         self.next_sequence += 1;
         event.sequence = self.next_sequence;
@@ -117,33 +81,21 @@ mod tests {
     fn audit_sequence_is_monotonic_and_workspace_scoped() {
         let mut store = AuditStore::default();
         let workspace = Uuid::new_v4();
-        let first = store.append(
-            Some(workspace),
-            "workspace.created",
-            "workspace",
-            workspace.to_string(),
-            Value::Null,
-        );
-        let second = store.append(
-            Some(workspace),
-            "task.created",
-            "task",
-            "task-1",
-            Value::Null,
-        );
-        store.append(
-            Some(Uuid::new_v4()),
-            "workspace.created",
-            "workspace",
-            "other",
-            Value::Null,
-        );
+        let first = store.append_event(AuditEvent::attributed(
+            "user:actor-1", Some(workspace), "workspace.created", "workspace", workspace.to_string(), Value::Null,
+        ));
+        let second = store.append_event(AuditEvent::attributed(
+            "user:actor-1", Some(workspace), "task.created", "task", "task-1", Value::Null,
+        ));
+        store.append_event(AuditEvent::attributed(
+            "user:actor-2", Some(Uuid::new_v4()), "workspace.created", "workspace", "other", Value::Null,
+        ));
         assert_eq!(first.sequence, 1);
         assert_eq!(second.sequence, 2);
         assert_eq!(store.list_workspace(workspace).len(), 2);
         assert!(store
             .list_workspace(workspace)
             .iter()
-            .all(|event| event.actor == "system:local-development-unattributed"));
+            .all(|event| event.actor == "user:actor-1"));
     }
 }
