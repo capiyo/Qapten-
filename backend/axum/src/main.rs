@@ -19,8 +19,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .parse::<u16>()?;
     let address: SocketAddr = format!("{host}:{port}").parse()?;
 
-    if !address.ip().is_loopback() && env::var("FIREBASE_PROJECT_ID").is_err() {
-        return Err("FIREBASE_PROJECT_ID is required before non-loopback binding.".into());
+    let allow_remote = matches!(env::var("AXON_ALLOW_REMOTE_BIND").as_deref(), Ok("true"));
+    let tls_terminated = matches!(env::var("AXON_TLS_TERMINATED").as_deref(), Ok("true"));
+    if !address.ip().is_loopback() && !(allow_remote && tls_terminated) {
+        return Err("Remote binding requires AXON_ALLOW_REMOTE_BIND=true and AXON_TLS_TERMINATED=true behind a trusted HTTPS proxy.".into());
     }
 
     let database_url =
