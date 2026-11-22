@@ -308,4 +308,12 @@ mod tests {
         let token = local_test_token("axon-test-project", "firebase-user-1", now + 600, true);
         assert!(matches!(verifier.verify(&token).await, Err(AuthError::InvalidToken)));
     }
+    #[tokio::test]
+    async fn rejects_tokens_for_a_different_firebase_project_audience() {
+        let verifier = local_test_verifier("axon-test-project");
+        let now = chrono::Utc::now().timestamp().max(0) as u64;
+        let token = local_test_token("another-firebase-project", "firebase-user-1", now + 600, false);
+        assert!(matches!(verifier.verify(&token).await, Err(AuthError::InvalidToken)));
+    }
+
 }
