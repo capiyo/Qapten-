@@ -1,75 +1,97 @@
 # State of Repository
 
-**Last updated:** 2026-11-08
+**Last updated:** 2026-11-21
 
-**Product identity:** Axon (working name; public trademark/domain clearance not yet completed).
+**Product identity:** Axon (working name; public trademark/domain clearance remains outstanding).
 
 ## Repository
 
 - Repository: `capiyo/Qapten-`
 - Default branch: `main`
-- Visibility: public
-- Active implementation branch: `foundation/axum-web-skeleton`
-- Review: [Draft PR #1](https://github.com/capiyo/Qapten-/pull/1)
+- Active foundation branch: `foundation/axum-web-skeleton`
+- Active Phase A branch: `production/phase-a-firebase-auth`
+- Foundation review: [Draft PR #1](https://github.com/capiyo/Qapten-/pull/1)
+- Phase A review: [Draft PR #4](https://github.com/capiyo/Qapten-/pull/4)
 - License: MIT (see [LICENSE](../LICENSE))
 
-## Implemented on the draft branch
+## Implemented
 
-- [x] Product purpose, design principles, architecture, protocol draft, risk policy, roadmap, and architecture decision record.
+### Backend and persistence
 - [x] Rust workspace and Axum API application.
-- [x] Health, workspace, manual agent registration/listing, and artifact capture/listing endpoints.
-- [x] Task creation/listing, selected context artifact references, and version-checked lifecycle transitions.
-- [x] Manual task response submission as a linked artifact.
-- [x] React + TypeScript + Vite web workspace for creating workspaces, registering agents, capturing artifacts, attaching context to tasks, submitting responses, and reviewing/advancing tasks.
-- [x] React Native + Expo workspace for workspace creation/listing, agent registration, artifact capture, context selection, task creation, response submission, and review transitions.
-- [x] Shared TypeScript API contract types consumed by web and mobile.
-- [x] GitHub Actions checks for Rust formatting, Clippy, tests, web production build, and mobile TypeScript validation.
-- [x] AXP robotics device-registration, telemetry, non-executable command-proposal, and safety-state schemas.
-- [x] Shared TypeScript robotics contracts and pure Rust proposal validation tests.
-- [x] Robotics safety boundary documented; no hardware dispatch or actuator endpoint.
-- [x] Workspace-scoped identity and capability grant domain primitives with deny-by-default policy evaluation and expiry/revocation tests.
-- [x] AXP identity grant schema and shared TypeScript principal/capability contracts.
-- [x] Process-local append-only audit event model, workspace audit read endpoint, and mutation events for workspace, agent, artifact, and task lifecycle changes.
-- [x] Proposal validation rejects stale/future safety-state observations.
-- [x] Development-only simulator telemetry API with simulated-source enforcement, event deduplication, monotonic per-device sequences, freshness checks, and 500-event per-device in-memory retention.
-- [x] Simulator telemetry ingress schema and shared TypeScript request contract.
-- [x] Initial open-source project files: MIT license, contribution guidance, and security policy.
+- [x] SQLite storage adapter with versioned SQL migrations.
+- [x] Existing workspace, agent, artifact and task models retained.
+- [x] Workspace, agent, artifact, task creation/listing, version-checked task lifecycle transitions, and response-artifact capture.
+- [x] Primary entity writes and their audit event commit atomically through the storage mutation API.
+- [x] Append-only SQLite audit table with database triggers rejecting update/delete.
+- [x] Audit events record the authenticated internal principal as actor for workspace, agent, artifact and task mutations.
+- [x] Development simulator telemetry remains bounded and in-memory; it is not treated as durable physical-device telemetry.
 
-- [x] Initial Python Claude-export to DeepSeek API connector with AXP normalization, explicit approval gating, CLI preview, and unit tests.
+### Phase A authentication and authorization
+- [x] Firebase ID-token verification using RS256 and Google's Firebase Secure Token JWKS.
+- [x] Project-specific issuer and audience validation, expiry validation, and a 60-second clock-skew allowance.
+- [x] JWKS caching using the upstream cache lifetime, refresh on unknown key IDs for key rotation, and a short forced-refresh cooldown.
+- [x] Persistent `users` and `workspace_memberships` tables; Firebase UID maps to an internal Axon user ID.
+- [x] One personal workspace per Firebase UID, created idempotently on first successful authentication; uniqueness is enforced by provider + subject and creation is transactional.
+- [x] Workspace membership is checked at the HTTP boundary. Requests for another user's workspace or task resources return not-found rather than forbidden.
+- [x] All registered API routes require a verified bearer token except `GET /health`.
+- [x] Simulator routes require authentication and are hidden unless `AXON_ENABLE_SIMULATOR=true`.
+- [x] Offline tests use locally signed RSA test keys; no external network is required for token-verification tests.
+- [x] Tests cover missing/expired tokens across registered API routes, wrong signing keys, JWKS key rotation, concurrent first-login provisioning, cross-user not-found behavior, and the public health route.
+- [x] Account and data deletion lifecycle documented as design only; no destructive endpoint or job is enabled.
+
+### Frontend and design
+- [x] React + TypeScript + Vite web workspace.
+- [x] React Native + Expo mobile workspace.
+- [x] Shared frontend API contract types.
+- [x] Axon-owned `frontend/packages/theme` package with named TypeScript tokens and CSS custom properties.
+- [x] Web and mobile consume the Qoin-derived dark navy, slate and lime palette.
+
+### Robotics and connector foundation
+- [x] AXP robotics device-registration, telemetry, non-executable command-proposal, and safety-state schemas.
+- [x] Pure Rust proposal validation for identity matching, requester authorization, emergency stop, interlocks, operating mode, expiry, sequence, idempotency-key shape, and velocity bounds.
+- [x] Robotics safety boundary documented; no hardware dispatch or actuator endpoint.
+- [x] Python Claude-export to DeepSeek API connector with AXP normalization, explicit approval gating, CLI preview, and unit tests.
 - [x] Python connector Ruff/pytest CI job.
 
-## Not implemented
+## Not implemented / production gates
 
-- Persistent MongoDB adapter, schema migrations, and durable event/audit storage.
-- Cryptographic device enrollment, persistent replay/idempotency enforcement, and device gateway.
-- Authentication adapters, verified caller identity, workspace membership persistence, grant issuance/revocation APIs, and route-level authorization enforcement.
-- Artifact content hashing, classification enforcement, context bundle read API, and retention controls.
-- Durable tamper-evident audit storage, verified actor attribution, full decision records, permission management, and revocation UI.
-- Firebase ID-token verification and server-side route authorization.
-- AXON backend API integration for Python transfer persistence and response artifact creation.
-- Direct Claude chat-history API access; current import uses user-authorized exports, not browser scraping.
-- Attachment/image/tool-use transfer and resumable large-context transfer.
-- Additional agent provider APIs, webhooks, and autonomous agent execution.
+- Firebase client sign-in screens and ID-token injection in the web/mobile clients. The backend verifier is ready, but clients still need to use the dedicated Axon Firebase project. Intended sign-in methods: phone first for Kenya, with Google and email-link fallback.
+- Provider-side sign-in abuse controls and any client-specific phone/SMS quota configuration. Axon currently exposes no password/SMS sign-in endpoint; credentials should go directly through Firebase Auth, not through Axon's API.
+- Invitations, workspace membership management UI, role/capability grant persistence and management APIs.
+- Chats, messages, approved project memory, resume briefs and news consumer (Phase B).
+- Durable simulator telemetry, device cryptographic enrollment, persistent replay/idempotency enforcement, device gateway and hardware-in-the-loop tests.
+- Artifact content hashing, classification enforcement, context bundle read API and retention controls.
+- Account/data deletion execution, legal retention policy and deletion worker; see [ACCOUNT_AND_DATA_DELETION_DESIGN.md](ACCOUNT_AND_DATA_DELETION_DESIGN.md).
+- Additional agent provider APIs, webhooks and autonomous agent execution.
 - C++/Drogon service and Zig utilities (intentionally deferred until justified).
-- Production deployment, secrets management, and operational monitoring.
-- Published standalone npm package for shared frontend contracts.
+- Production deployment, secrets management, persistent-volume configuration, backups, monitoring and operational runbooks.
+- Published standalone npm package for shared frontend contracts/theme.
 
-## Python connector limitations
+## Runtime and security notes
 
-The Python connector imports one user-authorized Claude conversation export and calls DeepSeek's API after explicit approval. Preview can display the exact AXP context; the payload carries a SHA-256 digest for change detection, not a signature or proof of origin. Its standalone actor ID is provenance metadata, not authentication. The transfer is not yet persisted in the AXON backend, and DeepSeek output is returned locally rather than stored as a task response artifact. Do not commit provider API keys. Production integration must verify Firebase ID tokens and enforce workspace/capability authorization on the backend.
-
-## Runtime limitations
-
-The current API uses an in-process memory store. All records, including the audit stream, disappear when the process exits. The development audit stream is append-only within one process but is neither durable nor tamper-evident. Simulator telemetry is bounded to 500 retained events per device; event-ID deduplication is limited to that retained window. This is not durable replay protection. It has no authentication or route-level authorization enforcement. The identity module evaluates grants only for principals supplied by a future trusted authentication adapter; it does not establish identity. It refuses non-loopback binding by default; the explicit override is for isolated development only. Do not expose it to a network or use it for sensitive information.
+- The Axum process refuses to start unless `FIREBASE_PROJECT_ID` is configured.
+- `AXON_DATABASE_URL` defaults to `sqlite://axon.db`. Production deployment must mount a persistent volume or use a separately reviewed durable database adapter; ephemeral container filesystems are not sufficient.
+- `AXON_ENABLE_SIMULATOR` defaults to false. Do not enable simulator ingress in production.
+- Firebase tokens are never written to logs. Request bodies and user message text are not logged by the authentication middleware.
+- The backend has no sign-in endpoint. Firebase Auth handles sign-in directly; the API accepts only verified Firebase ID tokens.
+- Audit records are append-only. Simulator telemetry is still process-local and bounded to 500 events per device, so its deduplication window is not durable replay protection.
+- Account deletion is a design only. Do not implement a hard-delete endpoint until workspace ownership, retention, audit pseudonymization and legal-hold rules are approved.
+- The Firebase client application must use a separate Axon Firebase project, not Funspot's Firebase project.
 
 ## Verification
 
-GitHub Actions run [42500672881](https://github.com/capiyo/Qapten-/actions/runs/42500672881) passed all four jobs on commit `5c199a8f364d5272f9525703f4e591a820652ef4`: Rust formatting, Clippy and tests; React web production build; React Native TypeScript validation; and Python connector Ruff/pytest. The Python suite verifies Claude export normalization, AXP provenance and payload hashing, preview-only behavior, explicit transfer approval, and context-size validation. This verifies the current branch head at the time of the run. No physical Android/iOS build, hardware integration, or production deployment has been performed.
+GitHub Actions run [44987177024](https://github.com/capiyo/Qapten-/actions/runs/44987177024) passed all four jobs on Phase A source commit `a92c767bc14565986600ade62a8286b10d81fd86`:
+- Rust formatting, Clippy with warnings denied, and Rust tests.
+- React web production build.
+- React Native TypeScript validation.
+- Python connector Ruff and pytest.
+
+The Rust suite includes offline locally signed Firebase tokens, wrong-key rejection, local JWKS rotation, per-route missing/expired-token checks, cross-user not-found checks, simulator gating and concurrent first-login provisioning. No physical Android/iOS build, hardware integration, production deployment, live Firebase project validation or external-provider sign-in has been performed.
 
 ## Architecture direction
 
-- `frontend/` is the client layer: web, mobile, and frontend-only shared TypeScript contracts.
-- `backend/` is the server layer: Axum currently owns API behavior and authoritative domain state.
+- `frontend/` is the client layer: web, mobile and frontend-owned shared TypeScript packages.
+- `backend/` is the server layer: Axum owns API behavior and authoritative domain state.
 - `contracts/` is the language-neutral, versioned protocol boundary.
-- Axum remains the initial orchestration authority. MongoDB is the planned persistence layer, subject to schema and transaction design.
-- Drogon and Zig remain evidence-driven extension points, not duplicated orchestration services.
+- SQLite is the current durable adapter for Axon workspace/agent/artifact/task entities and audit events; production persistence/backup topology must be explicitly configured.
+- Axum remains the orchestration authority. Drogon and Zig remain evidence-driven extension points, not duplicated orchestration services.
