@@ -124,6 +124,10 @@ impl AppState {
         let storage = self.storage.as_ref().ok_or(StorageError::IdentityProvisioning)?;
         let identity = storage.resolve_or_create_firebase_user(subject, email).await?;
         self.workspaces.write().await.insert(identity.workspace.id, identity.workspace.clone());
+        if self.audit.read().await.list_workspace(identity.workspace.id).is_empty() {
+            let events = storage.list_audit_events(identity.workspace.id).await?;
+            self.audit.write().await.restore(events);
+        }
         Ok(identity)
     }
 
