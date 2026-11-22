@@ -1,5 +1,7 @@
 pub mod audit;
 pub mod auth_middleware;
+#[cfg(test)]
+mod auth_middleware_tests;
 pub mod firebase_auth;
 pub mod identity;
 mod model;
