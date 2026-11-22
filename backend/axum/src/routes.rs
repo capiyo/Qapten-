@@ -7,13 +7,15 @@ use crate::{
     AppState,
 };
 use axum::{
-    extract::{Path, State},
+    extract::{Extension, Path, State},
     http::StatusCode,
     Json,
 };
 use chrono::Utc;
 use serde::Serialize;
 use uuid::Uuid;
+use std::sync::Arc;
+use crate::auth_middleware::AuthenticatedUser;
 
 type ApiResult<T> = Result<T, (StatusCode, Json<ApiError>)>;
 
@@ -78,6 +80,7 @@ fn bad_request(message: impl Into<String>) -> (StatusCode, Json<ApiError>) {
 
 pub async fn create_workspace(
     State(state): State<AppState>,
+    Extension(user): Extension<Arc<AuthenticatedUser>>,
     Json(input): Json<CreateWorkspace>,
 ) -> ApiResult<(StatusCode, Json<Workspace>)> {
     let name = input.name.trim();
@@ -87,42 +90,30 @@ pub async fn create_workspace(
         ));
     }
 
-    let workspace = Workspace {
-        id: Uuid::new_v4(),
-        name: name.to_owned(),
-        created_at: Utc::now(),
-    };
-    state
-        .persist_entity(
-            StoredEntity::Workspace(workspace.clone()),
-            Vec::new(),
-            AuditEvent::unattributed(
-                Some(workspace.id),
-                "workspace.created",
-                "workspace",
-                workspace.id.to_string(),
-                serde_json::json!({ "name": workspace.name }),
-            ),
+    let workspace = state
+        .create_workspace_for_user(
+            user.user_id,
+            name.to_owned(),
+            format!("human:{}", user.user_id),
         )
         .await
         .map_err(|_| storage_failure())?;
-    state
-        .workspaces
-        .write()
-        .await
-        .insert(workspace.id, workspace.clone());
+    state.workspaces.write().await.insert(workspace.id, workspace.clone());
 
     Ok((StatusCode::CREATED, Json(workspace)))
 }
 
-pub async fn list_workspaces(State(state): State<AppState>) -> Json<Vec<Workspace>> {
-    let mut items: Vec<_> = state.workspaces.read().await.values().cloned().collect();
-    items.sort_by_key(|item| item.created_at);
-    Json(items)
+pub async fn list_workspaces(
+    State(state): State<AppState>,
+    Extension(user): Extension<Arc<AuthenticatedUser>>,
+) -> ApiResult<Json<Vec<Workspace>>> {
+    let items = state.list_user_workspaces(user.user_id).await.map_err(|_| storage_failure())?;
+    Ok(Json(items))
 }
 
 pub async fn register_agent(
     State(state): State<AppState>,
+    Extension(user): Extension<Arc<AuthenticatedUser>>,
     Path(workspace_id): Path<Uuid>,
     Json(input): Json<RegisterAgent>,
 ) -> ApiResult<(StatusCode, Json<Agent>)> {
@@ -159,7 +150,8 @@ pub async fn register_agent(
         .persist_entity(
             StoredEntity::Agent(agent.clone()),
             Vec::new(),
-            AuditEvent::unattributed(
+            AuditEvent::attributed(
+                format!("human:{}", user.user_id),
                 Some(workspace_id),
                 "agent.registered",
                 "agent",
@@ -176,6 +168,7 @@ pub async fn register_agent(
 
 pub async fn create_artifact(
     State(state): State<AppState>,
+    Extension(user): Extension<Arc<AuthenticatedUser>>,
     Path(workspace_id): Path<Uuid>,
     Json(input): Json<CreateArtifact>,
 ) -> ApiResult<(StatusCode, Json<Artifact>)> {
@@ -223,7 +216,8 @@ pub async fn create_artifact(
         .persist_entity(
             StoredEntity::Artifact(artifact.clone()),
             Vec::new(),
-            AuditEvent::unattributed(
+            AuditEvent::attributed(
+                format!("human:{}", user.user_id),
                 Some(workspace_id),
                 "artifact.created",
                 "artifact",
