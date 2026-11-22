@@ -6,10 +6,12 @@ use crate::{
     storage::{EntityKind, Storage, StorageError, StorageMutation, StoredEntity, UserWorkspace},
 };
 use std::{
-    collections::{HashMap, HashSet},
+    collections::{HashMap, HashSet, VecDeque},
+    net::IpAddr,
+    time::{Duration, Instant},
     sync::Arc,
 };
-use tokio::sync::RwLock;
+use tokio::sync::{Mutex, RwLock};
 use uuid::Uuid;
 
 #[derive(Default)]
@@ -32,6 +34,7 @@ pub struct AppState {
     storage: Option<Arc<dyn Storage>>,
     pub firebase_verifier: Option<FirebaseVerifier>,
     pub simulator_enabled: bool,
+    auth_failures: Arc<Mutex<HashMap<IpAddr, VecDeque<Instant>>>>,
 }
 
 impl AppState {
@@ -82,6 +85,24 @@ impl AppState {
         state.audit.write().await.restore(audit_events);
 
         Ok(state)
+    }
+
+    /// Count failed bearer-token attempts per source IP without retaining tokens.
+    /// The limit is 20 failures per rolling minute; Firebase remains responsible
+    /// for throttling its own client sign-in endpoints.
+    pub async fn record_auth_failure(&self, ip: Option<IpAddr>) -> bool {
+        let Some(ip) = ip else { return true; };
+        let now = Instant::now();
+        let mut attempts = self.auth_failures.lock().await;
+        let history = attempts.entry(ip).or_default();
+        while history.front().is_some_and(|at| now.duration_since(*at) >= Duration::from_secs(60)) {
+            history.pop_front();
+        }
+        if history.len() >= 20 {
+            return false;
+        }
+        history.push_back(now);
+        true
     }
 
     pub async fn with_storage_and_auth(
