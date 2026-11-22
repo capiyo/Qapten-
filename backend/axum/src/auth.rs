@@ -278,3 +278,34 @@ KEyKVjiB8VYl2QzS7H0SaNy+5o3dULNd/v6jJFLS5t86+fA1/LmXz4TqBlHVDHFE
     header.kid = Some("local-test-kid".into());
     encode(&header, &claims, &EncodingKey::from_rsa_pem(pem.as_bytes()).unwrap()).unwrap()
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn verifies_locally_signed_firebase_rs256_token_without_network() {
+        let verifier = local_test_verifier("axon-test-project");
+        let now = chrono::Utc::now().timestamp().max(0) as u64;
+        let token = local_test_token("axon-test-project", "firebase-user-1", now + 600, false);
+        let claims = verifier.verify(&token).await.unwrap();
+        assert_eq!(claims.sub, "firebase-user-1");
+        assert_eq!(claims.aud, "axon-test-project");
+    }
+
+    #[tokio::test]
+    async fn rejects_expired_firebase_token() {
+        let verifier = local_test_verifier("axon-test-project");
+        let now = chrono::Utc::now().timestamp().max(0) as u64;
+        let token = local_test_token("axon-test-project", "firebase-user-1", now - 120, false);
+        assert!(matches!(verifier.verify(&token).await, Err(AuthError::InvalidToken)));
+    }
+
+    #[tokio::test]
+    async fn rejects_validly_formed_token_signed_by_wrong_rsa_key() {
+        let verifier = local_test_verifier("axon-test-project");
+        let now = chrono::Utc::now().timestamp().max(0) as u64;
+        let token = local_test_token("axon-test-project", "firebase-user-1", now + 600, true);
+        assert!(matches!(verifier.verify(&token).await, Err(AuthError::InvalidToken)));
+    }
+}
