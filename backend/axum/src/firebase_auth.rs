@@ -313,6 +313,7 @@ xwHsID0kXFg8C746vTsQbmrQtcGVXypnei5wd0Fp/cBbRzJXmDTKR2SvJukL8Vkb
                     e: "AQAB".into(),
                 }],
                 expires_at: Instant::now() + Duration::from_secs(600),
+                refreshed_at: Instant::now() - Duration::from_secs(10),
             }))),
         }
     }
