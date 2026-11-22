@@ -5,7 +5,10 @@
     "version": "0.1.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
-    "ios": { "supportsTablet": true },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "co.axon.mobile"
+    },
     "android": {
       "package": "co.axon.mobile",
       "adaptiveIcon": {
