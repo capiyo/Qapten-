@@ -180,6 +180,7 @@ export type AxonAuditEvent = {
 export type Chat = {
   id: string;
   workspace_id: string;
+  owner_id: string;
   title: string;
   created_at: string;
   updated_at: string;
