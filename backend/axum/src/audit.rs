@@ -19,6 +19,27 @@ pub struct AuditEvent {
 }
 
 impl AuditEvent {
+    pub fn attributed(
+        actor: impl Into<String>,
+        workspace_id: Option<Uuid>,
+        event_type: impl Into<String>,
+        entity_type: impl Into<String>,
+        entity_id: impl Into<String>,
+        metadata: Value,
+    ) -> Self {
+        Self {
+            sequence: 0,
+            event_id: Uuid::new_v4(),
+            workspace_id,
+            actor: actor.into(),
+            event_type: event_type.into(),
+            entity_type: entity_type.into(),
+            entity_id: entity_id.into(),
+            occurred_at: Utc::now(),
+            metadata,
+        }
+    }
+
     pub fn unattributed(
         workspace_id: Option<Uuid>,
         event_type: impl Into<String>,
