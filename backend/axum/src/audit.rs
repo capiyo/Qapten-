@@ -3,8 +3,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use uuid::Uuid;
 
-/// In-memory development audit record. Actor attribution is explicitly local
-/// and unauthenticated until a verified principal is supplied by middleware.
+/// Audit record attributed to the authenticated actor that caused the mutation.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AuditEvent {
     pub sequence: u64,
