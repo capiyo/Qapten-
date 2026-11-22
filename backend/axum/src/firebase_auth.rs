@@ -116,6 +116,70 @@ impl FirebaseVerifier {
         Ok(keys)
     }
 
+    #[cfg(test)]
+    pub(crate) fn test_verifier() -> Self {
+        Self {
+            project_id: Arc::from("axon-test-project"),
+            client: reqwest::Client::new(),
+            cache: Arc::new(RwLock::new(Some(CachedJwks {
+                keys: vec![Jwk {
+                    kid: "local-test-key".into(),
+                    kty: "RSA".into(),
+                    alg: Some("RS256".into()),
+                    n: "v3SikEyycB1cf_KuzKCTsynsY9S53YXBMhE2BeTtvlDsU-607fUhWZnpsgSbXdexKJ6BlqAw-1y2L2aaTH60JZvDJJjUv0IckE68uFpFlg1nclh0UyCqjVeeYTeVJvEzaL1nzH4FgdqCzbNPfCkQgEYGnb1sBZWDlKhfwVyPjyWfVU0JCTYEgFruksQd8rG0dA06NPuPcIwLqExTUiib-V8ezmbha02pd3CDgdllVJmLVWIBiKb8VPGnOqlKC6lV5ED1EotujnsfH5Lf3w499yShPM5xe7TpcwaLitbabxCGppa0iANOZwA5nQGV_Z1wPJqEjbLA2uA1YauU24bRGw".into(),
+                    e: "AQAB".into(),
+                }],
+                expires_at: Instant::now() + Duration::from_secs(600),
+            }))),
+        }
+    }
+
+    #[cfg(test)]
+    pub(crate) fn test_token(uid: &str, expired: bool) -> String {
+        use jsonwebtoken::{encode, EncodingKey, Header};
+        const PRIVATE_KEY: &str = r#"-----BEGIN PRIVATE KEY-----
+MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQC/dKKQTLJwHVx/
+8q7MoJOzKexj1LndhcEyETYF5O2+UOxT7rTt9SFZmemyBJtd17EonoGWoDD7XLYv
+ZppMfrQlm8MkmNS/QhyQTry4WkWWDWdyWHRTIKqNV55hN5Um8TNovWfMfgWB2oLN
+s098KRCARgadvWwFlYOUqF/BXI+PJZ9VTQkJNgSAWu6SxB3ysbR0DTo0+49wjAuo
+TFNSKJv5Xx7OZuFrTal3cIOB2WVUmYtVYgGIpvxU8ac6qUoLqVXkQPUSi26Oex8f
+kt/fDj33JKE8znF7tOlzBouK1tpvEIamlrSIA05nADmdAZX9nXA8moSNssDa4DVh
+q5TbhtEbAgMBAAECggEAFOdTroSpQON7y36ARlhL+BZeOIIr7vthHinR56/Yo1xr
+iTh5abfHdeR/pw+otQTNU32G8Z646mDzhVZjB3IYEjkhA9hp9h3uR3VJVqmIinsZ
+Ldtpi//3jyofYUbz0oYoUknH0QR7bnOgr3vh9FD5e7/pjgR2DGAIN01w8wg7pmnJ
+MQT4ha/mjA55PaJopmL/vvmixUu9YoJjJVnwcj+T3N6TB9XQfInWQfnFb4JIl3ne
+ZSNyGMUlhDLjikajnopUpS0HU0/qf2u8hyr209ilXv+seSujXn5zkEoplGA8iFo3
+DTjwotpASQblpIBEmiaHkparBaG7tS20iyECVB0gQQKBgQDu9xMWHnfmEQ7eU/1h
+Eerww/EgPvnpMSPaiuZxjL66/FU0QYpYbAVnhbl6JO2P42cJ3S4bi+gpr5yj+y9r
+C0mWTBne8GKNMowiglf10kULfH4NSbJvNsoiI5+C/uJFZ32CMVUe99uFWrkcxbpk
++wK7N5X8WYO6H4iV5kE+LroQ2wKBgQDNGoyJsS5FN9xEwvKpUMUdKpPa453qW4ke
+ZSUiJQINDJ8phTqLdAKN1U6pSuZbOEKXiyJglhNVwUbtD349Vo/TXFiDCxfNwmO6
+V2BfYua9rlQYhpOuMHWSdZqXncLIxwGkb4g/i6bONS6QVOk8+vqriNicupr898pC
+6nbcp30UwQKBgHp3j4WPed0jst4IZ1u/JgvcL5BaFhQHhhtzgiSBgCIuPbB5QmCM
+g7yJUQQjNsi+P0lT3FRrwEDU6k8z5RpT/5OSTtPtmGRKmnz5FgE6kP4RADzpHxRW
+HQOgBBjLbcUqA62cgMZNOmi+lQ4E28Dyz3SJSUm5yoOxs3s3NQqcQelvAoGBALoo
+PaR/32pN0CvM8WjB+ZaGXZqPe3YJzMN8tB5wjpL/gLqzxLZr/iFzmKjJZZkn0DEx
+xGr76+KqwVBK/p53oaUKLQALonhL1i58Pel1n85LmuKDyyiPrTbYbQ7tzqxjC9eO
+r5BVlXmWBYRUvTlu5vOoCkr+h8vQr5DatDWEA2BBAoGBAMvNFuiEQkHz060uwkB5
+QxmvvTxwzKwc2UXDgAsOF/s7oFLLKzrCPmH/TGEIhLOfxVxY+1Q3jMlwnFGJpFb7
+ywJ90rORebTVRXS775KyPffAjG139CCYShZblP79A03zm0uHTd3k6AT/Ptp+Otyp
+AkhVzUbUCeSFotfzkQEyfX9J
+-----END PRIVATE KEY-----"#;
+        let now = chrono::Utc::now().timestamp() as u64;
+        let exp = if expired { now.saturating_sub(300) } else { now + 300 };
+        let claims = serde_json::json!({
+            "iss": "https://securetoken.google.com/axon-test-project",
+            "aud": "axon-test-project",
+            "sub": uid,
+            "user_id": uid,
+            "iat": now,
+            "exp": exp
+        });
+        let mut header = jsonwebtoken::Header::new(Algorithm::RS256);
+        header.kid = Some("local-test-key".into());
+        encode(&header, &claims, &EncodingKey::from_rsa_pem(PRIVATE_KEY.as_bytes()).unwrap()).unwrap()
+    }
+
     pub async fn verify(&self, token: &str) -> Result<FirebaseIdentity, FirebaseAuthError> {
         if token.is_empty() || token.len() > 16_384 {
             return Err(FirebaseAuthError::MissingToken);
