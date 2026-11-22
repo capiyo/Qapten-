@@ -121,6 +121,21 @@ impl FirebaseVerifier {
     }
 
     async fn key_for(&self, kid: &str) -> Result<DecodingKey, AuthError> {
+        let now = Instant::now();
+        {
+            let cache = self.cache.read().await;
+            if let Some(cached) = cache.as_ref() {
+                if cached.expires_at > now {
+                    if let Some(key) = cached.keys.get(kid) {
+                        return Ok(key.clone());
+                    }
+                    if now.duration_since(cached.fetched_at) < Duration::from_secs(30) {
+                        return Err(AuthError::InvalidToken);
+                    }
+                }
+            }
+        }
+
         // Serialize refreshes and impose a cooldown on unknown-kid refreshes.
         // Otherwise arbitrary kid values could turn token verification into an
         // outbound-request amplification path.
