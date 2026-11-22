@@ -9,6 +9,7 @@ mod state;
 pub mod storage;
 mod task_routes;
 
+pub use model::Workspace;
 pub use state::AppState;
 
 use axum::{
