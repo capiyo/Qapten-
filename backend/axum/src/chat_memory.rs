@@ -180,7 +180,7 @@ impl ChatMemoryStore {
 
     pub async fn mutate_memory_entry(&self, workspace_id: Uuid, chat_id: Uuid, entry_id: Uuid, actor: &str, operation: &str, edit: Option<EditMemoryEntry>) -> Result<Option<MemoryEntry>, sqlx::Error> {
         let mut tx = self.pool.begin().await?;
-        let mut current = replay_memory(&mut tx, chat_id).await?.remove(&entry_id);
+        let mut current = replay_memory(&mut *tx, chat_id).await?.remove(&entry_id);
         let Some(mut entry) = current.take() else { return Ok(None); };
         if entry.status == "deleted" { return Ok(None); }
         let event_type = match operation {
@@ -209,7 +209,7 @@ impl ChatMemoryStore {
 
     async fn rebuild_memory(&self, chat_id: Uuid) -> Result<Vec<MemoryEntry>, sqlx::Error> {
         let mut connection = self.pool.acquire().await?;
-        let mut entries = replay_memory(&mut connection).await?.into_values().filter(|entry| entry.status != "deleted").collect::<Vec<_>>();
+        let mut entries = replay_memory(&mut *connection).await?.into_values().filter(|entry| entry.status != "deleted").collect::<Vec<_>>();
         entries.sort_by_key(|entry| entry.created_at);
         Ok(entries)
     }
