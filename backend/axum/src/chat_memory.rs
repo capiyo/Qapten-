@@ -319,6 +319,7 @@ mod tests {
     #[tokio::test]
     async fn resume_brief_uses_only_approved_memory_and_invalidates_after_mutation() {
         let storage = SqliteStorage::connect_in_memory().await.unwrap();
+        let account = storage.ensure_firebase_user("axon-test", "memory-test-user-1").await.unwrap();
         let store = storage.chat_memory_store();
         let workspace_id = account.workspace.id;
         let chat = store.create_chat(workspace_id, account.user_id, "human:test", "Persistence design".into()).await.unwrap();
@@ -367,7 +368,7 @@ mod tests {
         let store = storage.chat_memory_store();
         let workspace_id = account.workspace.id;
         let other_workspace = Uuid::new_v4();
-        let chat = store.create_chat(workspace_id, "human:test", "Private chat".into()).await.unwrap();
+        let chat = store.create_chat(workspace_id, account.user_id, "human:test", "Private chat".into()).await.unwrap();
 
         assert!(store.get_chat(other_workspace, chat.id).await.unwrap().is_none());
         assert_eq!(store.list_chats(workspace_id).await.unwrap().len(), 1);
@@ -382,7 +383,7 @@ mod tests {
         let account = storage.ensure_firebase_user("axon-test", "memory-test-user-3").await.unwrap();
         let store = storage.chat_memory_store();
         let workspace_id = account.workspace.id;
-        let chat = store.create_chat(workspace_id, "human:test", "Append only".into()).await.unwrap();
+        let chat = store.create_chat(workspace_id, account.user_id, "human:test", "Append only".into()).await.unwrap();
         let entry = store.create_memory_entry(workspace_id, chat.id, "human:test", CreateMemoryEntry {
             entry_type: "fact".into(),
             text: "Events are immutable.".into(),
