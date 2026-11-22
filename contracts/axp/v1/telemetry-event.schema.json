@@ -1,0 +1,17 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "$id":"urn:axon:axp:v1:telemetry-event",
+  "title":"Axon Device Telemetry Event","type":"object","additionalProperties":false,
+  "required":["event_id","device_id","sequence","observed_at","received_at","kind","payload"],
+  "properties":{
+    "event_id":{"type":"string","minLength":1,"maxLength":128},
+    "device_id":{"type":"string","minLength":1,"maxLength":128},
+    "sequence":{"type":"integer","minimum":0},
+    "observed_at":{"type":"string","format":"date-time"},
+    "received_at":{"type":"string","format":"date-time"},
+    "kind":{"enum":["pose","velocity","joint_state","battery","temperature","safety_state","diagnostic","heartbeat"]},
+    "frame_id":{"type":"string","maxLength":128},
+    "payload":{"type":"object","maxProperties":128},
+    "quality":{"enum":["measured","estimated","simulated","unknown"]}
+  }
+}

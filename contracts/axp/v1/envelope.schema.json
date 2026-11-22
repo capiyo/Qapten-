@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://qapten.dev/contracts/qep/v1/envelope.schema.json",
-  "title": "Qapten Exchange Protocol Envelope",
-  "description": "Draft provider-neutral envelope for records exchanged through Qapten.",
+  "$id": "urn:axon:protocol:v1:envelope",
+  "title": "Axon Exchange Protocol Envelope",
+  "description": "Draft provider-neutral envelope for records exchanged through Axon.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -73,7 +73,7 @@
             "manual_import",
             "user_authorized_browser_capture",
             "official_api",
-            "qapten_generated"
+            "axon_generated"
           ]
         },
         "external_reference": {

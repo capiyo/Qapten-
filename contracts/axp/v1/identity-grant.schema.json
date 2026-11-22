@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:axon:protocol:v1:identity-grant",
+  "title": "AXON Workspace Capability Grant",
+  "description": "A workspace-scoped capability grant. It is authorization data, not proof of identity or authentication.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["grant_id", "subject", "workspace_id", "capabilities", "issued_by", "issued_at"],
+  "properties": {
+    "grant_id": { "type": "string", "format": "uuid" },
+    "subject": { "$ref": "#/$defs/principal" },
+    "workspace_id": { "type": "string", "format": "uuid" },
+    "capabilities": { "type": "array", "uniqueItems": true, "items": { "enum": ["workspace_read", "workspace_manage", "agent_register", "agent_manage", "artifact_read", "artifact_create", "artifact_classify", "task_read", "task_create", "task_assign", "task_review", "decision_propose", "decision_accept", "audit_read", "device_enroll", "device_telemetry_read", "device_telemetry_write", "device_command_propose"] } },
+    "issued_by": { "$ref": "#/$defs/principal" },
+    "issued_at": { "type": "string", "format": "date-time" },
+    "expires_at": { "type": ["string", "null"], "format": "date-time" },
+    "revoked_at": { "type": ["string", "null"], "format": "date-time" }
+  },
+  "$defs": {
+    "principal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "id"],
+      "properties": {
+        "kind": { "enum": ["human", "agent", "service", "device"] },
+        "id": { "type": "string", "minLength": 1, "maxLength": 128 }
+      }
+    }
+  }
+}
