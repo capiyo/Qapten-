@@ -320,7 +320,7 @@ mod authentication_tests {
             assert!(state.record_auth_failure(Some(first_ip)).await);
         }
         assert!(!state.record_auth_failure(Some(first_ip)).await);
-        assert!(state.record_auth_failure(Some("192.0.2.11".parse().unwrap()).await);
+        assert!(state.record_auth_failure(Some("192.0.2.11".parse().unwrap())).await);
     }
 
 }
