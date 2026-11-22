@@ -46,7 +46,7 @@ pub async fn create_chat(
     if title.is_empty() || title.len() > 160 {
         return Err(error(StatusCode::BAD_REQUEST, "Chat title must contain 1–160 characters."));
     }
-    let chat = store(&state)?.create_chat(workspace_id, &actor(&user), title.to_owned()).await
+    let chat = store(&state)?.create_chat(workspace_id, user.user_id, &actor(&user), title.to_owned()).await
         .map_err(|_| error(StatusCode::INTERNAL_SERVER_ERROR, "Could not create chat."))?;
     Ok((StatusCode::CREATED, Json(chat)))
 }
