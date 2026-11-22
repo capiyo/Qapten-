@@ -289,7 +289,7 @@ pub async fn list_artifacts(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::storage::SqliteStorage;
+    use crate::storage::{SqliteStorage, Storage};
     use axum::{
         body::{to_bytes, Body},
         http::Request,
@@ -368,8 +368,8 @@ mod tests {
         .unwrap();
 
         assert_eq!(response.0, StatusCode::CREATED);
-        assert_eq!(state.workspaces.read().await.len(), 1);
-        let audit = state.audit.read().await.list_workspace(response.1.id);
+        assert_eq!(state.workspaces.read().await.len(), 2);
+        let audit = storage.list_audit_events(response.1.id).await.unwrap();
         assert_eq!(audit.len(), 1);
         assert_eq!(audit[0].event_type, "workspace.created");
     }
