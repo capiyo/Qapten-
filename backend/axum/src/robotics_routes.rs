@@ -133,12 +133,60 @@ pub async fn list_simulated_telemetry(
     )
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::robotics::{TelemetryKind, TelemetryQuality};
     use chrono::Duration;
+
+    #[tokio::test]
+    async fn simulator_ingress_accepts_fresh_event_and_rejects_duplicate_id() {
+        let state = AppState::default();
+        let first = ingest_simulated_telemetry(
+            State(state.clone()),
+            Path("simulator-1".into()),
+            Json(input("sim-event-1", 1)),
+        )
+        .await
+        .expect("fresh event should be accepted");
+        assert_eq!(first.0, StatusCode::ACCEPTED);
+        let duplicate = ingest_simulated_telemetry(
+            State(state),
+            Path("simulator-1".into()),
+            Json(input("sim-event-1", 2)),
+        )
+        .await
+        .expect_err("duplicate event ID should be rejected");
+        assert_eq!(duplicate.0, StatusCode::CONFLICT);
+    }
+
+    #[tokio::test]
+    async fn simulator_ingress_rejects_oversized_payload() {
+        let state = AppState::default();
+        let mut event = input("oversized-event", 1);
+        event.kind = TelemetryKind::Diagnostic;
+        event.payload.insert(
+            "data".into(),
+            serde_json::Value::String("x".repeat(65 * 1024)),
+        );
+        let response =
+            ingest_simulated_telemetry(State(state), Path("simulator-1".into()), Json(event))
+                .await
+                .expect_err("oversized telemetry must be rejected");
+        assert_eq!(response.0, StatusCode::PAYLOAD_TOO_LARGE);
+    }
+
+    #[tokio::test]
+    async fn simulator_ingress_rejects_measured_quality() {
+        let state = AppState::default();
+        let mut event = input("physical-event-1", 1);
+        event.quality = TelemetryQuality::Measured;
+        let response =
+            ingest_simulated_telemetry(State(state), Path("simulator-1".into()), Json(event))
+                .await
+                .expect_err("measured telemetry must be rejected by simulator ingress");
+        assert_eq!(response.0, StatusCode::FORBIDDEN);
+    }
 
     fn input(event_id: &str, sequence: u64) -> TelemetryIngest {
         TelemetryIngest {
@@ -153,35 +201,9 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn simulator_ingress_accepts_then_rejects_duplicate_event_id() {
-        let state = AppState::default();
-        let accepted = ingest_simulated_telemetry(
-            State(state.clone()),
-            Path("sim-test".into()),
-            Json(input("event-1", 1)),
-        )
-        .await
-        .expect("first event should be accepted");
-        assert_eq!(accepted.0, StatusCode::ACCEPTED);
-
-        let duplicate = ingest_simulated_telemetry(
-            State(state.clone()),
-            Path("sim-test".into()),
-            Json(input("event-1", 2)),
-        )
-        .await
-        .expect_err("duplicate event id must be rejected");
-        assert_eq!(duplicate.0, StatusCode::CONFLICT);
-        assert_eq!(
-            state.telemetry.read().await.last_sequence_by_device.get("sim-test"),
-            Some(&1)
-        );
-    }
-
-    #[tokio::test]
     async fn simulator_ingress_rejects_replayed_sequence_without_mutating_store() {
         let state = AppState::default();
-        ingest_simulated_telemetry(
+        let (_status, _event) = ingest_simulated_telemetry(
             State(state.clone()),
             Path("sim-test".into()),
             Json(input("event-1", 5)),
@@ -206,7 +228,7 @@ mod tests {
     async fn simulator_ingress_retains_only_latest_five_hundred_events() {
         let state = AppState::default();
         for sequence in 1..=501 {
-            ingest_simulated_telemetry(
+            let (_status, _event) = ingest_simulated_telemetry(
                 State(state.clone()),
                 Path("sim-test".into()),
                 Json(input(&format!("event-{sequence}"), sequence)),

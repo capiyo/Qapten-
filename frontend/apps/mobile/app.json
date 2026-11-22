@@ -1,0 +1,19 @@
+{
+  "expo": {
+    "name": "Axon",
+    "slug": "axon",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "co.axon.mobile"
+    },
+    "android": {
+      "package": "co.axon.mobile",
+      "adaptiveIcon": {
+        "backgroundColor": "#eaf1fc"
+      }
+    }
+  }
+}

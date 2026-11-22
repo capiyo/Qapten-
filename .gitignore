@@ -1,0 +1,22 @@
+# Rust
+/target
+**/axon.db*
+**/*.rs.bk
+
+# Node
+node_modules/
+dist/
+.expo/
+.web-build/
+
+# Local configuration and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Editors / OS
+.DS_Store
+.idea/
+.vscode/

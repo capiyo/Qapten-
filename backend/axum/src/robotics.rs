@@ -156,6 +156,7 @@ pub enum ProposalRejection {
     VelocityOutOfBounds,
     InvalidParameters,
     InvalidPolicyLimits,
+    PhysicalDispatchNotImplemented,
     StaleSafetyState,
     FutureSafetyState,
     TelemetryDeviceMismatch,
@@ -176,6 +177,9 @@ pub fn validate_proposal(
     now: DateTime<Utc>,
     limits: SafetyLimits,
 ) -> Result<(), ProposalRejection> {
+    if !proposal.simulation_only {
+        return Err(ProposalRejection::PhysicalDispatchNotImplemented);
+    }
     if proposal.device_id != authenticated_device_id || safety.device_id != authenticated_device_id
     {
         return Err(ProposalRejection::DeviceMismatch);
@@ -251,7 +255,10 @@ pub fn validate_simulated_telemetry(
 ) -> Result<(), ProposalRejection> {
     if input.event_id.trim().is_empty()
         || input.event_id.len() > 128
-        || input.frame_id.as_ref().is_some_and(|frame| frame.trim().is_empty() || frame.len() > 128)
+        || input
+            .frame_id
+            .as_ref()
+            .is_some_and(|frame| frame.trim().is_empty() || frame.len() > 128)
     {
         return Err(ProposalRejection::InvalidTelemetryEvent);
     }
@@ -349,6 +356,16 @@ mod tests {
         assert_eq!(
             validate_proposal(&proposal, "robot-1", true, &safety, 6, now, limits),
             Ok(())
+        );
+    }
+
+    #[test]
+    fn rejects_non_simulation_proposals_until_gateway_exists() {
+        let (mut proposal, safety, now, limits) = fixture();
+        proposal.simulation_only = false;
+        assert_eq!(
+            validate_proposal(&proposal, "robot-1", true, &safety, 6, now, limits),
+            Err(ProposalRejection::PhysicalDispatchNotImplemented)
         );
     }
 

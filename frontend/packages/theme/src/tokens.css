@@ -1,0 +1,25 @@
+:root {
+  --axon-color-canvas: #10141d;
+  --axon-color-canvas-glow: #1d2c3b;
+  --axon-color-surface: #171e28;
+  --axon-color-surface-raised: #202a36;
+  --axon-color-surface-input: #10151d;
+  --axon-color-border: #2a3542;
+  --axon-color-border-strong: #3b4a5a;
+  --axon-color-text: #edf2f8;
+  --axon-color-text-muted: #9aa8b8;
+  --axon-color-text-subtle: #8190a2;
+  --axon-color-accent: #b8f36a;
+  --axon-color-accent-text: #172011;
+  --axon-color-success: #b8f36a;
+  --axon-color-warning: #ffd58a;
+  --axon-color-danger: #ff999f;
+  --axon-radius-small: 8px;
+  --axon-radius-medium: 12px;
+  --axon-radius-large: 17px;
+  --axon-spacing-xs: 4px;
+  --axon-spacing-sm: 8px;
+  --axon-spacing-md: 12px;
+  --axon-spacing-lg: 16px;
+  --axon-spacing-xl: 24px;
+}

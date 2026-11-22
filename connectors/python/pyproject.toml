@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "axon-python-connector"
+version = "0.1.0"
+description = "Provider-neutral Python connector for explicit AI context handoffs in AXON."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = ["httpx>=0.27,<1"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8,<9", "pytest-asyncio>=0.23,<1", "ruff>=0.5,<1"]
+
+[project.scripts]
+axon-bridge = "axon_connector.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["axon_connector*"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
