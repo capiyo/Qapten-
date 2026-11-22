@@ -29,6 +29,8 @@ pub enum StorageError {
     InvalidStoredSequence,
     #[error("stored entity kind does not match its table")]
     InvalidStoredEntityKind,
+    #[error("user identity could not be provisioned")]
+    IdentityProvisioning,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -117,6 +119,16 @@ pub trait Storage: Send + Sync {
     ) -> Result<Vec<StoredEntity>, StorageError>;
 
     async fn list_audit_events(&self, workspace_id: Uuid) -> Result<Vec<AuditEvent>, StorageError>;
+    async fn resolve_or_create_firebase_user(&self, subject: &str, email: Option<&str>) -> Result<UserWorkspace, StorageError>;
+    async fn user_can_access_workspace(&self, user_id: Uuid, workspace_id: Uuid) -> Result<bool, StorageError>;
+    async fn list_user_workspace_ids(&self, user_id: Uuid) -> Result<Vec<Uuid>, StorageError>;
+    async fn create_workspace_for_user(&self, workspace: Workspace, user_id: Uuid, audit: AuditEvent) -> Result<(), StorageError>;
+}
+
+#[derive(Debug, Clone)]
+pub struct UserWorkspace {
+    pub user_id: Uuid,
+    pub workspace: Workspace,
 }
 
 #[derive(Clone)]
@@ -150,8 +162,130 @@ impl SqliteStorage {
     }
 }
 
+    pub async fn resolve_or_create_firebase_user(
+        &self,
+        subject: &str,
+        email: Option<&str>,
+    ) -> Result<UserWorkspace, StorageError> {
+        if subject.is_empty() || subject.len() > 128 {
+            return Err(StorageError::IdentityProvisioning);
+        }
+        let mut tx = self.pool.begin().await?;
+        let now = Utc::now();
+        sqlx::query(
+            "INSERT INTO users (id, provider, subject, email, created_at, updated_at) VALUES (?, 'firebase', ?, ?, ?, ?) ON CONFLICT(provider, subject) DO UPDATE SET email = COALESCE(excluded.email, users.email), updated_at = excluded.updated_at",
+        )
+        .bind(Uuid::new_v4().to_string())
+        .bind(subject)
+        .bind(email)
+        .bind(now.to_rfc3339())
+        .bind(now.to_rfc3339())
+        .execute(&mut *tx).await?;
+
+        let row = sqlx::query("SELECT id, personal_workspace_id FROM users WHERE provider = 'firebase' AND subject = ?")
+            .bind(subject).fetch_one(&mut *tx).await?;
+        let user_id = Uuid::parse_str(&row.try_get::<String, _>("id")?)
+            .map_err(|_| StorageError::IdentityProvisioning)?;
+        let current_workspace: Option<String> = row.try_get("personal_workspace_id")?;
+        let workspace = if let Some(value) = current_workspace {
+            let id = Uuid::parse_str(&value).map_err(|_| StorageError::IdentityProvisioning)?;
+            let payload: String = sqlx::query_scalar("SELECT payload_json FROM entities WHERE kind = 'workspace' AND id = ?")
+                .bind(id.to_string()).fetch_one(&mut *tx).await?;
+            match serde_json::from_str::<StoredEntity>(&payload)? {
+                StoredEntity::Workspace(value) => value,
+                _ => return Err(StorageError::InvalidStoredEntityKind),
+            }
+        } else {
+            let candidate = Workspace { id: Uuid::new_v4(), name: "Personal workspace".into(), created_at: now };
+            let claimed = sqlx::query("UPDATE users SET personal_workspace_id = ?, updated_at = ? WHERE id = ? AND personal_workspace_id IS NULL")
+                .bind(candidate.id.to_string()).bind(now.to_rfc3339()).bind(user_id.to_string())
+                .execute(&mut *tx).await?.rows_affected() == 1;
+            if claimed {
+                let payload = serde_json::to_string(&StoredEntity::Workspace(candidate.clone()))?;
+                sqlx::query("INSERT INTO entities (kind, id, workspace_id, created_at, payload_json) VALUES ('workspace', ?, NULL, ?, ?)")
+                    .bind(candidate.id.to_string()).bind(candidate.created_at.to_rfc3339()).bind(payload)
+                    .execute(&mut *tx).await?;
+                let event = AuditEvent {
+                    sequence: 0, event_id: Uuid::new_v4(), workspace_id: Some(candidate.id),
+                    actor: format!("user:{user_id}"), event_type: "workspace.created".into(),
+                    entity_type: "workspace".into(), entity_id: candidate.id.to_string(),
+                    occurred_at: now, metadata: serde_json::json!({"name": candidate.name, "provisioned": true}),
+                };
+                sqlx::query("INSERT INTO audit_events (event_id, workspace_id, actor, event_type, entity_type, entity_id, occurred_at, metadata_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?)")
+                    .bind(event.event_id.to_string()).bind(candidate.id.to_string()).bind(event.actor)
+                    .bind(event.event_type).bind(event.entity_type).bind(event.entity_id)
+                    .bind(event.occurred_at.to_rfc3339()).bind(serde_json::to_string(&event.metadata)?)
+                    .execute(&mut *tx).await?;
+                candidate
+            } else {
+                let value: String = sqlx::query_scalar("SELECT personal_workspace_id FROM users WHERE id = ?")
+                    .bind(user_id.to_string()).fetch_one(&mut *tx).await?;
+                let id = Uuid::parse_str(&value).map_err(|_| StorageError::IdentityProvisioning)?;
+                let payload: String = sqlx::query_scalar("SELECT payload_json FROM entities WHERE kind = 'workspace' AND id = ?")
+                    .bind(id.to_string()).fetch_one(&mut *tx).await?;
+                match serde_json::from_str::<StoredEntity>(&payload)? {
+                    StoredEntity::Workspace(value) => value,
+                    _ => return Err(StorageError::InvalidStoredEntityKind),
+                }
+            }
+        };
+        sqlx::query("INSERT INTO workspace_memberships (user_id, workspace_id, role, created_at) VALUES (?, ?, 'owner', ?) ON CONFLICT(user_id, workspace_id) DO NOTHING")
+            .bind(user_id.to_string()).bind(workspace.id.to_string()).bind(now.to_rfc3339())
+            .execute(&mut *tx).await?;
+        tx.commit().await?;
+        Ok(UserWorkspace { user_id, workspace })
+    }
+
+    pub async fn user_can_access_workspace(&self, user_id: Uuid, workspace_id: Uuid) -> Result<bool, StorageError> {
+        let exists: i64 = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM workspace_memberships WHERE user_id = ? AND workspace_id = ?)")
+            .bind(user_id.to_string()).bind(workspace_id.to_string()).fetch_one(&self.pool).await?;
+        Ok(exists == 1)
+    }
+
+    pub async fn list_user_workspace_ids(&self, user_id: Uuid) -> Result<Vec<Uuid>, StorageError> {
+        let rows = sqlx::query("SELECT workspace_id FROM workspace_memberships WHERE user_id = ? ORDER BY created_at")
+            .bind(user_id.to_string()).fetch_all(&self.pool).await?;
+        rows.into_iter().map(|row| {
+            let value: String = row.try_get("workspace_id")?;
+            Uuid::parse_str(&value).map_err(|_| StorageError::IdentityProvisioning)
+        }).collect()
+    }
+
+    pub async fn create_workspace_for_user(
+        &self, workspace: Workspace, user_id: Uuid, audit: AuditEvent,
+    ) -> Result<(), StorageError> {
+        let mut tx = self.pool.begin().await?;
+        let payload = serde_json::to_string(&StoredEntity::Workspace(workspace.clone()))?;
+        sqlx::query("INSERT INTO entities (kind, id, workspace_id, created_at, payload_json) VALUES ('workspace', ?, NULL, ?, ?)")
+            .bind(workspace.id.to_string()).bind(workspace.created_at.to_rfc3339()).bind(payload)
+            .execute(&mut *tx).await?;
+        sqlx::query("INSERT INTO workspace_memberships (user_id, workspace_id, role, created_at) VALUES (?, ?, 'owner', ?)")
+            .bind(user_id.to_string()).bind(workspace.id.to_string()).bind(workspace.created_at.to_rfc3339())
+            .execute(&mut *tx).await?;
+        sqlx::query("INSERT INTO audit_events (event_id, workspace_id, actor, event_type, entity_type, entity_id, occurred_at, metadata_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?)")
+            .bind(audit.event_id.to_string()).bind(audit.workspace_id.map(|id| id.to_string()))
+            .bind(audit.actor).bind(audit.event_type).bind(audit.entity_type).bind(audit.entity_id)
+            .bind(audit.occurred_at.to_rfc3339()).bind(serde_json::to_string(&audit.metadata)?)
+            .execute(&mut *tx).await?;
+        tx.commit().await?;
+        Ok(())
+    }
+
 #[async_trait]
 impl Storage for SqliteStorage {
+    async fn resolve_or_create_firebase_user(&self, subject: &str, email: Option<&str>) -> Result<UserWorkspace, StorageError> {
+        SqliteStorage::resolve_or_create_firebase_user(self, subject, email).await
+    }
+    async fn user_can_access_workspace(&self, user_id: Uuid, workspace_id: Uuid) -> Result<bool, StorageError> {
+        SqliteStorage::user_can_access_workspace(self, user_id, workspace_id).await
+    }
+    async fn list_user_workspace_ids(&self, user_id: Uuid) -> Result<Vec<Uuid>, StorageError> {
+        SqliteStorage::list_user_workspace_ids(self, user_id).await
+    }
+    async fn create_workspace_for_user(&self, workspace: Workspace, user_id: Uuid, audit: AuditEvent) -> Result<(), StorageError> {
+        SqliteStorage::create_workspace_for_user(self, workspace, user_id, audit).await
+    }
+
     async fn apply(&self, mutation: StorageMutation) -> Result<(), StorageError> {
         let mut transaction = self.pool.begin().await?;
         for entity in std::iter::once(mutation.entity).chain(mutation.related_entities) {
