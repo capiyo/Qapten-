@@ -523,4 +523,23 @@ mod tests {
             .await;
         assert!(delete.is_err());
     }
+
+
+    #[tokio::test]
+    async fn firebase_first_login_is_idempotent_under_concurrent_requests() {
+        let storage = SqliteStorage::connect_in_memory().await.unwrap();
+        let (first, second) = tokio::join!(
+            storage.ensure_firebase_user("axon-project", "same-firebase-uid"),
+            storage.ensure_firebase_user("axon-project", "same-firebase-uid"),
+        );
+        let first = first.unwrap();
+        let second = second.unwrap();
+        assert_eq!(first.user_id, second.user_id);
+        assert_eq!(first.workspace.id, second.workspace.id);
+        assert!(storage.is_workspace_member(first.user_id, first.workspace.id).await.unwrap());
+        assert_eq!(storage.list_user_workspaces(first.user_id).await.unwrap().len(), 1);
+        let audit = storage.list_audit_events(first.workspace.id).await.unwrap();
+        assert_eq!(audit.len(), 1);
+        assert_eq!(audit[0].actor, format!("human:{}", first.user_id));
+    }
 }
