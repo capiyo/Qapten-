@@ -98,4 +98,15 @@ mod tests {
         let api = app.oneshot(request("GET", "/api/v1/workspaces", None)).await.unwrap();
         assert_eq!(api.status(), StatusCode::UNAUTHORIZED);
     }
+
+    #[tokio::test]
+    async fn simulator_routes_are_hidden_when_development_flag_is_disabled() {
+        let storage = SqliteStorage::connect_in_memory().await.unwrap().shared();
+        let state = AppState::with_storage(storage).await.unwrap()
+            .with_firebase_verifier(FirebaseVerifier::test_verifier(), false);
+        let app = crate::app(state);
+        let token = FirebaseVerifier::test_token("dev-user", false);
+        let response = app.oneshot(request("GET", "/api/v1/sim/devices/simulator-1/telemetry", Some(token))).await.unwrap();
+        assert_eq!(response.status(), StatusCode::NOT_FOUND);
+    }
 }
