@@ -19,11 +19,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .parse::<u16>()?;
     let address: SocketAddr = format!("{host}:{port}").parse()?;
 
-    if !address.ip().is_loopback() {
-        return Err(
-            "Refusing non-loopback bind until verified authentication and route authorization are implemented."
-                .into(),
-        );
+    if !address.ip().is_loopback() && env::var("FIREBASE_PROJECT_ID").is_err() {
+        return Err("FIREBASE_PROJECT_ID is required before non-loopback binding.".into());
     }
 
     let database_url =
@@ -31,8 +28,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let storage = SqliteStorage::connect(&database_url).await?;
     let project_id = env::var("FIREBASE_PROJECT_ID")?;
     let verifier = FirebaseVerifier::new(project_id)?;
-    let simulator_enabled = env::var("AXON_ENV").as_deref() == Ok("development")
-        && env::var("AXON_ENABLE_SIMULATOR").as_deref() == Ok("true");
+    let simulator_enabled = matches!(env::var("AXON_ENV").as_deref(), Ok("development"))
+        && matches!(env::var("AXON_ENABLE_SIMULATOR").as_deref(), Ok("true"));
     let state = AppState::with_storage_and_auth(storage.shared(), verifier, simulator_enabled).await?;
 
     let listener = TcpListener::bind(address).await?;
