@@ -162,6 +162,7 @@ impl SqliteStorage {
     }
 }
 
+impl SqliteStorage {
     pub async fn resolve_or_create_firebase_user(
         &self,
         subject: &str,
@@ -270,6 +271,8 @@ impl SqliteStorage {
         tx.commit().await?;
         Ok(())
     }
+
+}
 
 #[async_trait]
 impl Storage for SqliteStorage {
