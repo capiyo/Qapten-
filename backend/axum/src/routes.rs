@@ -102,7 +102,7 @@ pub async fn create_workspace(
         "workspace.created",
         "workspace",
         workspace.id.to_string(),
-        serde_json::json!({ "name": workspace.name }),
+        serde_json::json!({}),
     );
     state.create_workspace_for_user(workspace.clone(), user.user_id, event.clone())
         .await.map_err(|_| storage_failure())?;
@@ -172,7 +172,7 @@ pub async fn register_agent(
                 "agent.registered",
                 "agent",
                 agent.id.to_string(),
-                serde_json::json!({"provider": agent.provider, "connection_mode": "manual"}),
+                serde_json::json!({"connection_mode": "manual"}),
             ),
         )
         .await
@@ -236,7 +236,7 @@ pub async fn create_artifact(
                 "artifact.created",
                 "artifact",
                 artifact.id.to_string(),
-                serde_json::json!({ "title": artifact.title, "source_agent_id": artifact.source_agent_id }),
+                serde_json::json!({ "source_agent_id": artifact.source_agent_id }),
             ),
         )
         .await
