@@ -175,3 +175,41 @@ export type AxonAuditEvent = {
   occurred_at: string;
   metadata: Record<string, unknown>;
 };
+
+
+export type Chat = {
+  id: string;
+  workspace_id: string;
+  title: string;
+  created_at: string;
+  updated_at: string;
+  archived: boolean;
+};
+
+export type ChatMessage = {
+  id: string;
+  chat_id: string;
+  role: "user" | "assistant" | "system";
+  content: string;
+  created_at: string;
+  answered_by: string | null;
+};
+
+export type ProjectMemoryEntry = {
+  id: string;
+  chat_id: string;
+  type: "decision" | "fact" | "constraint" | "open_task" | "note";
+  text: string;
+  reason: string | null;
+  source_message_id: string | null;
+  status: "proposed" | "approved" | "rejected" | "deleted";
+  created_at: string;
+  approved_at: string | null;
+};
+
+export type ChatDetail = {
+  chat: Chat;
+  messages: ChatMessage[];
+  memory: ProjectMemoryEntry[];
+  resume_brief: string;
+};
