@@ -97,6 +97,9 @@ impl ChatMemoryStore {
         let now = Utc::now();
         let chat = Chat { id: Uuid::new_v4(), workspace_id, owner_id, title, created_at: now, updated_at: now, archived: false };
         let mut tx = self.pool.begin().await?;
+        let is_member: Option<i64> = sqlx::query_scalar("SELECT 1 FROM workspace_memberships WHERE workspace_id = ? AND user_id = ?")
+            .bind(workspace_id.to_string()).bind(owner_id.to_string()).fetch_optional(&mut *tx).await?;
+        if is_member.is_none() { return Err(sqlx::Error::RowNotFound); }
         sqlx::query("INSERT INTO chats (id, workspace_id, owner_id, title, created_at, updated_at, archived, memory_version) VALUES (?, ?, ?, ?, ?, ?, 0, 0)")
             .bind(chat.id.to_string()).bind(workspace_id.to_string()).bind(owner_id.to_string()).bind(&chat.title)
             .bind(now.to_rfc3339()).bind(now.to_rfc3339()).execute(&mut *tx).await?;
