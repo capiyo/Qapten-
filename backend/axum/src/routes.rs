@@ -51,7 +51,7 @@ pub async fn health(State(state): State<AppState>) -> Json<Health> {
         } else {
             "development_memory_only"
         },
-        authentication: "not_implemented_local_only",
+        authentication: if state.firebase_verifier.is_some() { "firebase_id_token" } else { "not_configured" },
     })
 }
 
@@ -312,15 +312,24 @@ mod tests {
         let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
         let value: serde_json::Value = serde_json::from_slice(&body).unwrap();
         assert_eq!(value["storage"], "development_memory_only");
-        assert_eq!(value["authentication"], "not_implemented_local_only");
+        assert_eq!(value["authentication"], "not_configured");
     }
 
     #[tokio::test]
     async fn workspace_and_audit_survive_runtime_reconstruction() {
         let storage = SqliteStorage::connect_in_memory().await.unwrap().shared();
         let state = AppState::with_storage(storage.clone()).await.unwrap();
+        let account = state.ensure_firebase_user("axon-test", "user-1").await.unwrap();
+        let user = Arc::new(AuthenticatedUser {
+            user_id: account.user_id,
+            firebase_uid: "user-1".into(),
+            project_id: "axon-test".into(),
+            personal_workspace_id: account.workspace.id,
+        });
+        state.workspaces.write().await.insert(account.workspace.id, account.workspace);
         let created = create_workspace(
             State(state),
+            Extension(user),
             Json(CreateWorkspace {
                 name: "Persistent project".into(),
             }),
@@ -338,9 +347,19 @@ mod tests {
 
     #[tokio::test]
     async fn workspace_creation_validates_and_persists_in_process() {
-        let state = AppState::default();
+        let storage = SqliteStorage::connect_in_memory().await.unwrap().shared();
+        let state = AppState::with_storage(storage).await.unwrap();
+        let account = state.ensure_firebase_user("axon-test", "user-2").await.unwrap();
+        let user = Arc::new(AuthenticatedUser {
+            user_id: account.user_id,
+            firebase_uid: "user-2".into(),
+            project_id: "axon-test".into(),
+            personal_workspace_id: account.workspace.id,
+        });
+        state.workspaces.write().await.insert(account.workspace.id, account.workspace);
         let response = create_workspace(
             State(state.clone()),
+            Extension(user),
             Json(CreateWorkspace {
                 name: "Funspot engineering".into(),
             }),
