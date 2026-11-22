@@ -1,4 +1,4 @@
-use crate::{state::AppState, storage::UserWorkspace};
+use crate::state::AppState;
 use axum::{
     body::Body,
     extract::State,
@@ -14,17 +14,6 @@ pub struct AuthenticatedUser {
     pub firebase_uid: String,
     pub project_id: String,
     pub personal_workspace_id: Uuid,
-}
-
-impl From<UserWorkspace> for AuthenticatedUser {
-    fn from(value: UserWorkspace) -> Self {
-        Self {
-            user_id: value.user_id,
-            firebase_uid: String::new(),
-            project_id: String::new(),
-            personal_workspace_id: value.workspace.id,
-        }
-    }
 }
 
 pub async fn authenticate(
