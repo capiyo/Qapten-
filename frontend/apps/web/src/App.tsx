@@ -110,6 +110,18 @@ function WorkspaceApp() {
     });
   }
 
+  async function archiveChat() {
+    if (!selected || !activeChat) return;
+    setBusy(true);
+    try {
+      await api(`/api/v1/workspaces/${selected.id}/chats/${activeChat}/archive`, { method: "PATCH" });
+      setActiveChat("");
+      setChatDetail(null);
+      setChats(await api<Chat[]>(`/api/v1/workspaces/${selected.id}/chats`));
+    } catch (cause) { setError(cause instanceof Error ? cause.message : "Could not archive chat."); }
+    finally { setBusy(false); }
+  }
+
   async function sendChatMessage(event: FormEvent<HTMLFormElement>) {
     if (!selected || !activeChat || !messageDraft.trim()) return;
     await runForm(event, async () => {
@@ -378,7 +390,7 @@ function WorkspaceApp() {
                 </aside>
                 <div className="chat-main">
                   {!chatDetail ? <div className="empty-state compact"><h3>Select a chat or create one.</h3><p>Each conversation keeps its own messages, approved memory and resume brief.</p></div> : <>
-                    <div className="resume-brief"><span className="kicker">RESUME BRIEF · APPROVED MEMORY ONLY</span><p>{chatDetail.resume_brief || "No context yet. Add messages and approve useful memory to build a concise handoff."}</p></div>
+                    <div className="resume-brief"><div className="panel-heading"><span className="kicker">RESUME BRIEF · APPROVED MEMORY ONLY</span><button type="button" className="secondary" disabled={busy} onClick={() => void archiveChat()}>Archive chat</button></div><p>{chatDetail.resume_brief || "No context yet. Add messages and approve useful memory to build a concise handoff."}</p></div>
                     <div className="chat-messages">{chatDetail.messages.map(message => <article className={`chat-message message-${message.role}`} key={message.id}><div><strong>{message.role}</strong>{message.answered_by && <small> · {message.answered_by}</small>}</div><p>{message.content}</p></article>)}{chatDetail.messages.length === 0 && <p className="muted">No messages yet.</p>}</div>
                     <form className="chat-compose" onSubmit={sendChatMessage}><textarea value={messageDraft} onChange={event => setMessageDraft(event.target.value)} rows={3} maxLength={256000} placeholder="Write a message to this project chat…" required /><button disabled={!messageDraft.trim() || busy}>Send message</button></form>
                     <div className="memory-section">
