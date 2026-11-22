@@ -1,4 +1,5 @@
 use crate::{
+    auth::AuthenticatedUser,
     audit::AuditEvent,
     model::{
         Agent, Artifact, ConnectionMode, CreateArtifact, CreateWorkspace, RegisterAgent, Workspace,
@@ -8,6 +9,7 @@ use crate::{
 };
 use axum::{
     extract::{Path, State},
+    Extension,
     http::StatusCode,
     Json,
 };
@@ -28,6 +30,7 @@ pub struct Health {
 pub async fn list_audit_events(
     State(state): State<AppState>,
     Path(workspace_id): Path<Uuid>,
+    Extension(_user): Extension<AuthenticatedUser>,
 ) -> ApiResult<Json<Vec<AuditEvent>>> {
     if !state.workspaces.read().await.contains_key(&workspace_id) {
         return Err((
@@ -49,7 +52,7 @@ pub async fn health(State(state): State<AppState>) -> Json<Health> {
         } else {
             "development_memory_only"
         },
-        authentication: "not_implemented_local_only",
+        authentication: "firebase_id_tokens",
     })
 }
 
@@ -78,6 +81,7 @@ fn bad_request(message: impl Into<String>) -> (StatusCode, Json<ApiError>) {
 
 pub async fn create_workspace(
     State(state): State<AppState>,
+    Extension(user): Extension<AuthenticatedUser>,
     Json(input): Json<CreateWorkspace>,
 ) -> ApiResult<(StatusCode, Json<Workspace>)> {
     let name = input.name.trim();
@@ -92,20 +96,17 @@ pub async fn create_workspace(
         name: name.to_owned(),
         created_at: Utc::now(),
     };
-    state
-        .persist_entity(
-            StoredEntity::Workspace(workspace.clone()),
-            Vec::new(),
-            AuditEvent::unattributed(
-                Some(workspace.id),
-                "workspace.created",
-                "workspace",
-                workspace.id.to_string(),
-                serde_json::json!({ "name": workspace.name }),
-            ),
-        )
-        .await
-        .map_err(|_| storage_failure())?;
+    let event = AuditEvent::attributed(
+        format!("user:{}", user.user_id),
+        Some(workspace.id),
+        "workspace.created",
+        "workspace",
+        workspace.id.to_string(),
+        serde_json::json!({ "name": workspace.name }),
+    );
+    state.create_workspace_for_user(workspace.clone(), user.user_id, event.clone())
+        .await.map_err(|_| storage_failure())?;
+    state.audit.write().await.append_event(event);
     state
         .workspaces
         .write()
@@ -115,15 +116,21 @@ pub async fn create_workspace(
     Ok((StatusCode::CREATED, Json(workspace)))
 }
 
-pub async fn list_workspaces(State(state): State<AppState>) -> Json<Vec<Workspace>> {
-    let mut items: Vec<_> = state.workspaces.read().await.values().cloned().collect();
+pub async fn list_workspaces(
+    State(state): State<AppState>,
+    Extension(user): Extension<AuthenticatedUser>,
+) -> ApiResult<Json<Vec<Workspace>>> {
+    let ids = state.list_user_workspace_ids(user.user_id).await.map_err(|_| storage_failure())?;
+    let workspaces = state.workspaces.read().await;
+    let mut items: Vec<_> = ids.iter().filter_map(|id| workspaces.get(id).cloned()).collect();
     items.sort_by_key(|item| item.created_at);
-    Json(items)
+    Ok(Json(items))
 }
 
 pub async fn register_agent(
     State(state): State<AppState>,
     Path(workspace_id): Path<Uuid>,
+    Extension(user): Extension<AuthenticatedUser>,
     Json(input): Json<RegisterAgent>,
 ) -> ApiResult<(StatusCode, Json<Agent>)> {
     if !state.workspaces.read().await.contains_key(&workspace_id) {
@@ -159,7 +166,8 @@ pub async fn register_agent(
         .persist_entity(
             StoredEntity::Agent(agent.clone()),
             Vec::new(),
-            AuditEvent::unattributed(
+            AuditEvent::attributed(
+                format!("user:{}", user.user_id),
                 Some(workspace_id),
                 "agent.registered",
                 "agent",
@@ -177,6 +185,7 @@ pub async fn register_agent(
 pub async fn create_artifact(
     State(state): State<AppState>,
     Path(workspace_id): Path<Uuid>,
+    Extension(user): Extension<AuthenticatedUser>,
     Json(input): Json<CreateArtifact>,
 ) -> ApiResult<(StatusCode, Json<Artifact>)> {
     if !state.workspaces.read().await.contains_key(&workspace_id) {
@@ -245,6 +254,7 @@ pub async fn create_artifact(
 pub async fn list_agents(
     State(state): State<AppState>,
     Path(workspace_id): Path<Uuid>,
+    Extension(_user): Extension<AuthenticatedUser>,
 ) -> ApiResult<Json<Vec<Agent>>> {
     if !state.workspaces.read().await.contains_key(&workspace_id) {
         return Err((
@@ -270,6 +280,7 @@ pub async fn list_agents(
 pub async fn list_artifacts(
     State(state): State<AppState>,
     Path(workspace_id): Path<Uuid>,
+    Extension(_user): Extension<AuthenticatedUser>,
 ) -> ApiResult<Json<Vec<Artifact>>> {
     if !state.workspaces.read().await.contains_key(&workspace_id) {
         return Err((
@@ -318,7 +329,7 @@ mod tests {
         let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
         let value: serde_json::Value = serde_json::from_slice(&body).unwrap();
         assert_eq!(value["storage"], "development_memory_only");
-        assert_eq!(value["authentication"], "not_implemented_local_only");
+        assert_eq!(value["authentication"], "firebase_id_tokens");
     }
 
     #[tokio::test]
@@ -327,6 +338,7 @@ mod tests {
         let state = AppState::with_storage(storage.clone()).await.unwrap();
         let created = create_workspace(
             State(state),
+            Extension(AuthenticatedUser { user_id: Uuid::new_v4(), firebase_uid: "test".into() }),
             Json(CreateWorkspace {
                 name: "Persistent project".into(),
             }),
@@ -344,9 +356,11 @@ mod tests {
 
     #[tokio::test]
     async fn workspace_creation_validates_and_persists_in_process() {
-        let state = AppState::default();
+        let storage = SqliteStorage::connect_in_memory().await.unwrap().shared();
+        let state = AppState::with_storage(storage).await.unwrap();
         let response = create_workspace(
             State(state.clone()),
+            Extension(AuthenticatedUser { user_id: Uuid::new_v4(), firebase_uid: "test".into() }),
             Json(CreateWorkspace {
                 name: "Funspot engineering".into(),
             }),
