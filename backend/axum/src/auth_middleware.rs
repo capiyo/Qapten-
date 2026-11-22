@@ -59,6 +59,7 @@ pub async fn authenticate(
         project_id: identity.project_id,
         personal_workspace_id: account.workspace.id,
     });
+    state.workspaces.write().await.entry(account.workspace.id).or_insert(account.workspace.clone());
 
     let path: Vec<&str> = request.uri().path().split('/').collect();
     if path.get(3) == Some(&"workspaces") {
