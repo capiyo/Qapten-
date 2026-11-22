@@ -144,14 +144,26 @@ pub async fn list_simulated_telemetry(
 mod tests {
     use super::*;
     use crate::robotics::{TelemetryKind, TelemetryQuality};
+    use crate::storage::SqliteStorage;
+    use crate::auth::{local_test_token, local_test_verifier, AuthenticatedUser};
+    use crate::state::AppState;
+    use uuid::Uuid;
     use axum::{body::Body, http::Request};
     use chrono::Duration;
     use tower::ServiceExt;
 
+    async fn test_app() -> (axum::Router, String) {
+        let storage = SqliteStorage::connect_in_memory().await.unwrap().shared();
+        let verifier = local_test_verifier("axon-test-project");
+        let state = AppState::with_storage_and_auth(storage, verifier, true).await.unwrap();
+        let now = Utc::now().timestamp().max(0) as u64;
+        let token = local_test_token("axon-test-project", "sim-user", now + 3600, false);
+        (crate::app(state), token)
+    }
+
     #[tokio::test]
     async fn simulator_ingress_accepts_fresh_event_and_rejects_duplicate_id() {
-        let state = AppState::default();
-        let app = crate::app(state);
+        let (app, token) = test_app().await;
         let payload = serde_json::json!({
             "event_id": "sim-event-1",
             "sequence": 1,
@@ -164,6 +176,7 @@ mod tests {
             Request::builder()
                 .method("POST")
                 .uri("/api/v1/sim/devices/simulator-1/telemetry")
+                .header("authorization", format!("Bearer {token}"))
                 .header("content-type", "application/json")
                 .body(Body::from(serde_json::to_vec(&payload).unwrap()))
                 .unwrap()
@@ -178,7 +191,7 @@ mod tests {
 
     #[tokio::test]
     async fn simulator_ingress_rejects_oversized_payload() {
-        let app = crate::app(AppState::default());
+        let (app, token) = test_app().await;
         let payload = serde_json::json!({
             "event_id": "oversized-event",
             "sequence": 1,
@@ -192,6 +205,7 @@ mod tests {
                 Request::builder()
                     .method("POST")
                     .uri("/api/v1/sim/devices/simulator-1/telemetry")
+                    .header("authorization", format!("Bearer {token}"))
                     .header("content-type", "application/json")
                     .body(Body::from(serde_json::to_vec(&payload).unwrap()))
                     .unwrap(),
@@ -246,6 +260,7 @@ mod tests {
         let (_status, _event) = ingest_simulated_telemetry(
             State(state.clone()),
             Path("sim-test".into()),
+            Extension(AuthenticatedUser { user_id: Uuid::nil(), firebase_uid: "sim-test".into() }),
             Json(input("event-1", 5)),
         )
         .await
@@ -254,14 +269,15 @@ mod tests {
         let replay = ingest_simulated_telemetry(
             State(state.clone()),
             Path("sim-test".into()),
+            Extension(AuthenticatedUser { user_id: Uuid::nil(), firebase_uid: "sim-test".into() }),
             Json(input("event-2", 5)),
         )
         .await
         .expect_err("sequence replay must be rejected");
         assert_eq!(replay.0, StatusCode::CONFLICT);
         let store = state.telemetry.read().await;
-        assert_eq!(store.events_by_device["sim-test"].len(), 1);
-        assert_eq!(store.last_sequence_by_device["sim-test"], 5);
+        assert_eq!(store.events_by_device[&format!("{}:sim-test", Uuid::nil())].len(), 1);
+        assert_eq!(store.last_sequence_by_device[&format!("{}:sim-test", Uuid::nil())], 5);
     }
 
     #[tokio::test]
@@ -271,6 +287,7 @@ mod tests {
             let (_status, _event) = ingest_simulated_telemetry(
                 State(state.clone()),
                 Path("sim-test".into()),
+                Extension(AuthenticatedUser { user_id: Uuid::nil(), firebase_uid: "sim-test".into() }),
                 Json(input(&format!("event-{sequence}"), sequence)),
             )
             .await
@@ -278,10 +295,10 @@ mod tests {
         }
 
         let store = state.telemetry.read().await;
-        let events = &store.events_by_device["sim-test"];
+        let events = &store.events_by_device[&format!("{}:sim-test", Uuid::nil())];
         assert_eq!(events.len(), 500);
         assert_eq!(events.first().map(|event| event.sequence), Some(2));
         assert_eq!(events.last().map(|event| event.sequence), Some(501));
-        assert!(!store.event_ids.contains("event-1"));
+        assert!(!store.event_ids.contains(&format!("{}:event-1", Uuid::nil())));
     }
 }
