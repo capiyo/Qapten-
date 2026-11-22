@@ -1,7 +1,7 @@
 name: CI
 
 concurrency:
-  group: axon-ci-${{ github.ref }}
+  group: axon-ci
   cancel-in-progress: true
 
 on:
