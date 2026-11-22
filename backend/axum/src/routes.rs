@@ -335,9 +335,10 @@ mod tests {
     async fn workspace_and_audit_survive_runtime_reconstruction() {
         let storage = SqliteStorage::connect_in_memory().await.unwrap().shared();
         let state = AppState::with_storage(storage.clone()).await.unwrap();
+        let identity = state.resolve_firebase_user("route-test-user-1", None).await.unwrap();
         let created = create_workspace(
             State(state),
-            Extension(AuthenticatedUser { user_id: Uuid::new_v4(), firebase_uid: "test".into() }),
+            Extension(AuthenticatedUser { user_id: identity.user_id, firebase_uid: "route-test-user-1".into() }),
             Json(CreateWorkspace {
                 name: "Persistent project".into(),
             }),
@@ -357,9 +358,10 @@ mod tests {
     async fn workspace_creation_validates_and_persists_in_process() {
         let storage = SqliteStorage::connect_in_memory().await.unwrap().shared();
         let state = AppState::with_storage(storage).await.unwrap();
+        let identity = state.resolve_firebase_user("route-test-user-2", None).await.unwrap();
         let response = create_workspace(
             State(state.clone()),
-            Extension(AuthenticatedUser { user_id: Uuid::new_v4(), firebase_uid: "test".into() }),
+            Extension(AuthenticatedUser { user_id: identity.user_id, firebase_uid: "route-test-user-2".into() }),
             Json(CreateWorkspace {
                 name: "Funspot engineering".into(),
             }),
@@ -368,7 +370,7 @@ mod tests {
         .unwrap();
 
         assert_eq!(response.0, StatusCode::CREATED);
-        assert_eq!(state.workspaces.read().await.len(), 1);
+        assert_eq!(state.workspaces.read().await.len(), 2);
         let audit = state.audit.read().await.list_workspace(response.1.id);
         assert_eq!(audit.len(), 1);
         assert_eq!(audit[0].event_type, "workspace.created");
