@@ -214,9 +214,7 @@ pub async fn create_artifact(
             .get(&agent_id)
             .is_some_and(|agent| agent.workspace_id == workspace_id)
         {
-            return Err(bad_request(
-                "Source agent must belong to the target workspace.",
-            ));
+            return Err((StatusCode::NOT_FOUND, Json(ApiError { error: "Source agent not found.".into() })));
         }
     }
 
