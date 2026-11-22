@@ -163,7 +163,7 @@ impl FirebaseVerifier {
 
     #[cfg(test)]
     pub(crate) fn test_token(uid: &str, expired: bool) -> String {
-        use jsonwebtoken::{encode, EncodingKey, Header};
+        use jsonwebtoken::{encode, EncodingKey};
         const PRIVATE_KEY: &str = r#"-----BEGIN PRIVATE KEY-----
 MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQC/dKKQTLJwHVx/
 8q7MoJOzKexj1LndhcEyETYF5O2+UOxT7rTt9SFZmemyBJtd17EonoGWoDD7XLYv
