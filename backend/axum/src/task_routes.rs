@@ -308,7 +308,8 @@ pub async fn transition_task(
         .persist_entity(
             StoredEntity::Task(task.clone()),
             Vec::new(),
-            AuditEvent::unattributed(
+            AuditEvent::attributed(
+                format!("user:{}", user.user_id),
                 Some(task.workspace_id),
                 "task.transitioned",
                 "task",
