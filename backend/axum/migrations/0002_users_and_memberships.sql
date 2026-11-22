@@ -18,3 +18,4 @@ CREATE INDEX IF NOT EXISTS idx_memberships_user
     ON workspace_memberships (user_id, created_at);
 CREATE INDEX IF NOT EXISTS idx_memberships_workspace
     ON workspace_memberships (workspace_id, role);
+ALTER TABLE users ADD COLUMN personal_workspace_id TEXT;
