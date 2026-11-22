@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { auth } from "./firebase";
 
-import type { Agent, Artifact, Health, Task, Workspace } from "../../../packages/contracts/src";
+import type { Agent, Artifact, Health, Task, Workspace, Chat, ChatDetail, ChatMessage, ProjectMemoryEntry } from "../../../packages/contracts/src";
 
 
 const api = async <T,>(path: string, init?: RequestInit): Promise<T> => {
@@ -24,6 +24,13 @@ function WorkspaceApp() {
   const [agents, setAgents] = useState<Agent[]>([]);
   const [artifacts, setArtifacts] = useState<Artifact[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [chats, setChats] = useState<Chat[]>([]);
+  const [activeChat, setActiveChat] = useState<string>("");
+  const [chatDetail, setChatDetail] = useState<ChatDetail | null>(null);
+  const [chatTitle, setChatTitle] = useState("");
+  const [messageDraft, setMessageDraft] = useState("");
+  const [memoryDraft, setMemoryDraft] = useState("");
+  const [memoryType, setMemoryType] = useState<ProjectMemoryEntry["type"]>("note");
   const [name, setName] = useState("");
   const [agentName, setAgentName] = useState("");
   const [provider, setProvider] = useState("claude");
@@ -57,6 +64,12 @@ function WorkspaceApp() {
     setAgents(agentItems);
     setArtifacts(artifactItems);
     setTasks(taskItems);
+    const chatItems = await api<Chat[]>(`/api/v1/workspaces/${workspace.id}/chats`);
+    setChats(chatItems);
+    if (activeChat && !chatItems.some(chat => chat.id === activeChat)) {
+      setActiveChat("");
+      setChatDetail(null);
+    }
     setAssignee(current => agentItems.some(agent => agent.id === current) ? current : agentItems[0]?.id ?? "");
   }
 
@@ -75,6 +88,64 @@ function WorkspaceApp() {
       setTasks([]);
     }
   }, [selected?.id]);
+
+  useEffect(() => {
+    if (!selected || !activeChat) { setChatDetail(null); return; }
+    api<ChatDetail>(`/api/v1/workspaces/${selected.id}/chats/${activeChat}`)
+      .then(setChatDetail)
+      .catch(cause => setError(cause instanceof Error ? cause.message : "Could not load chat."));
+  }, [selected?.id, activeChat]);
+
+  async function createChat(event: FormEvent<HTMLFormElement>) {
+    if (!selected) return;
+    await runForm(event, async () => {
+      const chat = await api<Chat>(`/api/v1/workspaces/${selected.id}/chats`, {
+        method: "POST", body: JSON.stringify({ title: chatTitle.trim() })
+      });
+      setChatTitle("");
+      setChats(current => [chat, ...current]);
+      setActiveChat(chat.id);
+    });
+  }
+
+  async function sendChatMessage(event: FormEvent<HTMLFormElement>) {
+    if (!selected || !activeChat || !messageDraft.trim()) return;
+    await runForm(event, async () => {
+      await api<ChatMessage>(`/api/v1/workspaces/${selected.id}/chats/${activeChat}/messages`, {
+        method: "POST", body: JSON.stringify({ role: "user", content: messageDraft.trim() })
+      });
+      setMessageDraft("");
+      const [detail, chatItems] = await Promise.all([
+        api<ChatDetail>(`/api/v1/workspaces/${selected.id}/chats/${activeChat}`),
+        api<Chat[]>(`/api/v1/workspaces/${selected.id}/chats`)
+      ]);
+      setChatDetail(detail);
+      setChats(chatItems);
+    });
+  }
+
+  async function proposeMemory(event: FormEvent<HTMLFormElement>) {
+    if (!selected || !activeChat || !memoryDraft.trim()) return;
+    await runForm(event, async () => {
+      await api<ProjectMemoryEntry>(`/api/v1/workspaces/${selected.id}/chats/${activeChat}/memory`, {
+        method: "POST", body: JSON.stringify({ type: memoryType, text: memoryDraft.trim() })
+      });
+      setMemoryDraft("");
+      setChatDetail(await api<ChatDetail>(`/api/v1/workspaces/${selected.id}/chats/${activeChat}`));
+    });
+  }
+
+  async function reviewMemory(entry: ProjectMemoryEntry, action: "approve" | "reject" | "delete") {
+    if (!selected || !activeChat) return;
+    setBusy(true);
+    setError("");
+    try {
+      await api<ProjectMemoryEntry>(`/api/v1/workspaces/${selected.id}/chats/${activeChat}/memory/${entry.id}/${action}`, { method: "POST" });
+      setChatDetail(await api<ChatDetail>(`/api/v1/workspaces/${selected.id}/chats/${activeChat}`));
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Memory update failed.");
+    } finally { setBusy(false); }
+  }
 
   async function runForm(event: FormEvent<HTMLFormElement>, action: () => Promise<void>) {
     event.preventDefault();
