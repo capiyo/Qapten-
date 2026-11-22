@@ -140,6 +140,13 @@ impl AppState {
         }
     }
 
+    pub async fn list_audit_events(&self, workspace_id: uuid::Uuid) -> Result<Vec<AuditEvent>, StorageError> {
+        match &self.storage {
+            Some(storage) => storage.list_audit_events(workspace_id).await,
+            None => Ok(self.audit.read().await.list_workspace(workspace_id)),
+        }
+    }
+
     pub fn storage_is_durable(&self) -> bool {
         self.storage.is_some()
     }
