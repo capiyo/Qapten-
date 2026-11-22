@@ -5,13 +5,15 @@ use crate::{
     AppState,
 };
 use axum::{
-    extract::{Path, State},
+    extract::{Extension, Path, State},
     http::StatusCode,
     Json,
 };
 use chrono::Utc;
 use serde::Serialize;
 use uuid::Uuid;
+use std::sync::Arc;
+use crate::auth_middleware::AuthenticatedUser;
 
 type TaskResult<T> = Result<T, (StatusCode, Json<TaskApiError>)>;
 
@@ -40,6 +42,7 @@ fn error(status: StatusCode, message: impl Into<String>) -> (StatusCode, Json<Ta
 
 pub async fn create_task(
     State(state): State<AppState>,
+    Extension(user): Extension<Arc<AuthenticatedUser>>,
     Path(workspace_id): Path<Uuid>,
     Json(input): Json<CreateTask>,
 ) -> TaskResult<(StatusCode, Json<Task>)> {
@@ -108,7 +111,8 @@ pub async fn create_task(
         .persist_entity(
             StoredEntity::Task(task.clone()),
             Vec::new(),
-            AuditEvent::unattributed(
+            AuditEvent::attributed(
+                format!("human:{}", user.user_id),
                 Some(workspace_id),
                 "task.created",
                 "task",
@@ -165,6 +169,7 @@ pub struct TaskSubmission {
 
 pub async fn submit_task(
     State(state): State<AppState>,
+    Extension(user): Extension<Arc<AuthenticatedUser>>,
     Path(task_id): Path<Uuid>,
     Json(input): Json<SubmitTask>,
 ) -> TaskResult<Json<TaskSubmission>> {
@@ -224,7 +229,8 @@ pub async fn submit_task(
         .persist_entity(
             StoredEntity::Task(task.clone()),
             vec![StoredEntity::Artifact(artifact.clone())],
-            AuditEvent::unattributed(
+            AuditEvent::attributed(
+                format!("human:{}", user.user_id),
                 Some(task.workspace_id),
                 "task.response_submitted",
                 "task",
@@ -247,6 +253,7 @@ pub async fn submit_task(
 
 pub async fn transition_task(
     State(state): State<AppState>,
+    Extension(user): Extension<Arc<AuthenticatedUser>>,
     Path(task_id): Path<Uuid>,
     Json(input): Json<TransitionTask>,
 ) -> TaskResult<Json<Task>> {
