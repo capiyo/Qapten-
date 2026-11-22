@@ -312,4 +312,15 @@ mod authentication_tests {
         }
     }
 
+    #[tokio::test]
+    async fn failed_authentication_is_rate_limited_per_client_ip() {
+        let state = AppState::default();
+        let first_ip = "192.0.2.10".parse().unwrap();
+        for _ in 0..20 {
+            assert!(state.record_auth_failure(Some(first_ip)).await);
+        }
+        assert!(!state.record_auth_failure(Some(first_ip)).await);
+        assert!(state.record_auth_failure(Some("192.0.2.11".parse().unwrap()).await);
+    }
+
 }
