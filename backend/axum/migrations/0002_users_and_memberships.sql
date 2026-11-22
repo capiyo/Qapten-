@@ -19,3 +19,4 @@ CREATE INDEX IF NOT EXISTS idx_memberships_user
 CREATE INDEX IF NOT EXISTS idx_memberships_workspace
     ON workspace_memberships (workspace_id, role);
 ALTER TABLE users ADD COLUMN personal_workspace_id TEXT;
+ALTER TABLE users ADD COLUMN firebase_project_id TEXT;
