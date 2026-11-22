@@ -174,7 +174,7 @@ impl SqliteStorage {
         let mut tx = self.pool.begin().await?;
         let now = Utc::now();
         sqlx::query(
-            "INSERT INTO users (id, provider, subject, email, created_at, updated_at) VALUES (?, 'firebase', ?, ?, ?, ?) ON CONFLICT(provider, subject) DO UPDATE SET email = COALESCE(excluded.email, users.email), updated_at = excluded.updated_at",
+            "INSERT INTO users (id, provider, subject, email, created_at, updated_at) VALUES (?, 'firebase', ?, ?, ?, ?) ON CONFLICT(provider, subject) DO NOTHING",
         )
         .bind(Uuid::new_v4().to_string())
         .bind(subject)
