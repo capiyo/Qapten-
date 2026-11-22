@@ -5,6 +5,7 @@ use tokio::sync::RwLock;
 
 const FIREBASE_JWKS_URL: &str = "https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com";
 const CLOCK_SKEW_SECONDS: u64 = 60;
+const JWKS_REFRESH_COOLDOWN: Duration = Duration::from_secs(5);
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct FirebaseClaims {
@@ -56,6 +57,7 @@ struct Jwk {
 struct CachedJwks {
     keys: Vec<Jwk>,
     expires_at: Instant,
+    refreshed_at: Instant,
 }
 
 #[derive(Clone)]
@@ -85,11 +87,13 @@ impl FirebaseVerifier {
     }
 
     async fn keys(&self, force_refresh: bool) -> Result<Vec<Jwk>, FirebaseAuthError> {
-        if !force_refresh {
-            if let Some(cached) = self.cache.read().await.as_ref() {
-                if cached.expires_at > Instant::now() {
-                    return Ok(cached.keys.clone());
-                }
+        if let Some(cached) = self.cache.read().await.as_ref() {
+            let now = Instant::now();
+            if !force_refresh && cached.expires_at > now {
+                return Ok(cached.keys.clone());
+            }
+            if force_refresh && now.duration_since(cached.refreshed_at) < JWKS_REFRESH_COOLDOWN {
+                return Ok(cached.keys.clone());
             }
         }
         let response = self.client.get(self.jwks_url.as_ref()).send().await
@@ -114,6 +118,7 @@ impl FirebaseVerifier {
         *self.cache.write().await = Some(CachedJwks {
             keys: keys.clone(),
             expires_at: Instant::now() + Duration::from_secs(ttl),
+            refreshed_at: Instant::now(),
         });
         Ok(keys)
     }
@@ -133,6 +138,7 @@ impl FirebaseVerifier {
                     e: "AQAB".into(),
                 }],
                 expires_at: Instant::now() + Duration::from_secs(600),
+                refreshed_at: Instant::now() - Duration::from_secs(10),
             }))),
         }
     }
