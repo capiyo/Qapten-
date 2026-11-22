@@ -294,6 +294,29 @@ function WorkspaceApp() {
             <Text style={styles.description}>Register participants, capture their work and create explicit handoffs.</Text>
 
             <View style={styles.panel}>
+              <Text style={styles.panelTitle}>04 · Chats & project memory</Text>
+              <TextInput value={chatTitle} onChangeText={setChatTitle} placeholder="New chat title" style={styles.input} maxLength={160} />
+              <ActionButton label="Create chat" onPress={createChat} disabled={!chatTitle.trim() || busy} />
+              {chats.map(chat => <Pressable key={chat.id} onPress={() => setActiveChat(chat.id)} style={[styles.agentChoice, activeChat === chat.id && styles.agentChoiceActive]}><Text style={styles.rowTitle}>{chat.title}</Text><Text style={styles.rowMeta}>{new Date(chat.updated_at).toLocaleString()}</Text></Pressable>)}
+              {chatDetail ? <>
+                <Text style={styles.fieldLabel}>RESUME BRIEF · APPROVED MEMORY ONLY</Text>
+                <Text style={styles.rowMeta}>{chatDetail.resume_brief || "No context yet. Add messages and approve useful memory."}</Text>
+                <View style={styles.listRow}>
+                  {chatDetail.messages.map(message => <View key={message.id} style={styles.contextChoice}><Text style={styles.rowTitle}>{message.role}{message.answered_by ? ` · ${message.answered_by}` : ""}</Text><Text style={styles.rowMeta}>{message.content}</Text></View>)}
+                </View>
+                <TextInput value={messageDraft} onChangeText={setMessageDraft} placeholder="Write a message…" style={[styles.input, styles.multiline]} multiline />
+                <ActionButton label="Send message" onPress={sendChatMessage} disabled={!messageDraft.trim() || busy} />
+                <Text style={styles.fieldLabel}>PROPOSE PROJECT MEMORY</Text>
+                <TextInput value={memoryDraft} onChangeText={setMemoryDraft} placeholder="Capture a decision, fact, constraint or open task…" style={[styles.input, styles.multiline]} multiline maxLength={4000} />
+                <View style={{flexDirection:"row",flexWrap:"wrap",gap:6,marginBottom:8}}>
+                  {(["decision","fact","constraint","open_task","note"] as const).map(kind => <Pressable key={kind} onPress={() => setMemoryType(kind)} style={[styles.contextChoice, memoryType === kind && styles.agentChoiceActive]}><Text style={styles.rowTitle}>{kind.replaceAll("_"," ")}</Text></Pressable>)}
+                </View>
+                <ActionButton label="Propose memory" onPress={proposeMemory} disabled={!memoryDraft.trim() || busy} />
+                {chatDetail.memory.map(entry => <View key={entry.id} style={styles.listRow}><Text style={styles.rowTitle}>{entry.type.replaceAll("_"," ")} · {entry.status}</Text><Text style={styles.rowMeta}>{entry.text}</Text>{entry.status === "proposed" ? <ActionButton label="Approve memory" onPress={() => approveMemory(entry)} disabled={busy} secondary /> : null}</View>)}
+              </> : <Text style={styles.muted}>Choose a chat to see its messages and resume brief. Only approved memory informs future briefs.</Text>}
+            </View>
+
+            <View style={styles.panel}>
               <Text style={styles.panelTitle}>01 · Agents ({agents.length})</Text>
               <TextInput value={agentName} onChangeText={setAgentName} placeholder="Agent name" style={styles.input} />
               <TextInput value={provider} onChangeText={setProvider} placeholder="Provider (claude, chatgpt…)" style={styles.input} autoCapitalize="none" />
