@@ -1,5 +1,7 @@
 pub mod audit;
 pub mod auth_middleware;
+pub mod chat_memory;
+mod chat_memory_routes;
 #[cfg(test)]
 mod auth_middleware_tests;
 pub mod firebase_auth;
@@ -16,7 +18,7 @@ pub use state::AppState;
 
 use axum::{
     middleware,
-    routing::{get, post},
+    routing::{get, post, patch},
     Router,
 };
 use tower_http::{limit::RequestBodyLimitLayer, trace::TraceLayer};
@@ -24,6 +26,30 @@ use tower_http::{limit::RequestBodyLimitLayer, trace::TraceLayer};
 pub fn app(state: AppState) -> Router {
     Router::new()
         .route("/health", get(routes::health))
+        .route(
+            "/api/v1/workspaces/:workspace_id/chats",
+            get(chat_memory_routes::list_chats).post(chat_memory_routes::create_chat),
+        )
+        .route(
+            "/api/v1/workspaces/:workspace_id/chats/:chat_id",
+            get(chat_memory_routes::get_chat),
+        )
+        .route(
+            "/api/v1/workspaces/:workspace_id/chats/:chat_id/messages",
+            post(chat_memory_routes::append_message),
+        )
+        .route(
+            "/api/v1/workspaces/:workspace_id/chats/:chat_id/archive",
+            patch(chat_memory_routes::archive_chat),
+        )
+        .route(
+            "/api/v1/workspaces/:workspace_id/chats/:chat_id/memory",
+            post(chat_memory_routes::create_memory_entry),
+        )
+        .route(
+            "/api/v1/workspaces/:workspace_id/chats/:chat_id/memory/:entry_id/:action",
+            post(chat_memory_routes::mutate_memory_entry),
+        )
         .route(
             "/api/v1/workspaces/:workspace_id/audit",
             get(routes::list_audit_events),
