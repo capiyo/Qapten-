@@ -28,7 +28,7 @@ jobs:
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
             git add backend/axum
             git commit -m "style: format Rust authentication implementation"
-            git push
+            git push origin "HEAD:${GITHUB_REF#refs/heads/}"
           fi
       - run: cargo fmt --all -- --check
       - run: cargo clippy --workspace --all-targets -- -D warnings
