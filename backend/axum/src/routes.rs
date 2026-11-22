@@ -52,7 +52,7 @@ pub async fn health(State(state): State<AppState>) -> Json<Health> {
         } else {
             "development_memory_only"
         },
-        authentication: "firebase_id_tokens",
+        authentication: if state.firebase_verifier.is_some() { "firebase_id_tokens" } else { "disabled" },
     })
 }
 
@@ -330,7 +330,7 @@ mod tests {
         let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
         let value: serde_json::Value = serde_json::from_slice(&body).unwrap();
         assert_eq!(value["storage"], "development_memory_only");
-        assert_eq!(value["authentication"], "firebase_id_tokens");
+        assert_eq!(value["authentication"], "disabled");
     }
 
     #[tokio::test]
