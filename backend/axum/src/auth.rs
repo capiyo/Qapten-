@@ -6,7 +6,7 @@
 use jsonwebtoken::{decode, decode_header, Algorithm, DecodingKey, TokenData, Validation};
 use serde::Deserialize;
 use std::{collections::HashMap, sync::Arc, time::{Duration, Instant}};
-use tokio::sync::RwLock;
+use tokio::sync::{Mutex, RwLock};
 use uuid::Uuid;
 
 const CLOCK_SKEW_SECONDS: u64 = 60;
@@ -52,6 +52,7 @@ struct Jwk {
 struct CachedKeys {
     keys: HashMap<String, DecodingKey>,
     expires_at: Instant,
+    fetched_at: Instant,
 }
 
 #[derive(Clone)]
@@ -59,6 +60,8 @@ pub struct FirebaseVerifier {
     project_id: Arc<str>,
     client: reqwest::Client,
     cache: Arc<RwLock<Option<CachedKeys>>>,
+    refresh_lock: Arc<Mutex<()>>,
+    last_refresh_attempt: Arc<Mutex<Option<Instant>>>,
 }
 
 impl FirebaseVerifier {
@@ -75,6 +78,8 @@ impl FirebaseVerifier {
             project_id: Arc::from(project_id),
             client,
             cache: Arc::new(RwLock::new(None)),
+            refresh_lock: Arc::new(Mutex::new(())),
+            last_refresh_attempt: Arc::new(Mutex::new(None)),
         })
     }
 
@@ -110,22 +115,37 @@ impl FirebaseVerifier {
         *self.cache.write().await = Some(CachedKeys {
             keys,
             expires_at: Instant::now() + Duration::from_secs(ttl.max(60)),
+            fetched_at: Instant::now(),
         });
         Ok(())
     }
 
     async fn key_for(&self, kid: &str) -> Result<DecodingKey, AuthError> {
+        // Serialize refreshes and impose a cooldown on unknown-kid refreshes.
+        // Otherwise arbitrary kid values could turn token verification into an
+        // outbound-request amplification path.
+        let _refresh_guard = self.refresh_lock.lock().await;
+        let now = Instant::now();
         {
             let cache = self.cache.read().await;
             if let Some(cached) = cache.as_ref() {
-                if cached.expires_at > Instant::now() {
+                if cached.expires_at > now {
                     if let Some(key) = cached.keys.get(kid) {
                         return Ok(key.clone());
+                    }
+                    if now.duration_since(cached.fetched_at) < Duration::from_secs(30) {
+                        return Err(AuthError::InvalidToken);
                     }
                 }
             }
         }
-        // Unknown kid is treated as possible key rotation and triggers refresh.
+        {
+            let last_attempt = self.last_refresh_attempt.lock().await;
+            if last_attempt.is_some_and(|at| now.duration_since(at) < Duration::from_secs(30)) {
+                return Err(AuthError::Unavailable);
+            }
+        }
+        *self.last_refresh_attempt.lock().await = Some(now);
         self.refresh_keys().await?;
         self.cache.read().await.as_ref()
             .and_then(|cached| cached.keys.get(kid))
@@ -169,7 +189,10 @@ impl FirebaseVerifier {
             cache: Arc::new(RwLock::new(Some(CachedKeys {
                 keys: HashMap::from([(kid.to_owned(), key)]),
                 expires_at: Instant::now() + Duration::from_secs(3600),
+                fetched_at: Instant::now(),
             }))),
+            refresh_lock: Arc::new(Mutex::new(())),
+            last_refresh_attempt: Arc::new(Mutex::new(None)),
         }
     }
 }
