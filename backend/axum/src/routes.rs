@@ -305,7 +305,7 @@ pub async fn list_artifacts(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::storage::{SqliteStorage, Storage};
+    use crate::storage::SqliteStorage;
     use axum::{
         body::{to_bytes, Body},
         http::Request,
@@ -371,7 +371,7 @@ mod tests {
     #[tokio::test]
     async fn workspace_creation_validates_and_persists_in_process() {
         let storage = SqliteStorage::connect_in_memory().await.unwrap().shared();
-        let state = AppState::with_storage(storage).await.unwrap();
+        let state = AppState::with_storage(storage.clone()).await.unwrap();
         let account = state
             .ensure_firebase_user("axon-test", "user-2")
             .await
