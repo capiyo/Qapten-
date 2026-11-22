@@ -133,6 +133,13 @@ impl AppState {
         }
     }
 
+    pub async fn create_workspace_for_user(&self, user_id: uuid::Uuid, name: String, actor: String) -> Result<Workspace, StorageError> {
+        match &self.storage {
+            Some(storage) => storage.create_workspace_for_user(user_id, name, actor).await,
+            None => Err(StorageError::IdentityStorageUnavailable),
+        }
+    }
+
     pub fn storage_is_durable(&self) -> bool {
         self.storage.is_some()
     }
