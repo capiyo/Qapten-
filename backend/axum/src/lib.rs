@@ -272,4 +272,43 @@ mod authentication_tests {
         assert_eq!(request_status(router, "GET", path, Some(&token)).await, StatusCode::NOT_FOUND);
     }
 
+    #[tokio::test]
+    async fn simulator_telemetry_is_isolated_between_authenticated_users() {
+        let (router, state) = test_app().await;
+        let owner = state.resolve_firebase_user("sim-owner", None).await.unwrap();
+        let now = Utc::now();
+        state.telemetry.write().await.events_by_device.insert(
+            format!("{}:private-device", owner.user_id),
+            vec![crate::robotics::TelemetryEvent {
+                event_id: "private-event".into(),
+                device_id: "private-device".into(),
+                sequence: 1,
+                observed_at: now,
+                received_at: now,
+                kind: crate::robotics::TelemetryKind::Heartbeat,
+                frame_id: None,
+                payload: serde_json::Map::new(),
+                quality: Some(crate::robotics::TelemetryQuality::Simulated),
+            }],
+        );
+        let owner_token = local_test_token(
+            "axon-test-project", "sim-owner", now.timestamp().max(0) as u64 + 600, false,
+        );
+        let stranger_token = local_test_token(
+            "axon-test-project", "sim-stranger", now.timestamp().max(0) as u64 + 600, false,
+        );
+        for (token, expected_count) in [(&owner_token, 1usize), (&stranger_token, 0usize)] {
+            let response = router.clone().oneshot(
+                Request::builder()
+                    .uri("/api/v1/sim/devices/private-device/telemetry")
+                    .header(axum::http::header::AUTHORIZATION, format!("Bearer {token}"))
+                    .body(Body::empty()).unwrap(),
+            ).await.unwrap();
+            assert_eq!(response.status(), StatusCode::OK);
+            let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
+            let events: Vec<serde_json::Value> = serde_json::from_slice(&body).unwrap();
+            assert_eq!(events.len(), expected_count);
+        }
+    }
+
 }
