@@ -29,6 +29,8 @@ pub enum StorageError {
     InvalidStoredSequence,
     #[error("stored entity kind does not match its table")]
     InvalidStoredEntityKind,
+    #[error("identity storage is unavailable")]
+    IdentityStorageUnavailable,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
