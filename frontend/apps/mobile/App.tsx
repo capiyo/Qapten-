@@ -58,6 +58,8 @@ function WorkspaceApp() {
   const [messageDraft, setMessageDraft] = useState("");
   const [memoryDraft, setMemoryDraft] = useState("");
   const [memoryType, setMemoryType] = useState<ProjectMemoryEntry["type"]>("note");
+  const [editingMemoryId, setEditingMemoryId] = useState("");
+  const [editMemoryDraft, setEditMemoryDraft] = useState("");
   const [workspaceName, setWorkspaceName] = useState("");
   const [agentName, setAgentName] = useState("");
   const [provider, setProvider] = useState("claude");
@@ -152,6 +154,26 @@ function WorkspaceApp() {
         method: "POST", body: JSON.stringify({ type: memoryType, text: memoryDraft.trim() })
       });
       setMemoryDraft("");
+      setChatDetail(await request<ChatDetail>(`/api/v1/workspaces/${selected.id}/chats/${activeChat}`));
+    });
+  }
+
+  function changeMemory(entry: ProjectMemoryEntry, action: "reject" | "delete") {
+    if (!selected || !activeChat) return;
+    void perform(async () => {
+      await request<ProjectMemoryEntry>(`/api/v1/workspaces/${selected.id}/chats/${activeChat}/memory/${entry.id}/${action}`, { method: "POST" });
+      setChatDetail(await request<ChatDetail>(`/api/v1/workspaces/${selected.id}/chats/${activeChat}`));
+    });
+  }
+
+  function saveMemoryEdit(entry: ProjectMemoryEntry) {
+    if (!selected || !activeChat || !editMemoryDraft.trim()) return;
+    void perform(async () => {
+      await request<ProjectMemoryEntry>(`/api/v1/workspaces/${selected.id}/chats/${activeChat}/memory/${entry.id}/edit`, {
+        method: "POST", body: JSON.stringify({ text: editMemoryDraft.trim(), reason: entry.reason })
+      });
+      setEditingMemoryId("");
+      setEditMemoryDraft("");
       setChatDetail(await request<ChatDetail>(`/api/v1/workspaces/${selected.id}/chats/${activeChat}`));
     });
   }
@@ -312,7 +334,7 @@ function WorkspaceApp() {
                   {(["decision","fact","constraint","open_task","note"] as const).map(kind => <Pressable key={kind} onPress={() => setMemoryType(kind)} style={[styles.contextChoice, memoryType === kind && styles.agentChoiceActive]}><Text style={styles.rowTitle}>{kind.replaceAll("_"," ")}</Text></Pressable>)}
                 </View>
                 <ActionButton label="Propose memory" onPress={proposeMemory} disabled={!memoryDraft.trim() || busy} />
-                {chatDetail.memory.map(entry => <View key={entry.id} style={styles.listRow}><Text style={styles.rowTitle}>{entry.type.replaceAll("_"," ")} · {entry.status}</Text><Text style={styles.rowMeta}>{entry.text}</Text>{entry.status === "proposed" ? <ActionButton label="Approve memory" onPress={() => approveMemory(entry)} disabled={busy} secondary /> : null}</View>)}
+                {chatDetail.memory.map(entry => <View key={entry.id} style={styles.listRow}><Text style={styles.rowTitle}>{entry.type.replaceAll("_"," ")} · {entry.status}</Text>{editingMemoryId === entry.id ? <><TextInput value={editMemoryDraft} onChangeText={setEditMemoryDraft} style={styles.input} maxLength={4000} /><ActionButton label="Save edit" onPress={() => saveMemoryEdit(entry)} disabled={busy || !editMemoryDraft.trim()} /><ActionButton label="Cancel" onPress={() => setEditingMemoryId("")} secondary /></> : <Text style={styles.rowMeta}>{entry.text}</Text>}{entry.status === "proposed" ? <><ActionButton label="Approve memory" onPress={() => approveMemory(entry)} disabled={busy} secondary /><ActionButton label="Reject memory" onPress={() => changeMemory(entry, "reject")} disabled={busy} secondary /></> : null}<ActionButton label="Edit memory" onPress={() => { setEditingMemoryId(entry.id); setEditMemoryDraft(entry.text); }} disabled={busy} secondary /><ActionButton label="Delete memory" onPress={() => changeMemory(entry, "delete")} disabled={busy} secondary /></View>)}
               </> : <Text style={styles.muted}>Choose a chat to see its messages and resume brief. Only approved memory informs future briefs.</Text>}
             </View>
 
