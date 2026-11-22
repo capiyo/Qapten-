@@ -130,3 +130,126 @@ pub fn app(state: AppState) -> Router {
         .layer(TraceLayer::new_for_http())
         .layer(middleware::from_fn_with_state(state, authenticate))
 }
+
+
+#[cfg(test)]
+mod authentication_tests {
+    use super::*;
+    use crate::{
+        auth::{local_test_token, local_test_verifier},
+        model::{Task, TaskStatus, TaskTransition},
+        storage::SqliteStorage,
+    };
+    use axum::{body::{to_bytes, Body}, http::Request};
+    use chrono::Utc;
+    use tower::ServiceExt;
+
+    async fn test_app() -> (Router, AppState) {
+        let storage = SqliteStorage::connect_in_memory().await.unwrap().shared();
+        let verifier = local_test_verifier("axon-test-project");
+        let state = AppState::with_storage_and_auth(storage, verifier, true).await.unwrap();
+        (app(state.clone()), state)
+    }
+
+    fn protected_routes(workspace_id: Uuid, task_id: Uuid) -> Vec<(&'static str, String)> {
+        vec![
+            ("GET", "/api/v1/workspaces".into()),
+            ("POST", "/api/v1/workspaces".into()),
+            ("GET", format!("/api/v1/workspaces/{workspace_id}/audit")),
+            ("GET", format!("/api/v1/workspaces/{workspace_id}/agents")),
+            ("POST", format!("/api/v1/workspaces/{workspace_id}/agents")),
+            ("GET", format!("/api/v1/workspaces/{workspace_id}/artifacts")),
+            ("POST", format!("/api/v1/workspaces/{workspace_id}/artifacts")),
+            ("GET", format!("/api/v1/workspaces/{workspace_id}/tasks")),
+            ("POST", format!("/api/v1/workspaces/{workspace_id}/tasks")),
+            ("POST", format!("/api/v1/tasks/{task_id}/submit")),
+            ("POST", format!("/api/v1/tasks/{task_id}/transitions")),
+            ("GET", "/api/v1/sim/devices/test-device/telemetry".into()),
+            ("POST", "/api/v1/sim/devices/test-device/telemetry".into()),
+        ]
+    }
+
+    async fn request_status(app: Router, method: &str, uri: &str, token: Option<&str>) -> StatusCode {
+        let mut builder = Request::builder().method(method).uri(uri);
+        if let Some(token) = token {
+            builder = builder.header(axum::http::header::AUTHORIZATION, format!("Bearer {token}"));
+        }
+        app.oneshot(builder.body(Body::empty()).unwrap()).await.unwrap().status()
+    }
+
+    #[tokio::test]
+    async fn every_protected_route_rejects_missing_expired_and_wrong_key_tokens() {
+        let (app, _state) = test_app().await;
+        let now = Utc::now().timestamp().max(0) as u64;
+        let expired = local_test_token("axon-test-project", "expired-user", now - 120, false);
+        let wrong_key = local_test_token("axon-test-project", "wrong-key-user", now + 600, true);
+        for (method, uri) in protected_routes(Uuid::new_v4(), Uuid::new_v4()) {
+            assert_eq!(request_status(app.clone(), method, &uri, None).await, StatusCode::UNAUTHORIZED, "missing token: {method} {uri}");
+            assert_eq!(request_status(app.clone(), method, &uri, Some(&expired)).await, StatusCode::UNAUTHORIZED, "expired token: {method} {uri}");
+            assert_eq!(request_status(app.clone(), method, &uri, Some(&wrong_key)).await, StatusCode::UNAUTHORIZED, "wrong signing key: {method} {uri}");
+        }
+    }
+
+    #[tokio::test]
+    async fn another_users_workspace_and_task_resources_are_hidden_as_not_found() {
+        let (app, state) = test_app().await;
+        let owner = state.resolve_firebase_user("owner-firebase-uid", None).await.unwrap();
+        let task_id = Uuid::new_v4();
+        let now = Utc::now();
+        state.tasks.write().await.insert(task_id, Task {
+            id: task_id,
+            workspace_id: owner.workspace.id,
+            title: "private task".into(),
+            objective: "test cross-user access".into(),
+            assignee_agent_id: Uuid::new_v4(),
+            context_artifact_ids: Vec::new(),
+            response_artifact_id: None,
+            status: TaskStatus::Offered,
+            version: 1,
+            created_at: now,
+            updated_at: now,
+            transitions: vec![TaskTransition {
+                from: None,
+                to: TaskStatus::Offered,
+                note: "created".into(),
+                occurred_at: now,
+            }],
+        });
+        let stranger_token = local_test_token(
+            "axon-test-project",
+            "different-firebase-uid",
+            now.timestamp().max(0) as u64 + 600,
+            false,
+        );
+
+        let protected_resources = [
+            ("GET", format!("/api/v1/workspaces/{}/audit", owner.workspace.id)),
+            ("GET", format!("/api/v1/workspaces/{}/agents", owner.workspace.id)),
+            ("POST", format!("/api/v1/workspaces/{}/agents", owner.workspace.id)),
+            ("GET", format!("/api/v1/workspaces/{}/artifacts", owner.workspace.id)),
+            ("POST", format!("/api/v1/workspaces/{}/artifacts", owner.workspace.id)),
+            ("GET", format!("/api/v1/workspaces/{}/tasks", owner.workspace.id)),
+            ("POST", format!("/api/v1/workspaces/{}/tasks", owner.workspace.id)),
+            ("POST", format!("/api/v1/tasks/{task_id}/submit")),
+            ("POST", format!("/api/v1/tasks/{task_id}/transitions")),
+        ];
+        for (method, uri) in protected_resources {
+            assert_eq!(
+                request_status(app.clone(), method, &uri, Some(&stranger_token)).await,
+                StatusCode::NOT_FOUND,
+                "foreign resource leaked: {method} {uri}",
+            );
+        }
+
+        let response = app.clone().oneshot(
+            Request::builder()
+                .uri("/api/v1/workspaces")
+                .header(axum::http::header::AUTHORIZATION, format!("Bearer {stranger_token}"))
+                .body(Body::empty()).unwrap(),
+        ).await.unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
+        let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+        assert!(json.as_array().unwrap().iter().all(|workspace| workspace["id"] != owner.workspace.id.to_string()));
+    }
+}
