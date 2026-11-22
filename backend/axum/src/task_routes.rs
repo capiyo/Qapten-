@@ -1,4 +1,5 @@
 use crate::{
+    auth::AuthenticatedUser,
     audit::AuditEvent,
     model::{Artifact, CreateTask, SubmitTask, Task, TaskStatus, TaskTransition, TransitionTask},
     storage::StoredEntity,
@@ -6,6 +7,7 @@ use crate::{
 };
 use axum::{
     extract::{Path, State},
+    Extension,
     http::StatusCode,
     Json,
 };
@@ -40,6 +42,7 @@ fn error(status: StatusCode, message: impl Into<String>) -> (StatusCode, Json<Ta
 
 pub async fn create_task(
     State(state): State<AppState>,
+    Extension(user): Extension<AuthenticatedUser>,
     Path(workspace_id): Path<Uuid>,
     Json(input): Json<CreateTask>,
 ) -> TaskResult<(StatusCode, Json<Task>)> {
@@ -108,7 +111,8 @@ pub async fn create_task(
         .persist_entity(
             StoredEntity::Task(task.clone()),
             Vec::new(),
-            AuditEvent::unattributed(
+            AuditEvent::attributed(
+                format!("user:{}", user.user_id),
                 Some(workspace_id),
                 "task.created",
                 "task",
@@ -124,6 +128,7 @@ pub async fn create_task(
 
 pub async fn list_tasks(
     State(state): State<AppState>,
+    Extension(user): Extension<AuthenticatedUser>,
     Path(workspace_id): Path<Uuid>,
 ) -> TaskResult<Json<Vec<Task>>> {
     if !state.workspaces.read().await.contains_key(&workspace_id) {
@@ -165,6 +170,7 @@ pub struct TaskSubmission {
 
 pub async fn submit_task(
     State(state): State<AppState>,
+    Extension(user): Extension<AuthenticatedUser>,
     Path(task_id): Path<Uuid>,
     Json(input): Json<SubmitTask>,
 ) -> TaskResult<Json<TaskSubmission>> {
@@ -224,7 +230,8 @@ pub async fn submit_task(
         .persist_entity(
             StoredEntity::Task(task.clone()),
             vec![StoredEntity::Artifact(artifact.clone())],
-            AuditEvent::unattributed(
+            AuditEvent::attributed(
+                format!("user:{}", user.user_id),
                 Some(task.workspace_id),
                 "task.response_submitted",
                 "task",
@@ -247,6 +254,7 @@ pub async fn submit_task(
 
 pub async fn transition_task(
     State(state): State<AppState>,
+    Extension(user): Extension<AuthenticatedUser>,
     Path(task_id): Path<Uuid>,
     Json(input): Json<TransitionTask>,
 ) -> TaskResult<Json<Task>> {
