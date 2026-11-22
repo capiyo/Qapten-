@@ -126,3 +126,58 @@ footer { display: flex; justify-content: space-between; gap: 16px; color: #a5afb
 .response-capture textarea:focus { border-color: #83aef0; box-shadow: 0 0 0 3px #edf4ff; }
 .request-changes-button { margin: 10px 0 0 7px; border: 0; border-radius: 9px; padding: 9px 11px; color: #986b29; background: #fff5e6; font-size: 10px; font-weight: 700; cursor: pointer; }
 .response-linked { color: #23855d !important; font-size: 10px !important; margin: 10px 0 0 !important; }
+
+
+/* Qoin-derived Axon theme: all palette values are centralized in @axon/theme. */
+:root {
+  color-scheme: dark;
+  font-family: "DM Sans", sans-serif;
+  color: var(--axon-color-text);
+  background: var(--axon-color-canvas);
+}
+body {
+  color: var(--axon-color-text);
+  background: radial-gradient(ellipse at 70% 0%, var(--axon-color-canvas-glow) 0, transparent 42%), var(--axon-color-canvas);
+}
+.rail, .panel, .workspace-card, .create-card {
+  background: var(--axon-color-surface);
+  border-color: var(--axon-color-border);
+  color: var(--axon-color-text);
+}
+.rail { border-right-color: var(--axon-color-border); }
+.brand-mark, .orbit-core, .create-card button, .stack-form button, .task-form > button {
+  background: var(--axon-color-accent);
+  color: var(--axon-color-accent-text);
+  box-shadow: none;
+}
+.rail-label, .rail-bottom, .count, footer, .card-foot { color: var(--axon-color-text-subtle); }
+.rail-dot, .pulse.online, .quiet-dot { background: var(--axon-color-accent); box-shadow: 0 0 12px #b8f36a45; }
+.eyebrow, .kicker, .back-link, .create-icon, .empty-symbol { color: var(--axon-color-accent); }
+.intro { background: linear-gradient(135deg, var(--axon-color-surface-raised), var(--axon-color-surface)); border: 1px solid var(--axon-color-border); }
+.intro p, .workspace-header p, .status, .muted, .empty-state { color: var(--axon-color-text-muted); }
+.intro h2, .workspace-header h2, .panel-heading h3, .workspace-card h3, .empty-state h3 { color: var(--axon-color-text); }
+.orbit:before, .orbit:after { border-color: var(--axon-color-border-strong); }
+.orbit-core { color: var(--axon-color-accent-text); }
+.orbit-node { background: var(--axon-color-surface-raised); border-color: var(--axon-color-border-strong); color: var(--axon-color-text); }
+.create-icon, .project-glyph, .agent-avatar { background: #283525; color: var(--axon-color-accent); }
+.create-card input, .stack-form input, .stack-form select, .stack-form textarea,
+.task-form input, .task-form select, .task-form textarea {
+  background: var(--axon-color-surface-input);
+  border-color: var(--axon-color-border);
+  color: var(--axon-color-text);
+}
+.create-card input:focus, .stack-form input:focus, .stack-form select:focus,
+.stack-form textarea:focus, .task-form input:focus, .task-form select:focus,
+.task-form textarea:focus { border-color: var(--axon-color-accent); box-shadow: 0 0 0 3px #b8f36a20; }
+.create-copy label, .agent-item strong, .artifact-item strong, .task-card h4,
+.task-meta, .task-card p, .history-row strong { color: var(--axon-color-text); }
+.create-copy span, .agent-item small, .artifact-item small, .task-meta small,
+.workspace-card p, .empty-state p, .hint { color: var(--axon-color-text-muted); }
+.agent-item, .artifact-item, .task-card, .response-capture, .history-row {
+  background: var(--axon-color-surface-raised);
+  border-color: var(--axon-color-border);
+  color: var(--axon-color-text);
+}
+.workspace-button:hover { border-color: var(--axon-color-accent); box-shadow: 0 8px 24px #00000030; }
+.error { color: var(--axon-color-danger); background: #43292d; }
+.dev-warning { color: var(--axon-color-warning); }
