@@ -31,6 +31,8 @@ function WorkspaceApp() {
   const [messageDraft, setMessageDraft] = useState("");
   const [memoryDraft, setMemoryDraft] = useState("");
   const [memoryType, setMemoryType] = useState<ProjectMemoryEntry["type"]>("note");
+  const [editingMemoryId, setEditingMemoryId] = useState("");
+  const [editMemoryDraft, setEditMemoryDraft] = useState("");
   const [name, setName] = useState("");
   const [agentName, setAgentName] = useState("");
   const [provider, setProvider] = useState("claude");
@@ -133,6 +135,20 @@ function WorkspaceApp() {
       setMemoryDraft("");
       setChatDetail(await api<ChatDetail>(`/api/v1/workspaces/${selected.id}/chats/${activeChat}`));
     });
+  }
+
+  async function saveMemoryEdit(entry: ProjectMemoryEntry) {
+    if (!selected || !activeChat || !editMemoryDraft.trim()) return;
+    setBusy(true);
+    try {
+      await api<ProjectMemoryEntry>(`/api/v1/workspaces/${selected.id}/chats/${activeChat}/memory/${entry.id}/edit`, {
+        method: "POST", body: JSON.stringify({ text: editMemoryDraft.trim(), reason: entry.reason })
+      });
+      setEditingMemoryId("");
+      setEditMemoryDraft("");
+      setChatDetail(await api<ChatDetail>(`/api/v1/workspaces/${selected.id}/chats/${activeChat}`));
+    } catch (cause) { setError(cause instanceof Error ? cause.message : "Memory edit failed."); }
+    finally { setBusy(false); }
   }
 
   async function reviewMemory(entry: ProjectMemoryEntry, action: "approve" | "reject" | "delete") {
@@ -368,7 +384,7 @@ function WorkspaceApp() {
                     <div className="memory-section">
                       <div className="panel-heading"><div><span className="kicker">PROJECT MEMORY</span><h3>Review proposed knowledge</h3></div></div>
                       <form className="memory-compose" onSubmit={proposeMemory}><select value={memoryType} onChange={event => setMemoryType(event.target.value as ProjectMemoryEntry["type"])}><option value="decision">Decision</option><option value="fact">Fact</option><option value="constraint">Constraint</option><option value="open_task">Open task</option><option value="note">Note</option></select><input value={memoryDraft} onChange={event => setMemoryDraft(event.target.value)} placeholder="Capture a decision, fact, constraint or open task…" maxLength={4000} required /><button disabled={!memoryDraft.trim() || busy}>Propose memory</button></form>
-                      {chatDetail.memory.map(entry => <article className="memory-item" key={entry.id}><div><strong>{entry.type.replaceAll("_", " ")}</strong><small> · {entry.status}</small></div><p>{entry.text}</p>{entry.status === "proposed" && <div className="memory-actions"><button type="button" disabled={busy} onClick={() => void reviewMemory(entry, "approve")}>Approve</button><button type="button" className="secondary" disabled={busy} onClick={() => void reviewMemory(entry, "reject")}>Reject</button></div>}</article>)}
+                      {chatDetail.memory.map(entry => <article className="memory-item" key={entry.id}><div><strong>{entry.type.replaceAll("_", " ")}</strong><small> · {entry.status}</small></div>{editingMemoryId === entry.id ? <div className="memory-compose"><input value={editMemoryDraft} onChange={event => setEditMemoryDraft(event.target.value)} maxLength={4000} /><button type="button" disabled={busy || !editMemoryDraft.trim()} onClick={() => void saveMemoryEdit(entry)}>Save</button><button type="button" className="secondary" onClick={() => setEditingMemoryId("")}>Cancel</button></div> : <p>{entry.text}</p>}<div className="memory-actions">{entry.status === "proposed" && <><button type="button" disabled={busy} onClick={() => void reviewMemory(entry, "approve")}>Approve</button><button type="button" className="secondary" disabled={busy} onClick={() => void reviewMemory(entry, "reject")}>Reject</button></>}<button type="button" className="secondary" disabled={busy} onClick={() => { setEditingMemoryId(entry.id); setEditMemoryDraft(entry.text); }}>Edit</button><button type="button" className="secondary" disabled={busy} onClick={() => void reviewMemory(entry, "delete")}>Delete</button></div></article>)}
                       {chatDetail.memory.length === 0 && <p className="muted">No project memory proposed yet. Only approved entries shape future resume briefs.</p>}
                     </div>
                   </>}
