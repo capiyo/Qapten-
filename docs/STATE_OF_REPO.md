@@ -39,6 +39,18 @@
 - [x] Tests cover missing/expired tokens across registered API routes, wrong signing keys, JWKS key rotation, concurrent first-login provisioning, cross-user not-found behavior, and the public health route.
 - [x] Account and data deletion lifecycle documented as design only; no destructive endpoint or job is enabled.
 
+### Phase B chats and project memory
+- [x] Workspace-scoped chats with newest-activity ordering and archive state.
+- [x] Persistent user, assistant and system messages with optional assistant attribution.
+- [x] Append-only memory event log with created, approved, edited, rejected and deleted events; current state is reconstructed by replay.
+- [x] Proposed/approved/rejected memory lifecycle; only approved entries contribute to resume briefs.
+- [x] Deterministic resume briefs capped at 190 words, including where-left-off, decisions, open tasks and next/constraints.
+- [x] Lazy resume-brief cache keyed by chat, memory version, last message ID and prompt version; mutation transactions invalidate the cache.
+- [x] Atomic SQLite transactions for chat/message/memory mutations and corresponding audit events. Audit metadata excludes message and memory text.
+- [x] Authenticated workspace-scoped API routes and web/mobile chat and memory interfaces.
+- [x] Backend tests cover event replay, approval/edit invalidation, workspace isolation, archive behavior and append-only enforcement.
+- [x] See [CHATS_AND_PROJECT_MEMORY.md](CHATS_AND_PROJECT_MEMORY.md) for API and data contracts.
+
 ### Frontend and design
 - [x] React + TypeScript + Vite web workspace.
 - [x] React Native + Expo mobile workspace.
@@ -55,10 +67,10 @@
 
 ## Not implemented / production gates
 
-- Web and Expo mobile Firebase email/password sign-in and account creation, session restoration, sign-out, and Firebase ID-token injection on every authenticated API request. Client configuration is supplied through app-specific public Firebase environment variables; no Firebase credentials are committed. Google, email-link and phone-first sign-in providers remain to be added before claiming the full intended Kenya sign-in experience.
+- Web and Expo mobile Firebase email/password sign-in and account creation, session restoration, sign-out, and Firebase ID-token injection on authenticated API requests. Client configuration is supplied through app-specific public Firebase environment variables; no Firebase credentials are committed. Google, email-link and phone-first sign-in providers remain outside the current email/password implementation.
 - Provider-side sign-in abuse controls and any client-specific phone/SMS quota configuration. Axon currently exposes no password/SMS sign-in endpoint; credentials should go directly through Firebase Auth, not through Axon's API.
 - Invitations, workspace membership management UI, role/capability grant persistence and management APIs.
-- Chats, messages, approved project memory, resume briefs and news consumer (Phase B).
+- A news consumer and provider/model-driven assistant response generation. Chat messages are persisted, but Axon does not invent assistant replies.
 - Durable simulator telemetry, device cryptographic enrollment, persistent replay/idempotency enforcement, device gateway and hardware-in-the-loop tests.
 - Artifact content hashing, classification enforcement, context bundle read API and retention controls.
 - Account/data deletion execution, legal retention policy and deletion worker; see [ACCOUNT_AND_DATA_DELETION_DESIGN.md](ACCOUNT_AND_DATA_DELETION_DESIGN.md).
@@ -80,7 +92,7 @@
 
 ## Verification
 
-GitHub Actions run [44987177024](https://github.com/capiyo/Qapten-/actions/runs/44987177024) passed all four jobs on Phase A source commit `a92c767bc14565986600ade62a8286b10d81fd86`:
+GitHub Actions run [44988959132](https://github.com/capiyo/Qapten-/actions/runs/44988959132) passed all four jobs on Phase A source commit `09be25463e3f787d186105d59e65de8cd242718d`:
 - Rust formatting, Clippy with warnings denied, and Rust tests.
 - React web production build.
 - React Native TypeScript validation.
