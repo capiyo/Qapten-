@@ -138,7 +138,7 @@ pub struct SqliteStorage {
 
 impl SqliteStorage {
     pub async fn connect(database_url: &str) -> Result<Self, StorageError> {
-        let options = SqliteConnectOptions::from_str(database_url)?.create_if_missing(true).busy_timeout(Duration::from_secs(5));
+        let options = SqliteConnectOptions::from_str(database_url)?.create_if_missing(true).foreign_keys(true).busy_timeout(Duration::from_secs(5));
         let pool = SqlitePoolOptions::new()
             .max_connections(5)
             .connect_with(options)
@@ -148,7 +148,7 @@ impl SqliteStorage {
     }
 
     pub async fn connect_in_memory() -> Result<Self, StorageError> {
-        let options = SqliteConnectOptions::from_str("sqlite::memory:")?.busy_timeout(Duration::from_secs(5));
+        let options = SqliteConnectOptions::from_str("sqlite::memory:")?.foreign_keys(true).busy_timeout(Duration::from_secs(5));
         let pool = SqlitePoolOptions::new()
             .max_connections(1)
             .connect_with(options)
