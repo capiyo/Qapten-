@@ -244,7 +244,7 @@ impl SqliteStorage {
     }
 
     pub async fn list_user_workspace_ids(&self, user_id: Uuid) -> Result<Vec<Uuid>, StorageError> {
-        let rows = sqlx::query("SELECT workspace_id FROM workspace_memberships WHERE user_id = ? ORDER BY created_at")
+        let rows = sqlx::query("SELECT workspace_id FROM workspace_memberships WHERE user_id = ? AND role = 'owner' ORDER BY created_at")
             .bind(user_id.to_string()).fetch_all(&self.pool).await?;
         rows.into_iter().map(|row| {
             let value: String = row.try_get("workspace_id")?;
