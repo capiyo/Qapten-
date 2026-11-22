@@ -327,6 +327,27 @@ impl Storage for SqliteStorage {
                 .bind(user_id.to_string())
                 .bind(now.to_rfc3339())
                 .execute(&mut *tx).await?;
+            let event = AuditEvent {
+                sequence: 0,
+                event_id: Uuid::new_v4(),
+                workspace_id: Some(workspace.id),
+                actor: format!("human:{user_id}"),
+                event_type: "workspace.personal_created".into(),
+                entity_type: "workspace".into(),
+                entity_id: workspace.id.to_string(),
+                occurred_at: now,
+                metadata: serde_json::json!({"provisioned_by": "firebase_auth"}),
+            };
+            sqlx::query("INSERT INTO audit_events (event_id, workspace_id, actor, event_type, entity_type, entity_id, occurred_at, metadata_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?)")
+                .bind(event.event_id.to_string())
+                .bind(event.workspace_id.map(|id| id.to_string()))
+                .bind(event.actor)
+                .bind(event.event_type)
+                .bind(event.entity_type)
+                .bind(event.entity_id)
+                .bind(event.occurred_at.to_rfc3339())
+                .bind(serde_json::to_string(&event.metadata)?)
+                .execute(&mut *tx).await?;
             workspace
         };
         tx.commit().await?;
