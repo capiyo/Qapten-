@@ -4,7 +4,7 @@ Phase B adds workspace-scoped project conversations and reviewable, event-source
 
 ## Data model
 
-- `chats`: workspace-owned conversation metadata, newest activity first, with archive state and a monotonic memory version.
+- `chats`: workspace-owned conversation metadata with creator `owner_id`, newest activity first, archive state and a monotonic memory version.
 - `chat_messages`: ordered `user | assistant | system` messages. Assistant messages may carry `answered_by` to identify the responding agent/provider.
 - `memory_events`: append-only event log. Each event stores a complete entry snapshot and one of `created | approved | edited | rejected | deleted`. The current memory view is rebuilt by replaying events in sequence order; there is no independently mutable memory-state table.
 - `resume_brief_cache`: disposable derived data keyed by chat ID, memory version, last message ID and prompt version. Cache rows are deleted in the same transaction as message/memory mutations and lazily rebuilt on the next chat read.
