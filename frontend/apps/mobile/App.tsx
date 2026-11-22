@@ -131,6 +131,16 @@ function WorkspaceApp() {
     });
   }
 
+  function archiveChat() {
+    if (!selected || !activeChat) return;
+    void perform(async () => {
+      await request(`/api/v1/workspaces/${selected.id}/chats/${activeChat}/archive`, { method: "PATCH" });
+      setActiveChat("");
+      setChatDetail(null);
+      setChats(await request<Chat[]>(`/api/v1/workspaces/${selected.id}/chats`));
+    });
+  }
+
   function sendChatMessage() {
     if (!selected || !activeChat || !messageDraft.trim()) return;
     void perform(async () => {
@@ -321,7 +331,7 @@ function WorkspaceApp() {
               <ActionButton label="Create chat" onPress={createChat} disabled={!chatTitle.trim() || busy} />
               {chats.map(chat => <Pressable key={chat.id} onPress={() => setActiveChat(chat.id)} style={[styles.agentChoice, activeChat === chat.id && styles.agentChoiceActive]}><Text style={styles.rowTitle}>{chat.title}</Text><Text style={styles.rowMeta}>{new Date(chat.updated_at).toLocaleString()}</Text></Pressable>)}
               {chatDetail ? <>
-                <Text style={styles.fieldLabel}>RESUME BRIEF · APPROVED MEMORY ONLY</Text>
+                <Text style={styles.fieldLabel}>RESUME BRIEF · APPROVED MEMORY ONLY</Text>\n                <ActionButton label="Archive chat" onPress={archiveChat} disabled={busy} secondary />
                 <Text style={styles.rowMeta}>{chatDetail.resume_brief || "No context yet. Add messages and approve useful memory."}</Text>
                 <View style={styles.listRow}>
                   {chatDetail.messages.map(message => <View key={message.id} style={styles.contextChoice}><Text style={styles.rowTitle}>{message.role}{message.answered_by ? ` · ${message.answered_by}` : ""}</Text><Text style={styles.rowMeta}>{message.content}</Text></View>)}
