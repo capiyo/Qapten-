@@ -4,13 +4,16 @@ This guide runs the current manual-collaboration prototype locally. It is not a 
 
 ## 1. Start the API
 
-From the repository root:
+Set `FIREBASE_PROJECT_ID` to the same Firebase project used by the clients and configure a durable `AXON_DATABASE_URL` (the default is local SQLite):
 
 ```sh
+# PowerShell
+$env:FIREBASE_PROJECT_ID="your-axon-firebase-project-id"
+$env:AXON_DATABASE_URL="sqlite://axon.db"
 cargo run -p axon-api
 ```
 
-The API listens on `http://127.0.0.1:8080`. It uses process-local memory and has no authentication. Keep it on loopback.
+The API listens on `http://127.0.0.1:8080`. Only `GET /health` is public; all workspace routes require a verified Firebase ID token.
 
 ## 2. Start the web client
 
@@ -40,7 +43,13 @@ adb reverse tcp:8080 tcp:8080
 
 Then set `EXPO_PUBLIC_AXON_API_URL=http://127.0.0.1:8080`. Do not enable remote API binding on an untrusted network.
 
-## 4. Manual API workflow
+## 4. Sign in and use the workspace UI
+
+Open the web or mobile app and create an account or sign in with Firebase Email/Password. The API provisions one personal workspace for the Firebase UID on first successful authenticated request. The clients attach the current Firebase ID token as a bearer token automatically.
+
+The API rejects unauthenticated workspace requests. For direct API testing, first obtain an ID token through Firebase Auth and pass it as `Authorization: Bearer $FIREBASE_ID_TOKEN`.
+
+## 5. Manual API workflow
 
 Create a workspace:
 
