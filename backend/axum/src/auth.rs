@@ -179,3 +179,102 @@ pub struct AuthenticatedUser {
     pub user_id: Uuid,
     pub firebase_uid: String,
 }
+
+#[cfg(test)]
+pub fn local_test_verifier(project_id: &str) -> FirebaseVerifier {
+    const PUBLIC: &str = "-----BEGIN PUBLIC KEY-----
+MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAr/lhZbLeidEHaTjlfUfj
+wOjRYwpU/65/EYkPDOgiymFSiqYDWm0VZz+dpGF1UzMWmFcfyyrKYp2cARgrToCN
+YNP6EaqN0hu07J8vlxqJI1y67oiu7gNYV3MAsvlb3XKBCViJxyR3Icv5C9fincI/
+HC0bZ9WWDqLhdTCNrzwrfbWkIQd0l7P/+2tWlHjl13bIRkEXpCJgqAwM/4a2jjyy
+IU7Ic2RRacxrBz6C9ER/5XxjXVUMaz9Yaw1KHt1vIAC8Nx6+MfdyRS8ehPvXfbO+
+EHjNRK7NZZf8Ob4BnJyS5ePjhQIGfdvvQwEblrNRWA0W9bPHS1KPsQlpOs9mKuqs
+5QIDAQAB
+-----END PUBLIC KEY-----";
+    FirebaseVerifier::with_local_test_key(project_id, "local-test-kid", PUBLIC.as_bytes())
+}
+
+#[cfg(test)]
+pub fn local_test_token(project_id: &str, uid: &str, exp: u64, wrong_key: bool) -> String {
+    use jsonwebtoken::{encode, EncodingKey, Header};
+    #[derive(serde::Serialize)]
+    struct Claims<'a> {
+        iss: String,
+        aud: &'a str,
+        sub: &'a str,
+        exp: u64,
+        iat: u64,
+        auth_time: u64,
+        email: Option<&'a str>,
+    }
+    const PRIVATE: &str = "-----BEGIN PRIVATE KEY-----
+MIIEvwIBADANBgkqhkiG9w0BAQEFAASCBKkwggSlAgEAAoIBAQCv+WFlst6J0Qdp
+OOV9R+PA6NFjClT/rn8RiQ8M6CLKYVKKpgNabRVnP52kYXVTMxaYVx/LKspinZwB
+GCtOgI1g0/oRqo3SG7Tsny+XGokjXLruiK7uA1hXcwCy+VvdcoEJWInHJHchy/kL
+1+Kdwj8cLRtn1ZYOouF1MI2vPCt9taQhB3SXs//7a1aUeOXXdshGQRekImCoDAz/
+hraOPLIhTshzZFFpzGsHPoL0RH/lfGNdVQxrP1hrDUoe3W8gALw3Hr4x93JFLx6E
++9d9s74QeM1Ers1ll/w5vgGcnJLl4+OFAgZ92+9DARuWs1FYDRb1s8dLUo+xCWk6
+z2Yq6qzlAgMBAAECggEAAbhzVzOrtKGm4Czq/mABgb0ZJRBl46Wz6E7tbitNAdpS
+OS9dVxDAq7n/Vb35hqrP7VqGDHGQfjiZDDC6i4SqWtQ+Qp2M4vDNtGVK2yOhCbvv
+dYEHF1V/0QFvtnFwP8Y6xRPmeYuxtRTwu6eYdTpxpjjbMqV+AgpK8N9JyPkQIVle
+2fHrlJ4AAmdPdKWAyh+eTR8oHj94iQCqlHb9zwkK+6imXh2aGyHctvwdFtEbDv3c
+Tt99OTmb8DoDpgIe6opbcITOZHmQpQuKyQ5+hAvKrkms9PfNZpG7bH8FYeZtP+j9
+5v/bhU28pPXZiXSyfHc1g/SPcHA7fzh40sV6Ksq2swKBgQDlq36aKy0vebGz8Cka
+MM5qS4Kew8Vz3RimoQZXvS0zNUG1KOjHOsZ5EaARnF34wcSomb6rLOfMBSck+QuG
+QToxgw+H2LaB88xpi7EOAD6DAO7BzkvSOA7/uhCVL8A2hPSDFWj0eWGDoVVPCOmA
+sbDkFpi/bYIy4hGL8zny8DV1JwKBgQDEJfyrJ2fw84WAaxATEFUFofhJEUyI7eU4
+gSKwzC1yDJxzQ3ODM7RY+tvuzNT9uvLKm3qkDIjgW1K18dkWP4le21n/AW09BRj+
+2qOOdmcNlifN3uRtpD6vRPgaHg2GLA6IhI7aKtzqvhlWOzM3hZwbtRLDowW9aLHP
+t4X7YAANEwKBgQDgQWwFLVOZn8IcaMw5fp6Ou9x3GcGbOK/xRBnlYhrYfZADTEa/
+Amz5mnQpvf0kAE/+MOE0U0yisgVe3K6cEOS5o7dudfT/PwbBqFzhxutDD44SP1VZ
+ltNOcGfwxAdzNK9rr2QkEsFcvhOGcLVPrDGFBWtwv4T6GjP36y8SP+py0QKBgQCl
+cBTIlxgIFp2HTsXkDmZntdEgb8LJyz0Gh4Sm8c9y3kgmv8Fx6+41DoDpzUHoMAIP
++Utbimb4NI5yf2XGahiHNSOW/bERQndunSJOSndo8jjoXxLzlxB37AgGn0pw3D/1
+zThfsr9aDrR4Er6EGeEtTXBiKeHxe5hdxkDvYG0qmQKBgQCh/UDvT901Z7oYvx3E
+6OzXwq3NjnSGq+DYc548kOz//+XXAi/CYZEAB9w//XdSMSRzrCZC+KJS0cdh5vS/
+V+6aT1ARVti/L6DTBDXA40PZGHzRu/guA6wOG3g9Qsh5U1V8tq1cSTBgUMKhuepT
+v/b24ca3nApgErhLVE3DNM+SOw==
+-----END PRIVATE KEY-----";
+    const WRONG: &str = "-----BEGIN PRIVATE KEY-----
+MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCbjKq5JFdRV8aN
+9thFoR9exJ+LmbedT3yP0KpkLHqPLs8aPBQS3LhmOOuJVo2wDlQGBua0mT/IJxSI
+n0ZYp8b1GOWO69szzt4/Wu/vjLx5z+50vHWJ5+mt1C6s5yHS+9NkKbUYzqN77OUa
+5as1ifETlG+qjKg94k/qiOEBHH+kJ2VkrxLCR46cstNtMBOPRHuV2INksv3PDN+e
+Fw5mTqBINZStGMXbAMvy1/HBfBQ52gptwRRXllY1IaGCX/EK2ThCj3uxm7d5kwKY
+tgy23LMXBWaxYPJW3xJgzMrQPN2UiCEOWSrCdqc+uEqq7EIf3bdRxQdrAtad4S3v
+gd90Ai8vAgMBAAECggEAAd8Y5L5bsJZaRLX+FyRfoL/D3aWdUG625HIRwr/IP7XD
+9yBW630tWMmBh/b7IG2jtCjcGLspScqylAw6h/GI0sUYafZLfl2UTfXVoi+yytJm
+H5Bu55hbNuSxJRJo1UWDXxajX6eIzwJkJUU3IKNGu8IS793eXlQ9OuinsGA75ukv
+oKvzIFySWlMFr494ds0puNUwrjrSC8Wqd+n2VFJS95QGx94FcSDcVr+PfEMW5ROq
+7LV0gIfmVThWeCUVxGq09dpl8I0LLKyQwMhGsQgbUaSA79ot+TVUvmoCD/X8qCsk
+HGQFuzFiJ1gvSDDHV4GRo25rQdGjiOLXNNSKVVZY8QKBgQDORpIivzxjpXYeqKqH
+DHiAg7d3vgIAvQPMRs3+vjz5k4dSKiu3xZN3woKzkSxSlVpIdSf9tn1dKWKpBIPk
+oZCIqccuv/uS7nEJfxeaTTD6tmMILeFaAPRqH12C0IMOE9NLn8HT9SY2A8rRkoxO
+QOalWVA0ENcsD8BJSAjC+QtukQKBgQDBC76GZN3OobpZWNgBoJ/7Ent2AW96hjKO
+CgmCfxxvDp2V0rIwnLcM94yF1d4SbkJlKAnXfHEqCB6GDVhDHfg1VxVQXo6Jm0nE
+tzw+Xbk+DzNOptlsDhD7xx2il1RQWFnWEi4bevlRqdqZ7VYzvOdwctZTrksLTEL0
+BTjGKJohvwKBgQCKLiArAqxznB26gAZsHWCDxriakEBLOlNW/n90DQBPuBJIalOK
+8eHLr5larP9h+wbVzxWREjR8ugKLcqjf+ZMW2ZTCrnzaerxiPi8TgG41JQTGL+Xs
+IwOYK5a60O9Z+NHssQJo+Ko2OOge5+rxaOyZC3F8z2M08wA+lvC3m5ma4QKBgByM
+fBSr/hF84W4tMWSsOHyM8y00cSQRjJBs85MU8UOLScrKage+ZWPJiEKSqlDXdYI4
+NZxkjufEY583ggILAJYC1ugX08SN7o7k+kfO3IJNBS1wh17vhZt2iu9sqc9oAYEj
+FyaBPTXShL2W19S27xM2KHQfpoF5Ob2UuBy2DHVJAoGAUIFZH2KssYJx0rfeMUNN
+f+krk51xpNJ5+Vv/DlUfTwE1F0/43xgi7z3tZ9VK196Gvgpy2bKY0zpRjY/t3Sj7
+KEyKVjiB8VYl2QzS7H0SaNy+5o3dULNd/v6jJFLS5t86+fA1/LmXz4TqBlHVDHFE
+2gImDm63Ge5OF38bkqDLiAg=
+-----END PRIVATE KEY-----";
+    let pem = if wrong_key { WRONG } else { PRIVATE };
+    let now = chrono::Utc::now().timestamp().max(0) as u64;
+    let claims = Claims {
+        iss: format!("https://securetoken.google.com/{project_id}"),
+        aud: project_id,
+        sub: uid,
+        exp,
+        iat: now,
+        auth_time: now,
+        email: None,
+    };
+    let mut header = Header::new(Algorithm::RS256);
+    header.kid = Some("local-test-kid".into());
+    encode(&header, &claims, &EncodingKey::from_rsa_pem(pem.as_bytes()).unwrap()).unwrap()
+}
