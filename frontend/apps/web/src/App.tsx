@@ -1,13 +1,15 @@
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
+import { auth } from "./firebase";
 
 import type { Agent, Artifact, Health, Task, Workspace } from "../../../packages/contracts/src";
 
 
 const api = async <T,>(path: string, init?: RequestInit): Promise<T> => {
+  const token = await auth?.currentUser?.getIdToken();
   const response = await fetch(path, {
     ...init,
-    headers: { "Content-Type": "application/json", ...init?.headers }
+    headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}), ...init?.headers }
   });
   if (!response.ok) {
     const body = await response.json().catch(() => ({ error: response.statusText }));
@@ -16,7 +18,7 @@ const api = async <T,>(path: string, init?: RequestInit): Promise<T> => {
   return response.json() as Promise<T>;
 };
 
-export default function App() {
+function WorkspaceApp() {
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [selected, setSelected] = useState<Workspace | null>(null);
   const [agents, setAgents] = useState<Agent[]>([]);
@@ -346,3 +348,41 @@ export default function App() {
     </main>
   );
 }
+
+
+function AuthGate() {
+  const [user, setUser] = useState<import("firebase/auth").User | null>(null);
+  const [ready, setReady] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [mode, setMode] = useState<"sign_in" | "create">("sign_in");
+  const [authError, setAuthError] = useState("");
+  const [working, setWorking] = useState(false);
+
+  useEffect(() => {
+    if (!auth) { setReady(true); return; }
+    return onAuthStateChanged(auth, current => { setUser(current); setReady(true); });
+  }, []);
+
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!auth) return;
+    setWorking(true);
+    setAuthError("");
+    try {
+      if (mode === "create") await createUserWithEmailAndPassword(auth, email.trim(), password);
+      else await signInWithEmailAndPassword(auth, email.trim(), password);
+    } catch (cause) {
+      setAuthError(cause instanceof Error ? cause.message : "Authentication failed.");
+    } finally { setWorking(false); }
+  }
+
+  if (!ready) return <main className="shell"><section className="content"><p>Restoring your secure session…</p></section></main>;
+  if (!auth) return <main className="shell"><section className="content"><h1>Firebase configuration required</h1><p>Set the VITE_FIREBASE_* environment variables for this web app, then restart it.</p></section></main>;
+  if (user) return <><div style={{position:"fixed",right:24,top:18,zIndex:10,display:"flex",gap:12,alignItems:"center",fontSize:12}}><span>{user.email}</span><button onClick={() => void signOut(auth)}>Sign out</button></div><WorkspaceApp /></>;
+  return <main className="shell"><section className="content" style={{maxWidth:520,margin:"12vh auto"}}><p className="eyebrow">AXON · SECURE ACCESS</p><h1>{mode === "create" ? "Create your account" : "Welcome back"}</h1><p>Sign in to access your personal workspace and its data.</p><form className="stack-form" onSubmit={submit}><label htmlFor="auth-email">Email</label><input id="auth-email" type="email" autoComplete="email" required value={email} onChange={e=>setEmail(e.target.value)}/><label htmlFor="auth-password">Password</label><input id="auth-password" type="password" minLength={6} autoComplete={mode === "create" ? "new-password" : "current-password"} required value={password} onChange={e=>setPassword(e.target.value)}/><button disabled={working}>{working ? "Please wait…" : mode === "create" ? "Create account" : "Sign in"}</button></form>{authError && <p role="alert">{authError}</p>}<button className="back-link" onClick={()=>setMode(mode === "create" ? "sign_in" : "create")}>{mode === "create" ? "Already registered? Sign in" : "New to Axon? Create an account"}</button></section></main>;
+}
+
+import { onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from "firebase/auth";
+
+export default function App() { return <AuthGate />; }
