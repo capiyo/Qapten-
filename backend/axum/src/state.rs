@@ -2,7 +2,8 @@ use crate::{
     audit::{AuditEvent, AuditStore},
     model::{Agent, Artifact, Task, Workspace},
     robotics::TelemetryEvent,
-    storage::{EntityKind, Storage, StorageError, StorageMutation, StoredEntity},
+    storage::{EntityKind, Storage, StorageError, StorageMutation, StoredEntity, UserWorkspace},
+    firebase_auth::FirebaseVerifier,
 };
 use std::{
     collections::{HashMap, HashSet},
@@ -29,12 +30,16 @@ pub struct AppState {
     /// Runtime cache backed by the append-only audit table when SQLite is configured.
     pub audit: Arc<RwLock<AuditStore>>,
     storage: Option<Arc<dyn Storage>>,
+    pub firebase_verifier: Option<FirebaseVerifier>,
+    pub simulator_enabled: bool,
 }
 
 impl AppState {
     pub async fn with_storage(storage: Arc<dyn Storage>) -> Result<Self, StorageError> {
         let state = Self {
             storage: Some(storage.clone()),
+            firebase_verifier: None,
+            simulator_enabled: false,
             ..Self::default()
         };
 
@@ -99,6 +104,33 @@ impl AppState {
 
         self.audit.write().await.append_event(event);
         Ok(())
+    }
+
+    pub fn with_firebase_verifier(mut self, verifier: FirebaseVerifier, simulator_enabled: bool) -> Self {
+        self.firebase_verifier = Some(verifier);
+        self.simulator_enabled = simulator_enabled;
+        self
+    }
+
+    pub async fn ensure_firebase_user(&self, project_id: &str, uid: &str) -> Result<UserWorkspace, StorageError> {
+        match &self.storage {
+            Some(storage) => storage.ensure_firebase_user(project_id, uid).await,
+            None => Err(StorageError::IdentityStorageUnavailable),
+        }
+    }
+
+    pub async fn is_workspace_member(&self, user_id: uuid::Uuid, workspace_id: uuid::Uuid) -> Result<bool, StorageError> {
+        match &self.storage {
+            Some(storage) => storage.is_workspace_member(user_id, workspace_id).await,
+            None => Ok(false),
+        }
+    }
+
+    pub async fn list_user_workspaces(&self, user_id: uuid::Uuid) -> Result<Vec<Workspace>, StorageError> {
+        match &self.storage {
+            Some(storage) => storage.list_user_workspaces(user_id).await,
+            None => Ok(Vec::new()),
+        }
     }
 
     pub fn storage_is_durable(&self) -> bool {
