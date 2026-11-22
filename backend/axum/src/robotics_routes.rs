@@ -1,9 +1,11 @@
 use crate::{
+    auth::AuthenticatedUser,
     robotics::{validate_simulated_telemetry, TelemetryEvent, TelemetryIngest},
     state::AppState,
 };
 use axum::{
     extract::{Path, State},
+    Extension,
     http::StatusCode,
     Json,
 };
@@ -75,11 +77,14 @@ fn rejection_status(
 pub async fn ingest_simulated_telemetry(
     State(state): State<AppState>,
     Path(device_id): Path<String>,
+    Extension(user): Extension<AuthenticatedUser>,
     Json(input): Json<TelemetryIngest>,
 ) -> Result<(StatusCode, Json<TelemetryEvent>), (StatusCode, Json<RoboticsApiError>)> {
     let now = Utc::now();
+    let scoped_device_id = format!("{}:{device_id}", user.user_id);
+    let scoped_event_id = format!("{}:{}", user.user_id, input.event_id);
     let mut store = state.telemetry.write().await;
-    if store.event_ids.contains(&input.event_id) {
+    if store.event_ids.contains(&scoped_event_id) {
         return Err((
             StatusCode::CONFLICT,
             Json(RoboticsApiError {
@@ -89,7 +94,7 @@ pub async fn ingest_simulated_telemetry(
         ));
     }
 
-    let last_sequence = store.last_sequence_by_device.get(&device_id).copied();
+    let last_sequence = store.last_sequence_by_device.get(&scoped_device_id).copied();
     validate_simulated_telemetry(&input, &device_id, last_sequence, now, 30, 2)
         .map_err(rejection_status)?;
 
@@ -105,15 +110,15 @@ pub async fn ingest_simulated_telemetry(
         quality: Some(input.quality),
     };
 
-    store.event_ids.insert(event.event_id.clone());
+    store.event_ids.insert(scoped_event_id.clone());
     store
         .last_sequence_by_device
-        .insert(device_id.clone(), event.sequence);
-    let events = store.events_by_device.entry(device_id).or_default();
+        .insert(scoped_device_id.clone(), event.sequence);
+    let events = store.events_by_device.entry(scoped_device_id).or_default();
     events.push(event.clone());
     if events.len() > 500 {
         let removed = events.remove(0);
-        store.event_ids.remove(&removed.event_id);
+        store.event_ids.remove(&format!("{}:{}", user.user_id, removed.event_id));
     }
 
     Ok((StatusCode::ACCEPTED, Json(event)))
@@ -122,12 +127,14 @@ pub async fn ingest_simulated_telemetry(
 pub async fn list_simulated_telemetry(
     State(state): State<AppState>,
     Path(device_id): Path<String>,
+    Extension(user): Extension<AuthenticatedUser>,
 ) -> Json<Vec<TelemetryEvent>> {
+    let scoped_device_id = format!("{}:{device_id}", user.user_id);
     let store = state.telemetry.read().await;
     Json(
         store
             .events_by_device
-            .get(&device_id)
+            .get(&scoped_device_id)
             .cloned()
             .unwrap_or_default(),
     )
