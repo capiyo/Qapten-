@@ -128,13 +128,26 @@ pub trait Storage: Send + Sync {
 
     async fn list_audit_events(&self, workspace_id: Uuid) -> Result<Vec<AuditEvent>, StorageError>;
 
-    async fn ensure_firebase_user(&self, project_id: &str, uid: &str) -> Result<UserWorkspace, StorageError>;
+    async fn ensure_firebase_user(
+        &self,
+        project_id: &str,
+        uid: &str,
+    ) -> Result<UserWorkspace, StorageError>;
 
-    async fn is_workspace_member(&self, user_id: Uuid, workspace_id: Uuid) -> Result<bool, StorageError>;
+    async fn is_workspace_member(
+        &self,
+        user_id: Uuid,
+        workspace_id: Uuid,
+    ) -> Result<bool, StorageError>;
 
     async fn list_user_workspaces(&self, user_id: Uuid) -> Result<Vec<Workspace>, StorageError>;
 
-    async fn create_workspace_for_user(&self, user_id: Uuid, name: String, actor: String) -> Result<Workspace, StorageError>;
+    async fn create_workspace_for_user(
+        &self,
+        user_id: Uuid,
+        name: String,
+        actor: String,
+    ) -> Result<Workspace, StorageError>;
 }
 
 #[derive(Clone)]
@@ -278,7 +291,11 @@ impl Storage for SqliteStorage {
             .collect()
     }
 
-    async fn ensure_firebase_user(&self, project_id: &str, uid: &str) -> Result<UserWorkspace, StorageError> {
+    async fn ensure_firebase_user(
+        &self,
+        project_id: &str,
+        uid: &str,
+    ) -> Result<UserWorkspace, StorageError> {
         let mut tx = self.pool.begin().await?;
         let now = Utc::now();
         let candidate_user_id = Uuid::new_v4();
@@ -295,7 +312,8 @@ impl Storage for SqliteStorage {
              .bind(uid)
             .fetch_one(&mut *tx).await?;
         let user_id_text: String = row.try_get("id")?;
-        let user_id = Uuid::parse_str(&user_id_text).map_err(|_| StorageError::InvalidStoredIdentifier)?;
+        let user_id =
+            Uuid::parse_str(&user_id_text).map_err(|_| StorageError::InvalidStoredIdentifier)?;
         let linked_workspace: Option<String> = row.try_get("personal_workspace_id")?;
         let stored_project: Option<String> = row.try_get("firebase_project_id")?;
         if stored_project.as_deref() != Some(project_id) {
@@ -303,9 +321,14 @@ impl Storage for SqliteStorage {
         }
 
         let workspace = if let Some(workspace_id) = linked_workspace {
-            let workspace_id = Uuid::parse_str(&workspace_id).map_err(|_| StorageError::InvalidStoredIdentifier)?;
-            let row = sqlx::query("SELECT payload_json FROM entities WHERE kind = 'workspace' AND id = ?")
-                .bind(workspace_id.to_string()).fetch_one(&mut *tx).await?;
+            let workspace_id = Uuid::parse_str(&workspace_id)
+                .map_err(|_| StorageError::InvalidStoredIdentifier)?;
+            let row = sqlx::query(
+                "SELECT payload_json FROM entities WHERE kind = 'workspace' AND id = ?",
+            )
+            .bind(workspace_id.to_string())
+            .fetch_one(&mut *tx)
+            .await?;
             let payload: String = row.try_get("payload_json")?;
             match serde_json::from_str::<StoredEntity>(&payload)? {
                 StoredEntity::Workspace(workspace) => workspace,
@@ -360,13 +383,18 @@ impl Storage for SqliteStorage {
         Ok(UserWorkspace { user_id, workspace })
     }
 
-    async fn is_workspace_member(&self, user_id: Uuid, workspace_id: Uuid) -> Result<bool, StorageError> {
+    async fn is_workspace_member(
+        &self,
+        user_id: Uuid,
+        workspace_id: Uuid,
+    ) -> Result<bool, StorageError> {
         let exists: Option<i64> = sqlx::query_scalar(
-            "SELECT 1 FROM workspace_memberships WHERE user_id = ? AND workspace_id = ?"
+            "SELECT 1 FROM workspace_memberships WHERE user_id = ? AND workspace_id = ?",
         )
         .bind(user_id.to_string())
         .bind(workspace_id.to_string())
-        .fetch_optional(&self.pool).await?;
+        .fetch_optional(&self.pool)
+        .await?;
         Ok(exists.is_some())
     }
 
@@ -376,18 +404,29 @@ impl Storage for SqliteStorage {
         )
         .bind(user_id.to_string())
         .fetch_all(&self.pool).await?;
-        rows.into_iter().map(|row| {
-            let payload: String = row.try_get("payload_json")?;
-            match serde_json::from_str::<StoredEntity>(&payload)? {
-                StoredEntity::Workspace(workspace) => Ok(workspace),
-                _ => Err(StorageError::InvalidStoredEntityKind),
-            }
-        }).collect()
+        rows.into_iter()
+            .map(|row| {
+                let payload: String = row.try_get("payload_json")?;
+                match serde_json::from_str::<StoredEntity>(&payload)? {
+                    StoredEntity::Workspace(workspace) => Ok(workspace),
+                    _ => Err(StorageError::InvalidStoredEntityKind),
+                }
+            })
+            .collect()
     }
 
-    async fn create_workspace_for_user(&self, user_id: Uuid, name: String, actor: String) -> Result<Workspace, StorageError> {
+    async fn create_workspace_for_user(
+        &self,
+        user_id: Uuid,
+        name: String,
+        actor: String,
+    ) -> Result<Workspace, StorageError> {
         let mut tx = self.pool.begin().await?;
-        let workspace = Workspace { id: Uuid::new_v4(), name, created_at: Utc::now() };
+        let workspace = Workspace {
+            id: Uuid::new_v4(),
+            name,
+            created_at: Utc::now(),
+        };
         let entity = StoredEntity::Workspace(workspace.clone());
         sqlx::query("INSERT INTO entities (kind, id, workspace_id, created_at, payload_json) VALUES ('workspace', ?, NULL, ?, ?)")
             .bind(workspace.id.to_string())
@@ -530,7 +569,6 @@ mod tests {
         assert!(delete.is_err());
     }
 
-
     #[tokio::test]
     async fn firebase_first_login_is_idempotent_under_concurrent_requests() {
         let storage = SqliteStorage::connect_in_memory().await.unwrap();
@@ -542,8 +580,18 @@ mod tests {
         let second = second.unwrap();
         assert_eq!(first.user_id, second.user_id);
         assert_eq!(first.workspace.id, second.workspace.id);
-        assert!(storage.is_workspace_member(first.user_id, first.workspace.id).await.unwrap());
-        assert_eq!(storage.list_user_workspaces(first.user_id).await.unwrap().len(), 1);
+        assert!(storage
+            .is_workspace_member(first.user_id, first.workspace.id)
+            .await
+            .unwrap());
+        assert_eq!(
+            storage
+                .list_user_workspaces(first.user_id)
+                .await
+                .unwrap()
+                .len(),
+            1
+        );
         let audit = storage.list_audit_events(first.workspace.id).await.unwrap();
         assert_eq!(audit.len(), 1);
         assert_eq!(audit[0].actor, format!("human:{}", first.user_id));

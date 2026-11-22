@@ -28,7 +28,11 @@ pub async fn authenticate(
     let Some(verifier) = state.firebase_verifier.as_ref() else {
         return response(StatusCode::SERVICE_UNAVAILABLE);
     };
-    let Some(value) = request.headers().get(AUTHORIZATION).and_then(|v| v.to_str().ok()) else {
+    let Some(value) = request
+        .headers()
+        .get(AUTHORIZATION)
+        .and_then(|v| v.to_str().ok())
+    else {
         return response(StatusCode::UNAUTHORIZED);
     };
     let Some(token) = value.strip_prefix("Bearer ") else {
@@ -38,7 +42,10 @@ pub async fn authenticate(
         Ok(identity) => identity,
         Err(_) => return response(StatusCode::UNAUTHORIZED),
     };
-    let account = match state.ensure_firebase_user(&identity.project_id, &identity.uid).await {
+    let account = match state
+        .ensure_firebase_user(&identity.project_id, &identity.uid)
+        .await
+    {
         Ok(account) => account,
         Err(_) => return response(StatusCode::INTERNAL_SERVER_ERROR),
     };
@@ -48,7 +55,12 @@ pub async fn authenticate(
         project_id: identity.project_id,
         personal_workspace_id: account.workspace.id,
     });
-    state.workspaces.write().await.entry(account.workspace.id).or_insert(account.workspace.clone());
+    state
+        .workspaces
+        .write()
+        .await
+        .entry(account.workspace.id)
+        .or_insert(account.workspace.clone());
 
     let path: Vec<&str> = request.uri().path().split('/').collect();
     if path.get(3) == Some(&"workspaces") {
@@ -56,7 +68,10 @@ pub async fn authenticate(
             let Ok(workspace_id) = Uuid::parse_str(workspace_text) else {
                 return response(StatusCode::NOT_FOUND);
             };
-            let member = state.is_workspace_member(user.user_id, workspace_id).await.unwrap_or(false);
+            let member = state
+                .is_workspace_member(user.user_id, workspace_id)
+                .await
+                .unwrap_or(false);
             if !member {
                 return response(StatusCode::NOT_FOUND);
             }
@@ -66,11 +81,19 @@ pub async fn authenticate(
             let Ok(task_id) = Uuid::parse_str(task_text) else {
                 return response(StatusCode::NOT_FOUND);
             };
-            let workspace_id = state.tasks.read().await.get(&task_id).map(|task| task.workspace_id);
+            let workspace_id = state
+                .tasks
+                .read()
+                .await
+                .get(&task_id)
+                .map(|task| task.workspace_id);
             let Some(workspace_id) = workspace_id else {
                 return response(StatusCode::NOT_FOUND);
             };
-            let member = state.is_workspace_member(user.user_id, workspace_id).await.unwrap_or(false);
+            let member = state
+                .is_workspace_member(user.user_id, workspace_id)
+                .await
+                .unwrap_or(false);
             if !member {
                 return response(StatusCode::NOT_FOUND);
             }
@@ -90,7 +113,9 @@ fn response(status: StatusCode) -> Response<Body> {
         .body(Body::from(match status {
             StatusCode::UNAUTHORIZED => r#"{\"error\":\"Authentication required.\"}"#,
             StatusCode::NOT_FOUND => r#"{\"error\":\"Resource not found.\"}"#,
-            StatusCode::SERVICE_UNAVAILABLE => r#"{\"error\":\"Authentication is not configured.\"}"#,
+            StatusCode::SERVICE_UNAVAILABLE => {
+                r#"{\"error\":\"Authentication is not configured.\"}"#
+            }
             _ => r#"{\"error\":\"The request could not be completed.\"}"#,
         }))
         .expect("static authentication response is valid")

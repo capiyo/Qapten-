@@ -57,7 +57,10 @@ pub fn app(state: AppState) -> Router {
             "/api/v1/tasks/:task_id/transitions",
             post(task_routes::transition_task),
         )
-        .route_layer(middleware::from_fn_with_state(state.clone(), auth_middleware::authenticate))
+        .route_layer(middleware::from_fn_with_state(
+            state.clone(),
+            auth_middleware::authenticate,
+        ))
         .with_state(state)
         .layer(RequestBodyLimitLayer::new(1024 * 1024))
         .layer(TraceLayer::new_for_http())

@@ -13,8 +13,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with(tracing_subscriber::fmt::layer())
         .init();
 
-    let project_id = env::var("FIREBASE_PROJECT_ID")
-        .map_err(|_| "FIREBASE_PROJECT_ID must be configured; refusing to start without Firebase authentication")?;
+    let project_id = env::var("FIREBASE_PROJECT_ID").map_err(|_| {
+        "FIREBASE_PROJECT_ID must be configured; refusing to start without Firebase authentication"
+    })?;
     let verifier = FirebaseVerifier::new(project_id)?;
     let host = env::var("AXON_HOST").unwrap_or_else(|_| "127.0.0.1".to_owned());
     let port = env::var("AXON_PORT")
@@ -28,7 +29,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let simulator_enabled = env::var("AXON_ENABLE_SIMULATOR")
         .map(|value| value.eq_ignore_ascii_case("true"))
         .unwrap_or(false);
-    let state = AppState::with_storage(storage.shared()).await?
+    let state = AppState::with_storage(storage.shared())
+        .await?
         .with_firebase_verifier(verifier, simulator_enabled);
 
     let listener = TcpListener::bind(address).await?;

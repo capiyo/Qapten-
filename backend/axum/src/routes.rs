@@ -1,3 +1,4 @@
+use crate::auth_middleware::AuthenticatedUser;
 use crate::{
     audit::AuditEvent,
     model::{
@@ -13,9 +14,8 @@ use axum::{
 };
 use chrono::Utc;
 use serde::Serialize;
-use uuid::Uuid;
 use std::sync::Arc;
-use crate::auth_middleware::AuthenticatedUser;
+use uuid::Uuid;
 
 type ApiResult<T> = Result<T, (StatusCode, Json<ApiError>)>;
 
@@ -39,7 +39,12 @@ pub async fn list_audit_events(
             }),
         ));
     }
-    Ok(Json(state.list_audit_events(workspace_id).await.map_err(|_| storage_failure())?))
+    Ok(Json(
+        state
+            .list_audit_events(workspace_id)
+            .await
+            .map_err(|_| storage_failure())?,
+    ))
 }
 
 pub async fn health(State(state): State<AppState>) -> Json<Health> {
@@ -51,7 +56,11 @@ pub async fn health(State(state): State<AppState>) -> Json<Health> {
         } else {
             "development_memory_only"
         },
-        authentication: if state.firebase_verifier.is_some() { "firebase_id_token" } else { "not_configured" },
+        authentication: if state.firebase_verifier.is_some() {
+            "firebase_id_token"
+        } else {
+            "not_configured"
+        },
     })
 }
 
@@ -98,7 +107,11 @@ pub async fn create_workspace(
         )
         .await
         .map_err(|_| storage_failure())?;
-    state.workspaces.write().await.insert(workspace.id, workspace.clone());
+    state
+        .workspaces
+        .write()
+        .await
+        .insert(workspace.id, workspace.clone());
 
     Ok((StatusCode::CREATED, Json(workspace)))
 }
@@ -107,7 +120,10 @@ pub async fn list_workspaces(
     State(state): State<AppState>,
     Extension(user): Extension<Arc<AuthenticatedUser>>,
 ) -> ApiResult<Json<Vec<Workspace>>> {
-    let items = state.list_user_workspaces(user.user_id).await.map_err(|_| storage_failure())?;
+    let items = state
+        .list_user_workspaces(user.user_id)
+        .await
+        .map_err(|_| storage_failure())?;
     Ok(Json(items))
 }
 
@@ -319,14 +335,21 @@ mod tests {
     async fn workspace_and_audit_survive_runtime_reconstruction() {
         let storage = SqliteStorage::connect_in_memory().await.unwrap().shared();
         let state = AppState::with_storage(storage.clone()).await.unwrap();
-        let account = state.ensure_firebase_user("axon-test", "user-1").await.unwrap();
+        let account = state
+            .ensure_firebase_user("axon-test", "user-1")
+            .await
+            .unwrap();
         let user = Arc::new(AuthenticatedUser {
             user_id: account.user_id,
             firebase_uid: "user-1".into(),
             project_id: "axon-test".into(),
             personal_workspace_id: account.workspace.id,
         });
-        state.workspaces.write().await.insert(account.workspace.id, account.workspace);
+        state
+            .workspaces
+            .write()
+            .await
+            .insert(account.workspace.id, account.workspace);
         let created = create_workspace(
             State(state),
             Extension(user),
@@ -349,14 +372,21 @@ mod tests {
     async fn workspace_creation_validates_and_persists_in_process() {
         let storage = SqliteStorage::connect_in_memory().await.unwrap().shared();
         let state = AppState::with_storage(storage).await.unwrap();
-        let account = state.ensure_firebase_user("axon-test", "user-2").await.unwrap();
+        let account = state
+            .ensure_firebase_user("axon-test", "user-2")
+            .await
+            .unwrap();
         let user = Arc::new(AuthenticatedUser {
             user_id: account.user_id,
             firebase_uid: "user-2".into(),
             project_id: "axon-test".into(),
             personal_workspace_id: account.workspace.id,
         });
-        state.workspaces.write().await.insert(account.workspace.id, account.workspace);
+        state
+            .workspaces
+            .write()
+            .await
+            .insert(account.workspace.id, account.workspace);
         let response = create_workspace(
             State(state.clone()),
             Extension(user),

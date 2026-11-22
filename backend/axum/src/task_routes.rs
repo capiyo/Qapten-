@@ -1,3 +1,4 @@
+use crate::auth_middleware::AuthenticatedUser;
 use crate::{
     audit::AuditEvent,
     model::{Artifact, CreateTask, SubmitTask, Task, TaskStatus, TaskTransition, TransitionTask},
@@ -11,9 +12,8 @@ use axum::{
 };
 use chrono::Utc;
 use serde::Serialize;
-use uuid::Uuid;
 use std::sync::Arc;
-use crate::auth_middleware::AuthenticatedUser;
+use uuid::Uuid;
 
 type TaskResult<T> = Result<T, (StatusCode, Json<TaskApiError>)>;
 

@@ -1,9 +1,9 @@
 use crate::{
     audit::{AuditEvent, AuditStore},
+    firebase_auth::FirebaseVerifier,
     model::{Agent, Artifact, Task, Workspace},
     robotics::TelemetryEvent,
     storage::{EntityKind, Storage, StorageError, StorageMutation, StoredEntity, UserWorkspace},
-    firebase_auth::FirebaseVerifier,
 };
 use std::{
     collections::{HashMap, HashSet},
@@ -106,41 +106,68 @@ impl AppState {
         Ok(())
     }
 
-    pub fn with_firebase_verifier(mut self, verifier: FirebaseVerifier, simulator_enabled: bool) -> Self {
+    pub fn with_firebase_verifier(
+        mut self,
+        verifier: FirebaseVerifier,
+        simulator_enabled: bool,
+    ) -> Self {
         self.firebase_verifier = Some(verifier);
         self.simulator_enabled = simulator_enabled;
         self
     }
 
-    pub async fn ensure_firebase_user(&self, project_id: &str, uid: &str) -> Result<UserWorkspace, StorageError> {
+    pub async fn ensure_firebase_user(
+        &self,
+        project_id: &str,
+        uid: &str,
+    ) -> Result<UserWorkspace, StorageError> {
         match &self.storage {
             Some(storage) => storage.ensure_firebase_user(project_id, uid).await,
             None => Err(StorageError::IdentityStorageUnavailable),
         }
     }
 
-    pub async fn is_workspace_member(&self, user_id: uuid::Uuid, workspace_id: uuid::Uuid) -> Result<bool, StorageError> {
+    pub async fn is_workspace_member(
+        &self,
+        user_id: uuid::Uuid,
+        workspace_id: uuid::Uuid,
+    ) -> Result<bool, StorageError> {
         match &self.storage {
             Some(storage) => storage.is_workspace_member(user_id, workspace_id).await,
             None => Ok(false),
         }
     }
 
-    pub async fn list_user_workspaces(&self, user_id: uuid::Uuid) -> Result<Vec<Workspace>, StorageError> {
+    pub async fn list_user_workspaces(
+        &self,
+        user_id: uuid::Uuid,
+    ) -> Result<Vec<Workspace>, StorageError> {
         match &self.storage {
             Some(storage) => storage.list_user_workspaces(user_id).await,
             None => Ok(Vec::new()),
         }
     }
 
-    pub async fn create_workspace_for_user(&self, user_id: uuid::Uuid, name: String, actor: String) -> Result<Workspace, StorageError> {
+    pub async fn create_workspace_for_user(
+        &self,
+        user_id: uuid::Uuid,
+        name: String,
+        actor: String,
+    ) -> Result<Workspace, StorageError> {
         match &self.storage {
-            Some(storage) => storage.create_workspace_for_user(user_id, name, actor).await,
+            Some(storage) => {
+                storage
+                    .create_workspace_for_user(user_id, name, actor)
+                    .await
+            }
             None => Err(StorageError::IdentityStorageUnavailable),
         }
     }
 
-    pub async fn list_audit_events(&self, workspace_id: uuid::Uuid) -> Result<Vec<AuditEvent>, StorageError> {
+    pub async fn list_audit_events(
+        &self,
+        workspace_id: uuid::Uuid,
+    ) -> Result<Vec<AuditEvent>, StorageError> {
         match &self.storage {
             Some(storage) => storage.list_audit_events(workspace_id).await,
             None => Ok(self.audit.read().await.list_workspace(workspace_id)),

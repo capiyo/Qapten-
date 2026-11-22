@@ -1,9 +1,13 @@
 use jsonwebtoken::{decode, decode_header, Algorithm, DecodingKey, Validation};
 use serde::Deserialize;
-use std::{sync::Arc, time::{Duration, Instant}};
+use std::{
+    sync::Arc,
+    time::{Duration, Instant},
+};
 use tokio::sync::RwLock;
 
-const FIREBASE_JWKS_URL: &str = "https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com";
+const FIREBASE_JWKS_URL: &str =
+    "https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com";
 const CLOCK_SKEW_SECONDS: u64 = 60;
 const JWKS_REFRESH_COOLDOWN: Duration = Duration::from_secs(5);
 
@@ -96,20 +100,34 @@ impl FirebaseVerifier {
                 return Ok(cached.keys.clone());
             }
         }
-        let response = self.client.get(self.jwks_url.as_ref()).send().await
+        let response = self
+            .client
+            .get(self.jwks_url.as_ref())
+            .send()
+            .await
             .map_err(|_| FirebaseAuthError::KeyService)?;
         if !response.status().is_success() {
             return Err(FirebaseAuthError::KeyService);
         }
-        let ttl = response.headers().get(reqwest::header::CACHE_CONTROL)
+        let ttl = response
+            .headers()
+            .get(reqwest::header::CACHE_CONTROL)
             .and_then(|value| value.to_str().ok())
-            .and_then(|value| value.split(',').find_map(|part| part.trim().strip_prefix("max-age=")))
+            .and_then(|value| {
+                value
+                    .split(',')
+                    .find_map(|part| part.trim().strip_prefix("max-age="))
+            })
             .and_then(|value| value.parse::<u64>().ok())
             .unwrap_or(3600)
             .clamp(60, 86_400);
-        let document = response.json::<JwksDocument>().await
+        let document = response
+            .json::<JwksDocument>()
+            .await
             .map_err(|_| FirebaseAuthError::KeyService)?;
-        let keys: Vec<Jwk> = document.keys.into_iter()
+        let keys: Vec<Jwk> = document
+            .keys
+            .into_iter()
             .filter(|key| key.kty == "RSA" && key.alg.as_deref().unwrap_or("RS256") == "RS256")
             .collect();
         if keys.is_empty() {
@@ -175,7 +193,11 @@ ywJ90rORebTVRXS775KyPffAjG139CCYShZblP79A03zm0uHTd3k6AT/Ptp+Otyp
 AkhVzUbUCeSFotfzkQEyfX9J
 -----END PRIVATE KEY-----"#;
         let now = chrono::Utc::now().timestamp() as u64;
-        let exp = if expired { now.saturating_sub(300) } else { now + 300 };
+        let exp = if expired {
+            now.saturating_sub(300)
+        } else {
+            now + 300
+        };
         let claims = serde_json::json!({
             "iss": "https://securetoken.google.com/axon-test-project",
             "aud": "axon-test-project",
@@ -186,7 +208,12 @@ AkhVzUbUCeSFotfzkQEyfX9J
         });
         let mut header = jsonwebtoken::Header::new(Algorithm::RS256);
         header.kid = Some("local-test-key".into());
-        encode(&header, &claims, &EncodingKey::from_rsa_pem(PRIVATE_KEY.as_bytes()).unwrap()).unwrap()
+        encode(
+            &header,
+            &claims,
+            &EncodingKey::from_rsa_pem(PRIVATE_KEY.as_bytes()).unwrap(),
+        )
+        .unwrap()
     }
 
     pub async fn verify(&self, token: &str) -> Result<FirebaseIdentity, FirebaseAuthError> {
@@ -215,8 +242,12 @@ AkhVzUbUCeSFotfzkQEyfX9J
         validation.validate_exp = true;
         validation.validate_nbf = true;
         let claims = decode::<FirebaseClaims>(token, &decoding_key, &validation)
-            .map_err(|_| FirebaseAuthError::InvalidToken)?.claims;
-        if claims.sub.is_empty() || claims.sub.len() > 128 || claims.sub != claims.user_id.clone().unwrap_or_else(|| claims.sub.clone()) {
+            .map_err(|_| FirebaseAuthError::InvalidToken)?
+            .claims;
+        if claims.sub.is_empty()
+            || claims.sub.len() > 128
+            || claims.sub != claims.user_id.clone().unwrap_or_else(|| claims.sub.clone())
+        {
             return Err(FirebaseAuthError::InvalidToken);
         }
         Ok(FirebaseIdentity {
@@ -232,13 +263,19 @@ mod tests {
 
     #[test]
     fn verifier_requires_a_project_id() {
-        assert!(matches!(FirebaseVerifier::new(" ".into()), Err(FirebaseAuthError::MissingProject)));
+        assert!(matches!(
+            FirebaseVerifier::new(" ".into()),
+            Err(FirebaseAuthError::MissingProject)
+        ));
     }
 
     #[test]
     fn firebase_issuer_is_project_scoped() {
         let project = "axon-test-project";
-        assert_eq!(format!("https://securetoken.google.com/{project}"), "https://securetoken.google.com/axon-test-project");
+        assert_eq!(
+            format!("https://securetoken.google.com/{project}"),
+            "https://securetoken.google.com/axon-test-project"
+        );
     }
 
     const TEST_PRIVATE_KEY: &str = r#"-----BEGIN PRIVATE KEY-----
@@ -331,13 +368,21 @@ xwHsID0kXFg8C746vTsQbmrQtcGVXypnei5wd0Fp/cBbRzJXmDTKR2SvJukL8Vkb
         });
         let mut header = Header::new(Algorithm::RS256);
         header.kid = Some("local-test-key".into());
-        encode(&header, &claims, &EncodingKey::from_rsa_pem(private_key.as_bytes()).unwrap()).unwrap()
+        encode(
+            &header,
+            &claims,
+            &EncodingKey::from_rsa_pem(private_key.as_bytes()).unwrap(),
+        )
+        .unwrap()
     }
 
     #[tokio::test]
     async fn accepts_locally_signed_firebase_token_without_network() {
         let verifier = offline_verifier();
-        let identity = verifier.verify(&signed_token(TEST_PRIVATE_KEY)).await.unwrap();
+        let identity = verifier
+            .verify(&signed_token(TEST_PRIVATE_KEY))
+            .await
+            .unwrap();
         assert_eq!(identity.uid, "local-user-1");
         assert_eq!(identity.project_id, "axon-test-project");
     }
@@ -367,11 +412,16 @@ xwHsID0kXFg8C746vTsQbmrQtcGVXypnei5wd0Fp/cBbRzJXmDTKR2SvJukL8Vkb
             "n": "v3SikEyycB1cf_KuzKCTsynsY9S53YXBMhE2BeTtvlDsU-607fUhWZnpsgSbXdexKJ6BlqAw-1y2L2aaTH60JZvDJJjUv0IckE68uFpFlg1nclh0UyCqjVeeYTeVJvEzaL1nzH4FgdqCzbNPfCkQgEYGnb1sBZWDlKhfwVyPjyWfVU0JCTYEgFruksQd8rG0dA06NPuPcIwLqExTUiib-V8ezmbha02pd3CDgdllVJmLVWIBiKb8VPGnOqlKC6lV5ED1EotujnsfH5Lf3w499yShPM5xe7TpcwaLitbabxCGppa0iANOZwA5nQGV_Z1wPJqEjbLA2uA1YauU24bRGw",
             "e": "AQAB"
         }]});
-        let app = Router::new().route("/jwks", get(move || {
-            let jwks = jwks.clone();
-            async move { Json(jwks) }
-        }));
-        tokio::spawn(async move { axum::serve(listener, app).await.unwrap(); });
+        let app = Router::new().route(
+            "/jwks",
+            get(move || {
+                let jwks = jwks.clone();
+                async move { Json(jwks) }
+            }),
+        );
+        tokio::spawn(async move {
+            axum::serve(listener, app).await.unwrap();
+        });
 
         let verifier = offline_verifier();
         verifier.cache.write().await.as_mut().unwrap().keys[0].kid = "retired-key".into();
@@ -380,7 +430,10 @@ xwHsID0kXFg8C746vTsQbmrQtcGVXypnei5wd0Fp/cBbRzJXmDTKR2SvJukL8Vkb
             jwks_url: Arc::from(format!("http://{address}/jwks")),
             ..verifier
         };
-        let identity = verifier.verify(&signed_token(TEST_PRIVATE_KEY)).await.unwrap();
+        let identity = verifier
+            .verify(&signed_token(TEST_PRIVATE_KEY))
+            .await
+            .unwrap();
         assert_eq!(identity.uid, "local-user-1");
     }
 }

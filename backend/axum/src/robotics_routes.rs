@@ -146,13 +146,17 @@ mod tests {
             State(state.clone()),
             Path("simulator-1".into()),
             Json(input("sim-event-1", 1)),
-        ).await.expect("fresh event should be accepted");
+        )
+        .await
+        .expect("fresh event should be accepted");
         assert_eq!(first.0, StatusCode::ACCEPTED);
         let duplicate = ingest_simulated_telemetry(
             State(state),
             Path("simulator-1".into()),
             Json(input("sim-event-1", 2)),
-        ).await.expect_err("duplicate event ID should be rejected");
+        )
+        .await
+        .expect_err("duplicate event ID should be rejected");
         assert_eq!(duplicate.0, StatusCode::CONFLICT);
     }
 
@@ -161,12 +165,14 @@ mod tests {
         let state = AppState::default();
         let mut event = input("oversized-event", 1);
         event.kind = TelemetryKind::Diagnostic;
-        event.payload.insert("data".into(), serde_json::Value::String("x".repeat(65 * 1024)));
-        let response = ingest_simulated_telemetry(
-            State(state),
-            Path("simulator-1".into()),
-            Json(event),
-        ).await.expect_err("oversized telemetry must be rejected");
+        event.payload.insert(
+            "data".into(),
+            serde_json::Value::String("x".repeat(65 * 1024)),
+        );
+        let response =
+            ingest_simulated_telemetry(State(state), Path("simulator-1".into()), Json(event))
+                .await
+                .expect_err("oversized telemetry must be rejected");
         assert_eq!(response.0, StatusCode::PAYLOAD_TOO_LARGE);
     }
 
@@ -175,11 +181,10 @@ mod tests {
         let state = AppState::default();
         let mut event = input("physical-event-1", 1);
         event.quality = TelemetryQuality::Measured;
-        let response = ingest_simulated_telemetry(
-            State(state),
-            Path("simulator-1".into()),
-            Json(event),
-        ).await.expect_err("measured telemetry must be rejected by simulator ingress");
+        let response =
+            ingest_simulated_telemetry(State(state), Path("simulator-1".into()), Json(event))
+                .await
+                .expect_err("measured telemetry must be rejected by simulator ingress");
         assert_eq!(response.0, StatusCode::FORBIDDEN);
     }
 
