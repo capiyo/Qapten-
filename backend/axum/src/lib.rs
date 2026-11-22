@@ -17,7 +17,7 @@ use axum::{
     middleware::{self, Next},
     response::{IntoResponse, Response},
     routing::{get, post},
-    Extension, Json, Router,
+    Json, Router,
 };
 use auth::{AuthError, AuthenticatedUser};
 use serde::Serialize;
@@ -43,9 +43,6 @@ async fn authenticate(
     if path == "/health" {
         return next.run(request).await;
     }
-    if path.starts_with("/api/v1/sim/") && !state.simulator_enabled {
-        return StatusCode::NOT_FOUND.into_response();
-    }
     let Some(verifier) = state.firebase_verifier.as_ref() else {
         return StatusCode::SERVICE_UNAVAILABLE.into_response();
     };
@@ -68,6 +65,9 @@ async fn authenticate(
         Err(_) => return StatusCode::SERVICE_UNAVAILABLE.into_response(),
     };
     let principal = AuthenticatedUser { user_id: identity.user_id, firebase_uid: claims.sub };
+    if path.starts_with("/api/v1/sim/") && !state.simulator_enabled {
+        return StatusCode::NOT_FOUND.into_response();
+    }
 
     // Resource paths are authorized before handlers run. Missing and foreign
     // resources intentionally share the same 404 response.
@@ -256,4 +256,20 @@ mod authentication_tests {
         let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
         assert!(json.as_array().unwrap().iter().all(|workspace| workspace["id"] != owner.workspace.id.to_string()));
     }
+    #[tokio::test]
+    async fn simulator_requires_authentication_and_remains_hidden_outside_development() {
+        let storage = SqliteStorage::connect_in_memory().await.unwrap().shared();
+        let state = AppState::with_storage_and_auth(
+            storage,
+            local_test_verifier("axon-test-project"),
+            false,
+        ).await.unwrap();
+        let router = app(state);
+        let path = "/api/v1/sim/devices/test-device/telemetry";
+        assert_eq!(request_status(router.clone(), "GET", path, None).await, StatusCode::UNAUTHORIZED);
+        let now = Utc::now().timestamp().max(0) as u64;
+        let token = local_test_token("axon-test-project", "sim-user", now + 600, false);
+        assert_eq!(request_status(router, "GET", path, Some(&token)).await, StatusCode::NOT_FOUND);
+    }
+
 }
