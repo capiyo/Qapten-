@@ -39,7 +39,7 @@ pub async fn list_audit_events(
             }),
         ));
     }
-    Ok(Json(state.audit.read().await.list_workspace(workspace_id)))
+    Ok(Json(state.list_audit_events(workspace_id).await.map_err(|_| storage_failure())?))
 }
 
 pub async fn health(State(state): State<AppState>) -> Json<Health> {
