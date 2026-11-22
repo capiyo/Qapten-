@@ -128,7 +128,7 @@ pub async fn create_task(
 
 pub async fn list_tasks(
     State(state): State<AppState>,
-    Extension(user): Extension<AuthenticatedUser>,
+    Extension(_user): Extension<AuthenticatedUser>,
     Path(workspace_id): Path<Uuid>,
 ) -> TaskResult<Json<Vec<Task>>> {
     if !state.workspaces.read().await.contains_key(&workspace_id) {
