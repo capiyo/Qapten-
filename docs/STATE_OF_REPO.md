@@ -55,7 +55,7 @@
 
 ## Not implemented / production gates
 
-- Firebase client sign-in screens and ID-token injection in the web/mobile clients. The backend verifier is ready, but clients still need to use the dedicated Axon Firebase project. Intended sign-in methods: phone first for Kenya, with Google and email-link fallback.
+- Web and Expo mobile Firebase email/password sign-in and account creation, session restoration, sign-out, and Firebase ID-token injection on every authenticated API request. Client configuration is supplied through app-specific public Firebase environment variables; no Firebase credentials are committed. Google, email-link and phone-first sign-in providers remain to be added before claiming the full intended Kenya sign-in experience.
 - Provider-side sign-in abuse controls and any client-specific phone/SMS quota configuration. Axon currently exposes no password/SMS sign-in endpoint; credentials should go directly through Firebase Auth, not through Axon's API.
 - Invitations, workspace membership management UI, role/capability grant persistence and management APIs.
 - Chats, messages, approved project memory, resume briefs and news consumer (Phase B).
