@@ -281,15 +281,16 @@ impl Storage for SqliteStorage {
         let now = Utc::now();
         let candidate_user_id = Uuid::new_v4();
         sqlx::query(
-            "INSERT INTO users (id, auth_provider, provider_subject, created_at) VALUES (?, 'firebase', ?, ?) ON CONFLICT(auth_provider, provider_subject) DO NOTHING"
+            "INSERT INTO users (id, auth_provider, provider_subject, created_at, firebase_project_id) VALUES (?, 'firebase', ?, ?, ?) ON CONFLICT(auth_provider, provider_subject) DO NOTHING"
         )
         .bind(candidate_user_id.to_string())
-        .bind(format!("{project_id}:{uid}"))
+         .bind(uid)
         .bind(now.to_rfc3339())
+        .bind(project_id)
         .execute(&mut *tx).await?;
 
         let row = sqlx::query("SELECT id, personal_workspace_id FROM users WHERE auth_provider = 'firebase' AND provider_subject = ?")
-            .bind(format!("{project_id}:{uid}"))
+             .bind(uid)
             .fetch_one(&mut *tx).await?;
         let user_id_text: String = row.try_get("id")?;
         let user_id = Uuid::parse_str(&user_id_text).map_err(|_| StorageError::InvalidStoredIdentifier)?;
