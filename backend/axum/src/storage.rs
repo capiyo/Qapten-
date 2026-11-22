@@ -9,7 +9,7 @@ use sqlx::{
     sqlite::{SqliteConnectOptions, SqlitePoolOptions},
     Row, SqlitePool,
 };
-use std::{str::FromStr, sync::Arc};
+use std::{str::FromStr, sync::Arc, time::Duration};
 use thiserror::Error;
 use uuid::Uuid;
 
@@ -138,7 +138,7 @@ pub struct SqliteStorage {
 
 impl SqliteStorage {
     pub async fn connect(database_url: &str) -> Result<Self, StorageError> {
-        let options = SqliteConnectOptions::from_str(database_url)?.create_if_missing(true);
+        let options = SqliteConnectOptions::from_str(database_url)?.create_if_missing(true).busy_timeout(Duration::from_secs(5));
         let pool = SqlitePoolOptions::new()
             .max_connections(5)
             .connect_with(options)
@@ -148,7 +148,7 @@ impl SqliteStorage {
     }
 
     pub async fn connect_in_memory() -> Result<Self, StorageError> {
-        let options = SqliteConnectOptions::from_str("sqlite::memory:")?;
+        let options = SqliteConnectOptions::from_str("sqlite::memory:")?.busy_timeout(Duration::from_secs(5));
         let pool = SqlitePoolOptions::new()
             .max_connections(1)
             .connect_with(options)
@@ -502,4 +502,26 @@ mod tests {
             .await;
         assert!(delete.is_err());
     }
+    #[tokio::test]
+    async fn concurrent_first_logins_create_one_user_and_one_personal_workspace() {
+        let storage = SqliteStorage::connect_in_memory().await.unwrap();
+        let (first, second) = tokio::join!(
+            storage.resolve_or_create_firebase_user("same-firebase-uid", Some("one@example.test")),
+            storage.resolve_or_create_firebase_user("same-firebase-uid", Some("one@example.test")),
+        );
+        let first = first.unwrap();
+        let second = second.unwrap();
+        assert_eq!(first.user_id, second.user_id);
+        assert_eq!(first.workspace.id, second.workspace.id);
+        assert!(storage.user_can_access_workspace(first.user_id, first.workspace.id).await.unwrap());
+        let ids = storage.list_user_workspace_ids(first.user_id).await.unwrap();
+        assert_eq!(ids, vec![first.workspace.id]);
+        let workspace_rows = sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM entities WHERE kind = 'workspace'")
+            .fetch_one(&storage.pool).await.unwrap();
+        assert_eq!(workspace_rows, 1);
+        let user_rows = sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM users WHERE provider = 'firebase' AND subject = 'same-firebase-uid'")
+            .fetch_one(&storage.pool).await.unwrap();
+        assert_eq!(user_rows, 1);
+    }
+
 }
