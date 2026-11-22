@@ -1,9 +1,9 @@
 pub mod audit;
 pub mod auth_middleware;
-pub mod chat_memory;
-mod chat_memory_routes;
 #[cfg(test)]
 mod auth_middleware_tests;
+pub mod chat_memory;
+mod chat_memory_routes;
 pub mod firebase_auth;
 pub mod identity;
 mod model;
@@ -18,7 +18,7 @@ pub use state::AppState;
 
 use axum::{
     middleware,
-    routing::{get, post, patch},
+    routing::{get, patch, post},
     Router,
 };
 use tower_http::{limit::RequestBodyLimitLayer, trace::TraceLayer};
