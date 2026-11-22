@@ -64,10 +64,7 @@ pub async fn create_task(
         .get(&input.assignee_agent_id)
         .is_some_and(|agent| agent.workspace_id == workspace_id)
     {
-        return Err(error(
-            StatusCode::BAD_REQUEST,
-            "Assignee agent must belong to the target workspace.",
-        ));
+        return Err(error(StatusCode::NOT_FOUND, "Assignee agent not found."));
     }
     drop(agents);
 
@@ -79,10 +76,7 @@ pub async fn create_task(
                 .is_some_and(|artifact| artifact.workspace_id == workspace_id)
         })
     {
-        return Err(error(
-            StatusCode::BAD_REQUEST,
-            "Every context artifact must exist in this workspace; at most 50 references are allowed.",
-        ));
+        return Err(error(StatusCode::NOT_FOUND, "One or more context artifacts were not found."));
     }
     drop(artifacts);
 
