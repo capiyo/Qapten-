@@ -12,7 +12,7 @@ mod task_routes;
 pub use state::AppState;
 
 use axum::{
-    extract::State,
+    extract::{ConnectInfo, State},
     http::{Request, StatusCode},
     middleware::{self, Next},
     response::{IntoResponse, Response},
@@ -23,6 +23,7 @@ use auth::{AuthError, AuthenticatedUser};
 use serde::Serialize;
 use tower_http::{limit::RequestBodyLimitLayer, trace::TraceLayer};
 use uuid::Uuid;
+use std::net::SocketAddr;
 
 #[derive(Serialize)]
 struct AuthFailure {
@@ -48,16 +49,19 @@ async fn authenticate(
     let Some(verifier) = state.firebase_verifier.as_ref() else {
         return StatusCode::SERVICE_UNAVAILABLE.into_response();
     };
+    let source_ip = request.extensions().get::<ConnectInfo<SocketAddr>>().map(|ConnectInfo(address)| address.ip());
     let Some(value) = request.headers().get(axum::http::header::AUTHORIZATION).and_then(|v| v.to_str().ok()) else {
-        return unauthorized();
+        return if state.record_auth_failure(source_ip).await { unauthorized() } else { StatusCode::TOO_MANY_REQUESTS.into_response() };
     };
     let Some(token) = value.strip_prefix("Bearer ").filter(|v| !v.is_empty()) else {
-        return unauthorized();
+        return if state.record_auth_failure(source_ip).await { unauthorized() } else { StatusCode::TOO_MANY_REQUESTS.into_response() };
     };
     let claims = match verifier.verify(token).await {
         Ok(claims) => claims,
         Err(AuthError::Unavailable) => return StatusCode::SERVICE_UNAVAILABLE.into_response(),
-        Err(AuthError::InvalidToken | AuthError::MissingProject) => return unauthorized(),
+        Err(AuthError::InvalidToken | AuthError::MissingProject) => {
+            return if state.record_auth_failure(source_ip).await { unauthorized() } else { StatusCode::TOO_MANY_REQUESTS.into_response() };
+        },
     };
     let identity = match state.resolve_firebase_user(&claims.sub, claims.email.as_deref()).await {
         Ok(identity) => identity,
