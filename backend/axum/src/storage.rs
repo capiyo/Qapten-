@@ -31,6 +31,8 @@ pub enum StorageError {
     InvalidStoredEntityKind,
     #[error("identity storage is unavailable")]
     IdentityStorageUnavailable,
+    #[error("Firebase UID is already bound to a different Firebase project")]
+    IdentityProjectMismatch,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -289,12 +291,16 @@ impl Storage for SqliteStorage {
         .bind(project_id)
         .execute(&mut *tx).await?;
 
-        let row = sqlx::query("SELECT id, personal_workspace_id FROM users WHERE auth_provider = 'firebase' AND provider_subject = ?")
+        let row = sqlx::query("SELECT id, personal_workspace_id, firebase_project_id FROM users WHERE auth_provider = 'firebase' AND provider_subject = ?")
              .bind(uid)
             .fetch_one(&mut *tx).await?;
         let user_id_text: String = row.try_get("id")?;
         let user_id = Uuid::parse_str(&user_id_text).map_err(|_| StorageError::InvalidStoredIdentifier)?;
         let linked_workspace: Option<String> = row.try_get("personal_workspace_id")?;
+        let stored_project: Option<String> = row.try_get("firebase_project_id")?;
+        if stored_project.as_deref() != Some(project_id) {
+            return Err(StorageError::IdentityProjectMismatch);
+        }
 
         let workspace = if let Some(workspace_id) = linked_workspace {
             let workspace_id = Uuid::parse_str(&workspace_id).map_err(|_| StorageError::InvalidStoredIdentifier)?;
