@@ -574,10 +574,8 @@ mod tests {
 
     #[tokio::test]
     async fn firebase_first_login_is_idempotent_under_concurrent_requests() {
-        let database_path = std::env::temp_dir().join(format!(
-            "axon-identity-{}.db",
-            Uuid::new_v4()
-        ));
+        let database_path =
+            std::env::temp_dir().join(format!("axon-identity-{}.db", Uuid::new_v4()));
         let database_url = format!("sqlite://{}", database_path.display());
         let storage = SqliteStorage::connect(&database_url).await.unwrap();
         let (first, second) = tokio::join!(
