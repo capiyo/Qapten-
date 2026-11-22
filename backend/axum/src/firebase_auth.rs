@@ -61,6 +61,7 @@ struct CachedJwks {
 #[derive(Clone)]
 pub struct FirebaseVerifier {
     project_id: Arc<str>,
+    jwks_url: Arc<str>,
     client: reqwest::Client,
     cache: Arc<RwLock<Option<CachedJwks>>>,
 }
@@ -77,6 +78,7 @@ impl FirebaseVerifier {
             .map_err(|_| FirebaseAuthError::KeyService)?;
         Ok(Self {
             project_id: Arc::from(project_id),
+            jwks_url: Arc::from(FIREBASE_JWKS_URL),
             client,
             cache: Arc::new(RwLock::new(None)),
         })
@@ -90,7 +92,7 @@ impl FirebaseVerifier {
                 }
             }
         }
-        let response = self.client.get(FIREBASE_JWKS_URL).send().await
+        let response = self.client.get(self.jwks_url.as_ref()).send().await
             .map_err(|_| FirebaseAuthError::KeyService)?;
         if !response.status().is_success() {
             return Err(FirebaseAuthError::KeyService);
@@ -120,6 +122,7 @@ impl FirebaseVerifier {
     pub(crate) fn test_verifier() -> Self {
         Self {
             project_id: Arc::from("axon-test-project"),
+            jwks_url: Arc::from(FIREBASE_JWKS_URL),
             client: reqwest::Client::new(),
             cache: Arc::new(RwLock::new(Some(CachedJwks {
                 keys: vec![Jwk {
@@ -293,6 +296,7 @@ xwHsID0kXFg8C746vTsQbmrQtcGVXypnei5wd0Fp/cBbRzJXmDTKR2SvJukL8Vkb
     fn offline_verifier() -> FirebaseVerifier {
         FirebaseVerifier {
             project_id: Arc::from("axon-test-project"),
+            jwks_url: Arc::from(FIREBASE_JWKS_URL),
             client: reqwest::Client::new(),
             cache: Arc::new(RwLock::new(Some(CachedJwks {
                 keys: vec![Jwk {
@@ -338,5 +342,38 @@ xwHsID0kXFg8C746vTsQbmrQtcGVXypnei5wd0Fp/cBbRzJXmDTKR2SvJukL8Vkb
             verifier.verify(&signed_token(WRONG_PRIVATE_KEY)).await,
             Err(FirebaseAuthError::InvalidToken)
         ));
+    }
+
+    #[tokio::test]
+    async fn refreshes_jwks_when_a_rotated_kid_is_not_cached() {
+        use axum::{routing::get, Json, Router};
+        use serde_json::json;
+        use tokio::net::TcpListener;
+
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = listener.local_addr().unwrap();
+        let jwks = json!({"keys": [{
+            "kid": "local-test-key",
+            "kty": "RSA",
+            "alg": "RS256",
+            "use": "sig",
+            "n": "v3SikEyycB1cf_KuzKCTsynsY9S53YXBMhE2BeTtvlDsU-607fUhWZnpsgSbXdexKJ6BlqAw-1y2L2aaTH60JZvDJJjUv0IckE68uFpFlg1nclh0UyCqjVeeYTeVJvEzaL1nzH4FgdqCzbNPfCkQgEYGnb1sBZWDlKhfwVyPjyWfVU0JCTYEgFruksQd8rG0dA06NPuPcIwLqExTUiib-V8ezmbha02pd3CDgdllVJmLVWIBiKb8VPGnOqlKC6lV5ED1EotujnsfH5Lf3w499yShPM5xe7TpcwaLitbabxCGppa0iANOZwA5nQGV_Z1wPJqEjbLA2uA1YauU24bRGw",
+            "e": "AQAB"
+        }]});
+        let app = Router::new().route("/jwks", get(move || {
+            let jwks = jwks.clone();
+            async move { Json(jwks) }
+        }));
+        tokio::spawn(async move { axum::serve(listener, app).await.unwrap(); });
+
+        let verifier = offline_verifier();
+        verifier.cache.write().await.as_mut().unwrap().keys[0].kid = "retired-key".into();
+        // A stale key ID forces an immediate refresh against the local JWKS fixture.
+        let verifier = FirebaseVerifier {
+            jwks_url: Arc::from(format!("http://{address}/jwks")),
+            ..verifier
+        };
+        let identity = verifier.verify(&signed_token(TEST_PRIVATE_KEY)).await.unwrap();
+        assert_eq!(identity.uid, "local-user-1");
     }
 }
