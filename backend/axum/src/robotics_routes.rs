@@ -137,88 +137,50 @@ pub async fn list_simulated_telemetry(
 mod tests {
     use super::*;
     use crate::robotics::{TelemetryKind, TelemetryQuality};
-    use axum::{body::Body, http::Request};
     use chrono::Duration;
-    use tower::ServiceExt;
 
     #[tokio::test]
     async fn simulator_ingress_accepts_fresh_event_and_rejects_duplicate_id() {
         let state = AppState::default();
-        let app = crate::app(state);
-        let payload = serde_json::json!({
-            "event_id": "sim-event-1",
-            "sequence": 1,
-            "observed_at": Utc::now().to_rfc3339(),
-            "kind": "heartbeat",
-            "payload": {},
-            "quality": "simulated"
-        });
-        let request = || {
-            Request::builder()
-                .method("POST")
-                .uri("/api/v1/sim/devices/simulator-1/telemetry")
-                .header("content-type", "application/json")
-                .body(Body::from(serde_json::to_vec(&payload).unwrap()))
-                .unwrap()
-        };
-
-        let accepted = app.clone().oneshot(request()).await.unwrap();
-        assert_eq!(accepted.status(), StatusCode::ACCEPTED);
-
-        let duplicate = app.oneshot(request()).await.unwrap();
-        assert_eq!(duplicate.status(), StatusCode::CONFLICT);
+        let first = ingest_simulated_telemetry(
+            State(state.clone()),
+            Path("simulator-1".into()),
+            Json(input("sim-event-1", 1)),
+        ).await.expect("fresh event should be accepted");
+        assert_eq!(first.0, StatusCode::ACCEPTED);
+        let duplicate = ingest_simulated_telemetry(
+            State(state),
+            Path("simulator-1".into()),
+            Json(input("sim-event-1", 2)),
+        ).await.expect_err("duplicate event ID should be rejected");
+        assert_eq!(duplicate.0, StatusCode::CONFLICT);
     }
 
     #[tokio::test]
     async fn simulator_ingress_rejects_oversized_payload() {
-        let app = crate::app(AppState::default());
-        let payload = serde_json::json!({
-            "event_id": "oversized-event",
-            "sequence": 1,
-            "observed_at": Utc::now().to_rfc3339(),
-            "kind": "diagnostic",
-            "payload": { "data": "x".repeat(65 * 1024) },
-            "quality": "simulated"
-        });
-        let response = app
-            .oneshot(
-                Request::builder()
-                    .method("POST")
-                    .uri("/api/v1/sim/devices/simulator-1/telemetry")
-                    .header("content-type", "application/json")
-                    .body(Body::from(serde_json::to_vec(&payload).unwrap()))
-                    .unwrap(),
-            )
-            .await
-            .unwrap();
-
-        assert_eq!(response.status(), StatusCode::PAYLOAD_TOO_LARGE);
+        let state = AppState::default();
+        let mut event = input("oversized-event", 1);
+        event.kind = TelemetryKind::Diagnostic;
+        event.payload.insert("data".into(), serde_json::Value::String("x".repeat(65 * 1024)));
+        let response = ingest_simulated_telemetry(
+            State(state),
+            Path("simulator-1".into()),
+            Json(event),
+        ).await.expect_err("oversized telemetry must be rejected");
+        assert_eq!(response.0, StatusCode::PAYLOAD_TOO_LARGE);
     }
 
     #[tokio::test]
     async fn simulator_ingress_rejects_measured_quality() {
-        let app = crate::app(AppState::default());
-        let payload = serde_json::json!({
-            "event_id": "physical-event-1",
-            "sequence": 1,
-            "observed_at": Utc::now().to_rfc3339(),
-            "kind": "heartbeat",
-            "payload": {},
-            "quality": "measured"
-        });
-        let response = app
-            .oneshot(
-                Request::builder()
-                    .method("POST")
-                    .uri("/api/v1/sim/devices/simulator-1/telemetry")
-                    .header("content-type", "application/json")
-                    .body(Body::from(serde_json::to_vec(&payload).unwrap()))
-                    .unwrap(),
-            )
-            .await
-            .unwrap();
-
-        assert_eq!(response.status(), StatusCode::FORBIDDEN);
+        let state = AppState::default();
+        let mut event = input("physical-event-1", 1);
+        event.quality = TelemetryQuality::Measured;
+        let response = ingest_simulated_telemetry(
+            State(state),
+            Path("simulator-1".into()),
+            Json(event),
+        ).await.expect_err("measured telemetry must be rejected by simulator ingress");
+        assert_eq!(response.0, StatusCode::FORBIDDEN);
     }
 
     fn input(event_id: &str, sequence: u64) -> TelemetryIngest {
