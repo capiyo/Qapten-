@@ -11,6 +11,7 @@ const RESUME_PROMPT_VERSION: &str = "resume-v1";
 pub struct Chat {
     pub id: Uuid,
     pub workspace_id: Uuid,
+    pub owner_id: Uuid,
     pub title: String,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
@@ -87,17 +88,17 @@ impl ChatMemoryStore {
     }
 
     pub async fn list_chats(&self, workspace_id: Uuid) -> Result<Vec<Chat>, sqlx::Error> {
-        let rows = sqlx::query("SELECT id, workspace_id, title, created_at, updated_at, archived FROM chats WHERE workspace_id = ? AND archived = 0 ORDER BY updated_at DESC, id DESC")
+        let rows = sqlx::query("SELECT id, workspace_id, owner_id, title, created_at, updated_at, archived FROM chats WHERE workspace_id = ? AND archived = 0 ORDER BY updated_at DESC, id DESC")
             .bind(workspace_id.to_string()).fetch_all(&self.pool).await?;
         rows.iter().map(parse_chat).collect()
     }
 
-    pub async fn create_chat(&self, workspace_id: Uuid, actor: &str, title: String) -> Result<Chat, sqlx::Error> {
+    pub async fn create_chat(&self, workspace_id: Uuid, owner_id: Uuid, actor: &str, title: String) -> Result<Chat, sqlx::Error> {
         let now = Utc::now();
-        let chat = Chat { id: Uuid::new_v4(), workspace_id, title, created_at: now, updated_at: now, archived: false };
+        let chat = Chat { id: Uuid::new_v4(), workspace_id, owner_id, title, created_at: now, updated_at: now, archived: false };
         let mut tx = self.pool.begin().await?;
-        sqlx::query("INSERT INTO chats (id, workspace_id, title, created_at, updated_at, archived, memory_version) VALUES (?, ?, ?, ?, ?, 0, 0)")
-            .bind(chat.id.to_string()).bind(workspace_id.to_string()).bind(&chat.title)
+        sqlx::query("INSERT INTO chats (id, workspace_id, owner_id, title, created_at, updated_at, archived, memory_version) VALUES (?, ?, ?, ?, ?, ?, 0, 0)")
+            .bind(chat.id.to_string()).bind(workspace_id.to_string()).bind(owner_id.to_string()).bind(&chat.title)
             .bind(now.to_rfc3339()).bind(now.to_rfc3339()).execute(&mut *tx).await?;
         insert_audit(&mut tx, workspace_id, actor, "chat.created", "chat", chat.id, json!({"chat_id": chat.id})).await?;
         tx.commit().await?;
@@ -105,7 +106,7 @@ impl ChatMemoryStore {
     }
 
     pub async fn get_chat(&self, workspace_id: Uuid, chat_id: Uuid) -> Result<Option<ChatDetail>, sqlx::Error> {
-        let row = sqlx::query("SELECT id, workspace_id, title, created_at, updated_at, archived, memory_version FROM chats WHERE id = ? AND workspace_id = ?")
+        let row = sqlx::query("SELECT id, workspace_id, owner_id, title, created_at, updated_at, archived, memory_version FROM chats WHERE id = ? AND workspace_id = ?")
             .bind(chat_id.to_string()).bind(workspace_id.to_string()).fetch_optional(&self.pool).await?;
         let Some(row) = row else { return Ok(None); };
         let chat = parse_chat(&row)?;
@@ -255,6 +256,7 @@ fn parse_chat(row: &sqlx::sqlite::SqliteRow) -> Result<Chat, sqlx::Error> {
     Ok(Chat {
         id: Uuid::parse_str(&row.try_get::<String, _>("id")?).map_err(|e| sqlx::Error::Decode(Box::new(e)))?,
         workspace_id: Uuid::parse_str(&row.try_get::<String, _>("workspace_id")?).map_err(|e| sqlx::Error::Decode(Box::new(e)))?,
+        owner_id: Uuid::parse_str(&row.try_get::<String, _>("owner_id")?).map_err(|e| sqlx::Error::Decode(Box::new(e)))?,
         title: row.try_get("title")?,
         created_at: DateTime::parse_from_rfc3339(&row.try_get::<String, _>("created_at")?).map_err(|e| sqlx::Error::Decode(Box::new(e)))?.with_timezone(&Utc),
         updated_at: DateTime::parse_from_rfc3339(&row.try_get::<String, _>("updated_at")?).map_err(|e| sqlx::Error::Decode(Box::new(e)))?.with_timezone(&Utc),
@@ -318,8 +320,8 @@ mod tests {
     async fn resume_brief_uses_only_approved_memory_and_invalidates_after_mutation() {
         let storage = SqliteStorage::connect_in_memory().await.unwrap();
         let store = storage.chat_memory_store();
-        let workspace_id = Uuid::new_v4();
-        let chat = store.create_chat(workspace_id, "human:test", "Persistence design".into()).await.unwrap();
+        let workspace_id = account.workspace.id;
+        let chat = store.create_chat(workspace_id, account.user_id, "human:test", "Persistence design".into()).await.unwrap();
         let message = store.append_message(workspace_id, chat.id, "human:test", CreateMessage {
             role: "user".into(),
             content: "We need a durable way to continue this project.".into(),
@@ -361,8 +363,9 @@ mod tests {
     #[tokio::test]
     async fn chat_reads_are_workspace_scoped_and_archived_chats_disappear_from_list() {
         let storage = SqliteStorage::connect_in_memory().await.unwrap();
+        let account = storage.ensure_firebase_user("axon-test", "memory-test-user").await.unwrap();
         let store = storage.chat_memory_store();
-        let workspace_id = Uuid::new_v4();
+        let workspace_id = account.workspace.id;
         let other_workspace = Uuid::new_v4();
         let chat = store.create_chat(workspace_id, "human:test", "Private chat".into()).await.unwrap();
 
@@ -376,8 +379,9 @@ mod tests {
     #[tokio::test]
     async fn memory_event_log_rejects_updates_and_deletes() {
         let storage = SqliteStorage::connect_in_memory().await.unwrap();
+        let account = storage.ensure_firebase_user("axon-test", "memory-test-user-3").await.unwrap();
         let store = storage.chat_memory_store();
-        let workspace_id = Uuid::new_v4();
+        let workspace_id = account.workspace.id;
         let chat = store.create_chat(workspace_id, "human:test", "Append only".into()).await.unwrap();
         let entry = store.create_memory_entry(workspace_id, chat.id, "human:test", CreateMemoryEntry {
             entry_type: "fact".into(),
