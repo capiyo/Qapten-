@@ -346,6 +346,35 @@ function WorkspaceApp() {
               <h2>{selected.name}</h2>
               <p>Register agents, capture their work, and create explicit handoffs.</p>
             </div>
+            <section className="panel chat-panel">
+              <div className="panel-heading"><div><span className="kicker">04 · PROJECT CONVERSATIONS</span><h3>Chats & memory</h3></div><span className="count">{chats.length} CHATS</span></div>
+              <div className="chat-layout">
+                <aside className="chat-sidebar">
+                  <form className="stack-form" onSubmit={createChat}>
+                    <label htmlFor="chat-title">New chat</label>
+                    <input id="chat-title" value={chatTitle} onChange={event => setChatTitle(event.target.value)} placeholder="What are we working on?" maxLength={160} required />
+                    <button disabled={!chatTitle.trim() || busy}>Create chat</button>
+                  </form>
+                  <div className="chat-list">
+                    {chats.map(chat => <button type="button" className={activeChat === chat.id ? "chat-list-item active" : "chat-list-item"} key={chat.id} onClick={() => setActiveChat(chat.id)}><strong>{chat.title}</strong><small>{new Date(chat.updated_at).toLocaleString()}</small></button>)}
+                    {chats.length === 0 && <p className="muted">Chats created in this workspace will appear here.</p>}
+                  </div>
+                </aside>
+                <div className="chat-main">
+                  {!chatDetail ? <div className="empty-state compact"><h3>Select a chat or create one.</h3><p>Each conversation keeps its own messages, approved memory and resume brief.</p></div> : <>
+                    <div className="resume-brief"><span className="kicker">RESUME BRIEF · APPROVED MEMORY ONLY</span><p>{chatDetail.resume_brief || "No context yet. Add messages and approve useful memory to build a concise handoff."}</p></div>
+                    <div className="chat-messages">{chatDetail.messages.map(message => <article className={`chat-message message-${message.role}`} key={message.id}><div><strong>{message.role}</strong>{message.answered_by && <small> · {message.answered_by}</small>}</div><p>{message.content}</p></article>)}{chatDetail.messages.length === 0 && <p className="muted">No messages yet.</p>}</div>
+                    <form className="chat-compose" onSubmit={sendChatMessage}><textarea value={messageDraft} onChange={event => setMessageDraft(event.target.value)} rows={3} maxLength={256000} placeholder="Write a message to this project chat…" required /><button disabled={!messageDraft.trim() || busy}>Send message</button></form>
+                    <div className="memory-section">
+                      <div className="panel-heading"><div><span className="kicker">PROJECT MEMORY</span><h3>Review proposed knowledge</h3></div></div>
+                      <form className="memory-compose" onSubmit={proposeMemory}><select value={memoryType} onChange={event => setMemoryType(event.target.value as ProjectMemoryEntry["type"])}><option value="decision">Decision</option><option value="fact">Fact</option><option value="constraint">Constraint</option><option value="open_task">Open task</option><option value="note">Note</option></select><input value={memoryDraft} onChange={event => setMemoryDraft(event.target.value)} placeholder="Capture a decision, fact, constraint or open task…" maxLength={4000} required /><button disabled={!memoryDraft.trim() || busy}>Propose memory</button></form>
+                      {chatDetail.memory.map(entry => <article className="memory-item" key={entry.id}><div><strong>{entry.type.replaceAll("_", " ")}</strong><small> · {entry.status}</small></div><p>{entry.text}</p>{entry.status === "proposed" && <div className="memory-actions"><button type="button" disabled={busy} onClick={() => void reviewMemory(entry, "approve")}>Approve</button><button type="button" className="secondary" disabled={busy} onClick={() => void reviewMemory(entry, "reject")}>Reject</button></div>}</article>)}
+                      {chatDetail.memory.length === 0 && <p className="muted">No project memory proposed yet. Only approved entries shape future resume briefs.</p>}
+                    </div>
+                  </>}
+                </div>
+              </div>
+            </section>
             <div className="workspace-columns">
               <section className="panel">
                 <div className="panel-heading"><div><span className="kicker">01 · PARTICIPANTS</span><h3>Agents</h3></div><span className="count">{agents.length}</span></div>
