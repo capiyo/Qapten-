@@ -504,7 +504,9 @@ mod tests {
     }
     #[tokio::test]
     async fn concurrent_first_logins_create_one_user_and_one_personal_workspace() {
-        let storage = SqliteStorage::connect_in_memory().await.unwrap();
+        let database = std::env::temp_dir().join(format!("axon-identity-{}.db", Uuid::new_v4()));
+        let url = format!("sqlite://{}", database.display());
+        let storage = SqliteStorage::connect(&url).await.unwrap();
         let (first, second) = tokio::join!(
             storage.resolve_or_create_firebase_user("same-firebase-uid", Some("one@example.test")),
             storage.resolve_or_create_firebase_user("same-firebase-uid", Some("one@example.test")),
