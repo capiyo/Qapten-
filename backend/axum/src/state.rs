@@ -1,8 +1,9 @@
 use crate::{
+    auth::FirebaseVerifier,
     audit::{AuditEvent, AuditStore},
     model::{Agent, Artifact, Task, Workspace},
     robotics::TelemetryEvent,
-    storage::{EntityKind, Storage, StorageError, StorageMutation, StoredEntity},
+    storage::{EntityKind, Storage, StorageError, StorageMutation, StoredEntity, UserWorkspace},
 };
 use std::{
     collections::{HashMap, HashSet},
@@ -29,6 +30,8 @@ pub struct AppState {
     /// Runtime cache backed by the append-only audit table when SQLite is configured.
     pub audit: Arc<RwLock<AuditStore>>,
     storage: Option<Arc<dyn Storage>>,
+    pub firebase_verifier: Option<FirebaseVerifier>,
+    pub simulator_enabled: bool,
 }
 
 impl AppState {
@@ -79,6 +82,56 @@ impl AppState {
         state.audit.write().await.restore(audit_events);
 
         Ok(state)
+    }
+
+    pub async fn with_storage_and_auth(
+        storage: Arc<dyn Storage>,
+        verifier: FirebaseVerifier,
+        simulator_enabled: bool,
+    ) -> Result<Self, StorageError> {
+        let mut state = Self::with_storage(storage).await?;
+        state.firebase_verifier = Some(verifier);
+        state.simulator_enabled = simulator_enabled;
+        Ok(state)
+    }
+
+    pub async fn resolve_firebase_user(
+        &self,
+        subject: &str,
+        email: Option<&str>,
+    ) -> Result<UserWorkspace, StorageError> {
+        let storage = self.storage.as_ref().ok_or(StorageError::IdentityProvisioning)?;
+        let identity = storage.resolve_or_create_firebase_user(subject, email).await?;
+        self.workspaces.write().await.insert(identity.workspace.id, identity.workspace.clone());
+        Ok(identity)
+    }
+
+    pub async fn user_can_access_workspace(
+        &self,
+        user_id: Uuid,
+        workspace_id: Uuid,
+    ) -> Result<bool, StorageError> {
+        match &self.storage {
+            Some(storage) => storage.user_can_access_workspace(user_id, workspace_id).await,
+            None => Ok(false),
+        }
+    }
+
+    pub async fn list_user_workspace_ids(&self, user_id: Uuid) -> Result<Vec<Uuid>, StorageError> {
+        match &self.storage {
+            Some(storage) => storage.list_user_workspace_ids(user_id).await,
+            None => Ok(Vec::new()),
+        }
+    }
+
+    pub async fn create_workspace_for_user(
+        &self,
+        workspace: Workspace,
+        user_id: Uuid,
+        audit: AuditEvent,
+    ) -> Result<(), StorageError> {
+        let storage = self.storage.as_ref().ok_or(StorageError::IdentityProvisioning)?;
+        storage.create_workspace_for_user(workspace, user_id, audit).await
     }
 
     pub async fn persist_entity(
