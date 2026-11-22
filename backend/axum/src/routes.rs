@@ -352,6 +352,7 @@ mod tests {
         let events = restored.audit.read().await.list_workspace(workspace_id);
         assert_eq!(events.len(), 1);
         assert_eq!(events[0].event_type, "workspace.created");
+        assert_eq!(events[0].actor, format!("user:{}", identity.user_id));
     }
 
     #[tokio::test]
@@ -374,5 +375,6 @@ mod tests {
         let audit = state.audit.read().await.list_workspace(response.1.id);
         assert_eq!(audit.len(), 1);
         assert_eq!(audit[0].event_type, "workspace.created");
+        assert_eq!(audit[0].actor, format!("user:{}", identity.user_id));
     }
 }
