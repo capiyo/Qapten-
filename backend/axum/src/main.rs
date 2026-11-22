@@ -38,7 +38,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         storage = "sqlite",
         "Axon API listening with Firebase authentication and SQLite storage"
     );
-    axum::serve(listener, app(state))
+    axum::serve(listener, app(state).into_make_service_with_connect_info::<SocketAddr>())
         .with_graceful_shutdown(shutdown_signal())
         .await?;
     Ok(())
