@@ -9,7 +9,7 @@ use sqlx::{
     sqlite::{SqliteConnectOptions, SqlitePoolOptions},
     Row, SqlitePool,
 };
-use std::{str::FromStr, sync::Arc};
+use std::{str::FromStr, sync::Arc, time::Duration};
 use thiserror::Error;
 use uuid::Uuid;
 
@@ -157,7 +157,9 @@ pub struct SqliteStorage {
 
 impl SqliteStorage {
     pub async fn connect(database_url: &str) -> Result<Self, StorageError> {
-        let options = SqliteConnectOptions::from_str(database_url)?.create_if_missing(true);
+        let options = SqliteConnectOptions::from_str(database_url)?
+            .create_if_missing(true)
+            .busy_timeout(Duration::from_secs(10));
         let pool = SqlitePoolOptions::new()
             .max_connections(5)
             .connect_with(options)
@@ -167,7 +169,8 @@ impl SqliteStorage {
     }
 
     pub async fn connect_in_memory() -> Result<Self, StorageError> {
-        let options = SqliteConnectOptions::from_str("sqlite::memory:")?;
+        let options = SqliteConnectOptions::from_str("sqlite::memory:")?
+            .busy_timeout(Duration::from_secs(10));
         let pool = SqlitePoolOptions::new()
             .max_connections(1)
             .connect_with(options)
@@ -571,7 +574,9 @@ mod tests {
 
     #[tokio::test]
     async fn firebase_first_login_is_idempotent_under_concurrent_requests() {
-        let storage = SqliteStorage::connect_in_memory().await.unwrap();
+        let database_path = std::env::temp_dir().join(format!("axon-identity-{}.db", Uuid::new_v4()));
+        let database_url = format!("sqlite://{}", database_path.display());
+        let storage = SqliteStorage::connect(&database_url).await.unwrap();
         let (first, second) = tokio::join!(
             storage.ensure_firebase_user("axon-project", "same-firebase-uid"),
             storage.ensure_firebase_user("axon-project", "same-firebase-uid"),
@@ -595,5 +600,7 @@ mod tests {
         let audit = storage.list_audit_events(first.workspace.id).await.unwrap();
         assert_eq!(audit.len(), 1);
         assert_eq!(audit[0].actor, format!("human:{}", first.user_id));
+        drop(storage);
+        std::fs::remove_file(database_path).unwrap();
     }
 }
