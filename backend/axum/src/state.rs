@@ -94,6 +94,11 @@ impl AppState {
         let Some(ip) = ip else { return true; };
         let now = Instant::now();
         let mut attempts = self.auth_failures.lock().await;
+        if !attempts.contains_key(&ip) && attempts.len() >= 4096 {
+            if let Some(oldest_ip) = attempts.keys().next().copied() {
+                attempts.remove(&oldest_ip);
+            }
+        }
         let history = attempts.entry(ip).or_default();
         while history.front().is_some_and(|at| now.duration_since(*at) >= Duration::from_secs(60)) {
             history.pop_front();
