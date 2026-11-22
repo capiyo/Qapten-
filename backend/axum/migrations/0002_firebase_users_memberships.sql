@@ -14,7 +14,8 @@ CREATE TABLE IF NOT EXISTS workspace_memberships (
     workspace_id TEXT NOT NULL,
     role TEXT NOT NULL CHECK(role IN ('owner', 'member')),
     created_at TEXT NOT NULL,
-    PRIMARY KEY(user_id, workspace_id)
+    PRIMARY KEY(user_id, workspace_id),
+    FOREIGN KEY(user_id) REFERENCES users(id)
 );
 
 CREATE INDEX IF NOT EXISTS idx_memberships_workspace
