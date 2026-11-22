@@ -210,7 +210,7 @@ impl SqliteStorage {
                     sequence: 0, event_id: Uuid::new_v4(), workspace_id: Some(candidate.id),
                     actor: format!("user:{user_id}"), event_type: "workspace.created".into(),
                     entity_type: "workspace".into(), entity_id: candidate.id.to_string(),
-                    occurred_at: now, metadata: serde_json::json!({"name": candidate.name, "provisioned": true}),
+                    occurred_at: now, metadata: serde_json::json!({"provisioned": true}),
                 };
                 sqlx::query("INSERT INTO audit_events (event_id, workspace_id, actor, event_type, entity_type, entity_id, occurred_at, metadata_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?)")
                     .bind(event.event_id.to_string()).bind(candidate.id.to_string()).bind(event.actor)
