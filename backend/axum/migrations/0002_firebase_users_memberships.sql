@@ -6,8 +6,7 @@ CREATE TABLE IF NOT EXISTS users (
     personal_workspace_id TEXT UNIQUE,
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL,
-    UNIQUE(provider, subject),
-    FOREIGN KEY(personal_workspace_id) REFERENCES entities(id)
+    UNIQUE(provider, subject)
 );
 
 CREATE TABLE IF NOT EXISTS workspace_memberships (
@@ -15,9 +14,7 @@ CREATE TABLE IF NOT EXISTS workspace_memberships (
     workspace_id TEXT NOT NULL,
     role TEXT NOT NULL CHECK(role IN ('owner', 'member')),
     created_at TEXT NOT NULL,
-    PRIMARY KEY(user_id, workspace_id),
-    FOREIGN KEY(user_id) REFERENCES users(id),
-    FOREIGN KEY(workspace_id) REFERENCES entities(id)
+    PRIMARY KEY(user_id, workspace_id)
 );
 
 CREATE INDEX IF NOT EXISTS idx_memberships_workspace
