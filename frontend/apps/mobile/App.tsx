@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { axonTheme } from "../../packages/theme/src";
+import { auth } from "./firebase";
 
 import type { Agent, Artifact, Health, Task, Workspace } from "../../packages/contracts/src";
 
@@ -18,9 +19,10 @@ import type { Agent, Artifact, Health, Task, Workspace } from "../../packages/co
 const API_BASE_URL = process.env.EXPO_PUBLIC_AXON_API_URL ?? "http://127.0.0.1:8080";
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const token = await auth?.currentUser?.getIdToken();
   const response = await fetch(`${API_BASE_URL}${path}`, {
     ...init,
-    headers: { "Content-Type": "application/json", ...init?.headers }
+    headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}), ...init?.headers }
   });
   if (!response.ok) {
     const body = await response.json().catch(() => ({ error: response.statusText }));
@@ -42,7 +44,7 @@ function ActionButton({ label, onPress, disabled = false, secondary = false }: {
   );
 }
 
-export default function App() {
+function WorkspaceApp() {
   const [health, setHealth] = useState<Health | null>(null);
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [selected, setSelected] = useState<Workspace | null>(null);
@@ -361,3 +363,40 @@ const styles = StyleSheet.create({
   footer: { color: axonTheme.color.textSubtle, fontSize: 9, letterSpacing: 1.1, marginTop: 34, textAlign: "center" },
   warning: { color: axonTheme.color.warning, fontSize: 10, lineHeight: 15, marginTop: 10, textAlign: "center" }
 });
+
+
+function AuthGate() {
+  const [user, setUser] = useState<import("firebase/auth").User | null>(null);
+  const [ready, setReady] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [createAccount, setCreateAccount] = useState(false);
+  const [authError, setAuthError] = useState("");
+  const [working, setWorking] = useState(false);
+
+  useEffect(() => {
+    if (!auth) { setReady(true); return; }
+    return onAuthStateChanged(auth, current => { setUser(current); setReady(true); });
+  }, []);
+
+  async function submit() {
+    if (!auth) return;
+    setWorking(true);
+    setAuthError("");
+    try {
+      if (createAccount) await createUserWithEmailAndPassword(auth, email.trim(), password);
+      else await signInWithEmailAndPassword(auth, email.trim(), password);
+    } catch (cause) {
+      setAuthError(cause instanceof Error ? cause.message : "Authentication failed.");
+    } finally { setWorking(false); }
+  }
+
+  if (!ready) return <SafeAreaView style={styles.safe}><View style={styles.page}><ActivityIndicator/><Text style={styles.muted}>Restoring your secure session…</Text></View></SafeAreaView>;
+  if (!auth) return <SafeAreaView style={styles.safe}><View style={styles.page}><Text style={styles.title}>Firebase configuration required</Text><Text style={styles.description}>Set the EXPO_PUBLIC_FIREBASE_* variables and restart the app.</Text></View></SafeAreaView>;
+  if (user) return <><View style={{paddingTop:36,paddingHorizontal:18,backgroundColor:axonTheme.color.canvas,flexDirection:"row",justifyContent:"flex-end"}}><Text style={styles.rowMeta}>{user.email} </Text><Text onPress={()=>void signOut(auth)} style={styles.back}>Sign out</Text></View><WorkspaceApp/></>;
+  return <SafeAreaView style={styles.safe}><ScrollView contentContainerStyle={styles.page} keyboardShouldPersistTaps="handled"><View style={styles.brandRow}><View style={styles.logo}><Text style={styles.logoText}>A</Text></View><Text style={styles.brand}>AXON</Text></View><Text style={styles.eyebrow}>SECURE ACCESS</Text><Text style={styles.title}>{createAccount ? "Create your account" : "Welcome back"}</Text><Text style={styles.description}>Sign in to access your personal workspace and its data.</Text><TextInput value={email} onChangeText={setEmail} placeholder="Email address" keyboardType="email-address" autoCapitalize="none" autoComplete="email" style={styles.input}/><TextInput value={password} onChangeText={setPassword} placeholder="Password" secureTextEntry autoCapitalize="none" autoComplete={createAccount ? "new-password" : "password"} style={styles.input}/><ActionButton label={working ? "Please wait…" : createAccount ? "Create account" : "Sign in"} onPress={()=>void submit()} disabled={working || !email.trim() || password.length<6}/>{authError ? <Text style={styles.errorText}>{authError}</Text> : null}<Text onPress={()=>setCreateAccount(value=>!value)} style={styles.back}>{createAccount ? "Already registered? Sign in" : "New to Axon? Create an account"}</Text></ScrollView></SafeAreaView>;
+}
+
+import { onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from "firebase/auth";
+
+export default function App() { return <AuthGate />; }
