@@ -13,7 +13,7 @@ import { StatusBar } from "expo-status-bar";
 import { axonTheme } from "../../packages/theme/src";
 import { auth } from "./firebase";
 
-import type { Agent, Artifact, Health, Task, Workspace } from "../../packages/contracts/src";
+import type { Agent, Artifact, Health, Task, Workspace, Chat, ChatDetail, ChatMessage, ProjectMemoryEntry } from "../../packages/contracts/src";
 
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_AXON_API_URL ?? "http://127.0.0.1:8080";
@@ -28,6 +28,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     const body = await response.json().catch(() => ({ error: response.statusText }));
     throw new Error(body.error ?? "Request failed");
   }
+  if (response.status === 204) return undefined as T;
   return response.json() as Promise<T>;
 }
 
@@ -51,6 +52,15 @@ function WorkspaceApp() {
   const [agents, setAgents] = useState<Agent[]>([]);
   const [artifacts, setArtifacts] = useState<Artifact[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [chats, setChats] = useState<Chat[]>([]);
+  const [activeChat, setActiveChat] = useState("");
+  const [chatDetail, setChatDetail] = useState<ChatDetail | null>(null);
+  const [chatTitle, setChatTitle] = useState("");
+  const [messageDraft, setMessageDraft] = useState("");
+  const [memoryDraft, setMemoryDraft] = useState("");
+  const [memoryType, setMemoryType] = useState<ProjectMemoryEntry["type"]>("note");
+  const [editingMemoryId, setEditingMemoryId] = useState("");
+  const [editMemoryDraft, setEditMemoryDraft] = useState("");
   const [workspaceName, setWorkspaceName] = useState("");
   const [agentName, setAgentName] = useState("");
   const [provider, setProvider] = useState("claude");
@@ -82,6 +92,12 @@ function WorkspaceApp() {
     setAgents(agentItems);
     setArtifacts(artifactItems);
     setTasks(taskItems);
+    const chatItems = await request<Chat[]>(`/api/v1/workspaces/${workspace.id}/chats`);
+    setChats(chatItems);
+    if (activeChat && !chatItems.some(chat => chat.id === activeChat)) {
+      setActiveChat("");
+      setChatDetail(null);
+    }
     if (!agentItems.some(agent => agent.id === assignee)) setAssignee(agentItems[0]?.id ?? "");
   }
 
@@ -96,6 +112,90 @@ function WorkspaceApp() {
       refreshWorkspace(selected).catch(cause => setError(cause instanceof Error ? cause.message : "Could not load workspace"));
     }
   }, [selected?.id]);
+
+  useEffect(() => {
+    if (!selected || !activeChat) { setChatDetail(null); return; }
+    request<ChatDetail>(`/api/v1/workspaces/${selected.id}/chats/${activeChat}`)
+      .then(setChatDetail)
+      .catch(cause => setError(cause instanceof Error ? cause.message : "Could not load chat"));
+  }, [selected?.id, activeChat]);
+
+  function createChat() {
+    if (!selected || !chatTitle.trim()) return;
+    void perform(async () => {
+      const chat = await request<Chat>(`/api/v1/workspaces/${selected.id}/chats`, {
+        method: "POST", body: JSON.stringify({ title: chatTitle.trim() })
+      });
+      setChatTitle("");
+      setChats(current => [chat, ...current]);
+      setActiveChat(chat.id);
+    });
+  }
+
+  function archiveChat() {
+    if (!selected || !activeChat) return;
+    void perform(async () => {
+      await request(`/api/v1/workspaces/${selected.id}/chats/${activeChat}/archive`, { method: "PATCH" });
+      setActiveChat("");
+      setChatDetail(null);
+      setChats(await request<Chat[]>(`/api/v1/workspaces/${selected.id}/chats`));
+    });
+  }
+
+  function sendChatMessage() {
+    if (!selected || !activeChat || !messageDraft.trim()) return;
+    void perform(async () => {
+      await request<ChatMessage>(`/api/v1/workspaces/${selected.id}/chats/${activeChat}/messages`, {
+        method: "POST", body: JSON.stringify({ role: "user", content: messageDraft.trim() })
+      });
+      setMessageDraft("");
+      const [detail, items] = await Promise.all([
+        request<ChatDetail>(`/api/v1/workspaces/${selected.id}/chats/${activeChat}`),
+        request<Chat[]>(`/api/v1/workspaces/${selected.id}/chats`)
+      ]);
+      setChatDetail(detail);
+      setChats(items);
+    });
+  }
+
+  function proposeMemory() {
+    if (!selected || !activeChat || !memoryDraft.trim()) return;
+    void perform(async () => {
+      await request<ProjectMemoryEntry>(`/api/v1/workspaces/${selected.id}/chats/${activeChat}/memory`, {
+        method: "POST", body: JSON.stringify({ type: memoryType, text: memoryDraft.trim() })
+      });
+      setMemoryDraft("");
+      setChatDetail(await request<ChatDetail>(`/api/v1/workspaces/${selected.id}/chats/${activeChat}`));
+    });
+  }
+
+  function changeMemory(entry: ProjectMemoryEntry, action: "reject" | "delete") {
+    if (!selected || !activeChat) return;
+    void perform(async () => {
+      await request<ProjectMemoryEntry>(`/api/v1/workspaces/${selected.id}/chats/${activeChat}/memory/${entry.id}/${action}`, { method: "POST" });
+      setChatDetail(await request<ChatDetail>(`/api/v1/workspaces/${selected.id}/chats/${activeChat}`));
+    });
+  }
+
+  function saveMemoryEdit(entry: ProjectMemoryEntry) {
+    if (!selected || !activeChat || !editMemoryDraft.trim()) return;
+    void perform(async () => {
+      await request<ProjectMemoryEntry>(`/api/v1/workspaces/${selected.id}/chats/${activeChat}/memory/${entry.id}/edit`, {
+        method: "POST", body: JSON.stringify({ text: editMemoryDraft.trim(), reason: entry.reason })
+      });
+      setEditingMemoryId("");
+      setEditMemoryDraft("");
+      setChatDetail(await request<ChatDetail>(`/api/v1/workspaces/${selected.id}/chats/${activeChat}`));
+    });
+  }
+
+  function approveMemory(entry: ProjectMemoryEntry) {
+    if (!selected || !activeChat) return;
+    void perform(async () => {
+      await request<ProjectMemoryEntry>(`/api/v1/workspaces/${selected.id}/chats/${activeChat}/memory/${entry.id}/approve`, { method: "POST" });
+      setChatDetail(await request<ChatDetail>(`/api/v1/workspaces/${selected.id}/chats/${activeChat}`));
+    });
+  }
 
   async function perform(action: () => Promise<void>) {
     if (busy) return;
@@ -227,6 +327,29 @@ function WorkspaceApp() {
             <Text style={styles.description}>Register participants, capture their work and create explicit handoffs.</Text>
 
             <View style={styles.panel}>
+              <Text style={styles.panelTitle}>04 · Chats & project memory</Text>
+              <TextInput value={chatTitle} onChangeText={setChatTitle} placeholder="New chat title" style={styles.input} maxLength={160} />
+              <ActionButton label="Create chat" onPress={createChat} disabled={!chatTitle.trim() || busy} />
+              {chats.map(chat => <Pressable key={chat.id} onPress={() => setActiveChat(chat.id)} style={[styles.agentChoice, activeChat === chat.id && styles.agentChoiceActive]}><Text style={styles.rowTitle}>{chat.title}</Text><Text style={styles.rowMeta}>{new Date(chat.updated_at).toLocaleString()}</Text></Pressable>)}
+              {chatDetail ? <>
+                <Text style={styles.fieldLabel}>RESUME BRIEF · APPROVED MEMORY ONLY</Text>\n                <ActionButton label="Archive chat" onPress={archiveChat} disabled={busy} secondary />
+                <Text style={styles.rowMeta}>{chatDetail.resume_brief || "No context yet. Add messages and approve useful memory."}</Text>
+                <View style={styles.listRow}>
+                  {chatDetail.messages.map(message => <View key={message.id} style={styles.contextChoice}><Text style={styles.rowTitle}>{message.role}{message.answered_by ? ` · ${message.answered_by}` : ""}</Text><Text style={styles.rowMeta}>{message.content}</Text></View>)}
+                </View>
+                <TextInput value={messageDraft} onChangeText={setMessageDraft} placeholder="Write a message…" style={[styles.input, styles.multiline]} multiline />
+                <ActionButton label="Send message" onPress={sendChatMessage} disabled={!messageDraft.trim() || busy} />
+                <Text style={styles.fieldLabel}>PROPOSE PROJECT MEMORY</Text>
+                <TextInput value={memoryDraft} onChangeText={setMemoryDraft} placeholder="Capture a decision, fact, constraint or open task…" style={[styles.input, styles.multiline]} multiline maxLength={4000} />
+                <View style={{flexDirection:"row",flexWrap:"wrap",gap:6,marginBottom:8}}>
+                  {(["decision","fact","constraint","open_task","note"] as const).map(kind => <Pressable key={kind} onPress={() => setMemoryType(kind)} style={[styles.contextChoice, memoryType === kind && styles.agentChoiceActive]}><Text style={styles.rowTitle}>{kind.replaceAll("_"," ")}</Text></Pressable>)}
+                </View>
+                <ActionButton label="Propose memory" onPress={proposeMemory} disabled={!memoryDraft.trim() || busy} />
+                {chatDetail.memory.map(entry => <View key={entry.id} style={styles.listRow}><Text style={styles.rowTitle}>{entry.type.replaceAll("_"," ")} · {entry.status}</Text>{editingMemoryId === entry.id ? <><TextInput value={editMemoryDraft} onChangeText={setEditMemoryDraft} style={styles.input} maxLength={4000} /><ActionButton label="Save edit" onPress={() => saveMemoryEdit(entry)} disabled={busy || !editMemoryDraft.trim()} /><ActionButton label="Cancel" onPress={() => setEditingMemoryId("")} secondary /></> : <Text style={styles.rowMeta}>{entry.text}</Text>}{entry.status === "proposed" ? <><ActionButton label="Approve memory" onPress={() => approveMemory(entry)} disabled={busy} secondary /><ActionButton label="Reject memory" onPress={() => changeMemory(entry, "reject")} disabled={busy} secondary /></> : null}<ActionButton label="Edit memory" onPress={() => { setEditingMemoryId(entry.id); setEditMemoryDraft(entry.text); }} disabled={busy} secondary /><ActionButton label="Delete memory" onPress={() => changeMemory(entry, "delete")} disabled={busy} secondary /></View>)}
+              </> : <Text style={styles.muted}>Choose a chat to see its messages and resume brief. Only approved memory informs future briefs.</Text>}
+            </View>
+
+            <View style={styles.panel}>
               <Text style={styles.panelTitle}>01 · Agents ({agents.length})</Text>
               <TextInput value={agentName} onChangeText={setAgentName} placeholder="Agent name" style={styles.input} />
               <TextInput value={provider} onChangeText={setProvider} placeholder="Provider (claude, chatgpt…)" style={styles.input} autoCapitalize="none" />
@@ -312,7 +435,7 @@ function WorkspaceApp() {
 
         {error ? <View style={styles.error}><Text style={styles.errorText}>{error}</Text></View> : null}
         <Text style={styles.footer}>CONTEXT SHOULD TRAVEL WITH THE WORK.</Text>
-        <Text style={styles.warning}>Development mode: data is temporary and authentication is not implemented. Do not use sensitive or production data.</Text>
+        <Text style={styles.warning}>Chats and approved project memory are stored in your authenticated workspace.</Text>
       </ScrollView>
     </SafeAreaView>
   );
