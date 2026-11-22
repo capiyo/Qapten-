@@ -218,7 +218,7 @@ mod tests {
 
     #[tokio::test]
     async fn simulator_ingress_rejects_measured_quality() {
-        let app = crate::app(AppState::default());
+        let (app, token) = test_app().await;
         let payload = serde_json::json!({
             "event_id": "physical-event-1",
             "sequence": 1,
@@ -232,6 +232,7 @@ mod tests {
                 Request::builder()
                     .method("POST")
                     .uri("/api/v1/sim/devices/simulator-1/telemetry")
+                    .header("authorization", format!("Bearer {token}"))
                     .header("content-type", "application/json")
                     .body(Body::from(serde_json::to_vec(&payload).unwrap()))
                     .unwrap(),
