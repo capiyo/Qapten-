@@ -13,7 +13,7 @@ import { StatusBar } from "expo-status-bar";
 import { axonTheme } from "../../packages/theme/src";
 import { auth } from "./firebase";
 
-import type { Agent, Artifact, Health, Task, Workspace } from "../../packages/contracts/src";
+import type { Agent, Artifact, Health, Task, Workspace, Chat, ChatDetail, ChatMessage, ProjectMemoryEntry } from "../../packages/contracts/src";
 
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_AXON_API_URL ?? "http://127.0.0.1:8080";
@@ -51,6 +51,13 @@ function WorkspaceApp() {
   const [agents, setAgents] = useState<Agent[]>([]);
   const [artifacts, setArtifacts] = useState<Artifact[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [chats, setChats] = useState<Chat[]>([]);
+  const [activeChat, setActiveChat] = useState("");
+  const [chatDetail, setChatDetail] = useState<ChatDetail | null>(null);
+  const [chatTitle, setChatTitle] = useState("");
+  const [messageDraft, setMessageDraft] = useState("");
+  const [memoryDraft, setMemoryDraft] = useState("");
+  const [memoryType, setMemoryType] = useState<ProjectMemoryEntry["type"]>("note");
   const [workspaceName, setWorkspaceName] = useState("");
   const [agentName, setAgentName] = useState("");
   const [provider, setProvider] = useState("claude");
@@ -82,6 +89,12 @@ function WorkspaceApp() {
     setAgents(agentItems);
     setArtifacts(artifactItems);
     setTasks(taskItems);
+    const chatItems = await request<Chat[]>(`/api/v1/workspaces/${workspace.id}/chats`);
+    setChats(chatItems);
+    if (activeChat && !chatItems.some(chat => chat.id === activeChat)) {
+      setActiveChat("");
+      setChatDetail(null);
+    }
     if (!agentItems.some(agent => agent.id === assignee)) setAssignee(agentItems[0]?.id ?? "");
   }
 
@@ -96,6 +109,60 @@ function WorkspaceApp() {
       refreshWorkspace(selected).catch(cause => setError(cause instanceof Error ? cause.message : "Could not load workspace"));
     }
   }, [selected?.id]);
+
+  useEffect(() => {
+    if (!selected || !activeChat) { setChatDetail(null); return; }
+    request<ChatDetail>(`/api/v1/workspaces/${selected.id}/chats/${activeChat}`)
+      .then(setChatDetail)
+      .catch(cause => setError(cause instanceof Error ? cause.message : "Could not load chat"));
+  }, [selected?.id, activeChat]);
+
+  function createChat() {
+    if (!selected || !chatTitle.trim()) return;
+    void perform(async () => {
+      const chat = await request<Chat>(`/api/v1/workspaces/${selected.id}/chats`, {
+        method: "POST", body: JSON.stringify({ title: chatTitle.trim() })
+      });
+      setChatTitle("");
+      setChats(current => [chat, ...current]);
+      setActiveChat(chat.id);
+    });
+  }
+
+  function sendChatMessage() {
+    if (!selected || !activeChat || !messageDraft.trim()) return;
+    void perform(async () => {
+      await request<ChatMessage>(`/api/v1/workspaces/${selected.id}/chats/${activeChat}/messages`, {
+        method: "POST", body: JSON.stringify({ role: "user", content: messageDraft.trim() })
+      });
+      setMessageDraft("");
+      const [detail, items] = await Promise.all([
+        request<ChatDetail>(`/api/v1/workspaces/${selected.id}/chats/${activeChat}`),
+        request<Chat[]>(`/api/v1/workspaces/${selected.id}/chats`)
+      ]);
+      setChatDetail(detail);
+      setChats(items);
+    });
+  }
+
+  function proposeMemory() {
+    if (!selected || !activeChat || !memoryDraft.trim()) return;
+    void perform(async () => {
+      await request<ProjectMemoryEntry>(`/api/v1/workspaces/${selected.id}/chats/${activeChat}/memory`, {
+        method: "POST", body: JSON.stringify({ type: memoryType, text: memoryDraft.trim() })
+      });
+      setMemoryDraft("");
+      setChatDetail(await request<ChatDetail>(`/api/v1/workspaces/${selected.id}/chats/${activeChat}`));
+    });
+  }
+
+  function approveMemory(entry: ProjectMemoryEntry) {
+    if (!selected || !activeChat) return;
+    void perform(async () => {
+      await request<ProjectMemoryEntry>(`/api/v1/workspaces/${selected.id}/chats/${activeChat}/memory/${entry.id}/approve`, { method: "POST" });
+      setChatDetail(await request<ChatDetail>(`/api/v1/workspaces/${selected.id}/chats/${activeChat}`));
+    });
+  }
 
   async function perform(action: () => Promise<void>) {
     if (busy) return;
@@ -312,7 +379,7 @@ function WorkspaceApp() {
 
         {error ? <View style={styles.error}><Text style={styles.errorText}>{error}</Text></View> : null}
         <Text style={styles.footer}>CONTEXT SHOULD TRAVEL WITH THE WORK.</Text>
-        <Text style={styles.warning}>Development mode: data is temporary and authentication is not implemented. Do not use sensitive or production data.</Text>
+        <Text style={styles.warning}>Chats and approved project memory are stored in your authenticated workspace.</Text>
       </ScrollView>
     </SafeAreaView>
   );
